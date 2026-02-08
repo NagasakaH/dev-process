@@ -33,11 +33,13 @@ graph TB
     subgraph "呼び出しレイヤー"
         CGP[call-general-purpose.agent.md<br/>ラッパーエージェント]
         CM[call-manager.agent.md<br/>ラッパーエージェント]
+        CDPM[call-dev-planning-manager.agent.md<br/>ラッパーエージェント]
     end
     
     subgraph "実行レイヤー"
         GP[general-purpose.agent.md<br/>汎用作業エージェント]
         M[manager.agent.md<br/>作業管理エージェント]
+        DPM[dev-planning-manager.agent.md<br/>開発計画管理エージェント]
     end
     
     subgraph "Developmentスキル（基本フロー）"
@@ -60,6 +62,7 @@ graph TB
     
     CGP -->|Opus-4.5で呼び出し| GP
     CM -->|Opus-4.5で呼び出し| M
+    CDPM -->|Opus-4.5で呼び出し| DPM
     
     GP -->|開発フロー| IWB
     IWB --> SOV
@@ -67,6 +70,12 @@ graph TB
     DIN --> DDE
     DDE --> DPL
     DPL --> DIM
+    
+    DPM -->|開発計画フロー| IWB
+    DPM -->|開発計画フロー| SOV
+    DPM -->|開発計画フロー| DIN
+    DPM -->|開発計画フロー| DDE
+    DPM -->|開発計画フロー| DPL
     
     GP -->|汎用タスク| INV
     GP -->|汎用タスク| DES
@@ -84,6 +93,8 @@ graph TB
 | general-purpose | `general-purpose.agent.md` | 開発スキル・汎用スキルを実行するメインエージェント |
 | call-manager | `call-manager.agent.md` | manager-agentを呼び出すラッパー（複雑な並列タスク用） |
 | manager | `manager.agent.md` | 作業管理エージェント（PM）。子エージェントに作業を委譲 |
+| call-dev-planning-manager | `call-dev-planning-manager.agent.md` | dev-planning-manager-agentを呼び出すラッパー（調査・設計・計画用） |
+| dev-planning-manager | `dev-planning-manager.agent.md` | 開発計画管理エージェント。Developmentスキルで調査・設計・計画を実施しMR作成 |
 
 ---
 
@@ -481,15 +492,36 @@ call-general-purpose-manager-agentを使用して、ログ出力を全モジュ�
 
 ---
 
+### 調査・設計・計画向け（call-dev-planning-manager-agent）
+
+IssueやユーザーのリクエストからDevelopmentスキルを使って調査・設計・計画までを実施し、マージリクエストを作成するワークフローです。実装は行わず、計画までの成果物を作成します。
+
+**適用ケース:**
+- Issueから調査・設計・計画ドキュメントを自動作成したい場合
+- 実装前の調査・設計レビューを実施したい場合
+- 計画のマージリクエストを作成してチームレビューを受けたい場合
+
+**実行例:**
+```
+# Issueから調査・設計・計画を実施
+call-dev-planning-manager-agentを使用して、以下のIssueの調査・設計・計画を行ってください。
+https://github.com/org/repo/issues/123
+
+# ユーザー要望から調査・設計・計画を実施
+call-dev-planning-manager-agentを使用して、ユーザー認証機能の追加について調査・設計・計画を行ってください。
+```
+
+---
+
 ## ユースケース選択ガイド
 
-| 項目 | 基本ワークフロー | 簡単な作業 | 複雑な並列タスク |
-|------|-----------------|------------|------------------|
-| **用途** | 新機能開発、複雑なリファクタリング、重大な設計変更 | 単純なタスク、ちょっとした修正 | 複数の関連タスク、並列実装が必要な場合 |
-| **エージェント** | development スキル6ステップ | `call-general-purpose-agent` | `call-general-purpose-manager-agent` |
-| **ドキュメント** | 調査/設計/計画/実装の全ドキュメント | 最小限 | 実行履歴のみ |
-| **並列実行** | ○（worktree管理） | ✕ | ○（worktree管理） |
-| **推奨ケース** | 大規模機能開発、アーキテクチャ変更、チーム共有が必要 | バグ修正、設定変更、小規模改善 | 中規模機能追加、複数ファイル同時変更 |
+| 項目 | 基本ワークフロー | 簡単な作業 | 複雑な並列タスク | 調査・設計・計画 |
+|------|-----------------|------------|------------------|------------------|
+| **用途** | 新機能開発、複雑なリファクタリング、重大な設計変更 | 単純なタスク、ちょっとした修正 | 複数の関連タスク、並列実装が必要な場合 | Issueや要望から調査・設計・計画を実施しMR作成 |
+| **エージェント** | development スキル6ステップ | `call-general-purpose-agent` | `call-general-purpose-manager-agent` | `call-dev-planning-manager-agent` |
+| **ドキュメント** | 調査/設計/計画/実装の全ドキュメント | 最小限 | 実行履歴のみ | 調査/設計/計画のドキュメント + MR |
+| **並列実行** | ○（worktree管理） | ✕ | ○（worktree管理） | ✕（順次実行） |
+| **推奨ケース** | 大規模機能開発、アーキテクチャ変更、チーム共有が必要 | バグ修正、設定変更、小規模改善 | 中規模機能追加、複数ファイル同時変更 | 実装前レビュー、計画立案、設計共有 |
 
 ---
 
