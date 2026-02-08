@@ -1,18 +1,18 @@
 # General-Purpose Manager Skills
 
-Claude AIエージェント向けの汎用作業管理スキル集です。複雑なタスクを体系的に管理し、調査・設計・計画・実行の各プロセスを通じて作業を完遂します。
+Claude AIエージェント向けの汎用作業管理スキル集です。複雑なリクエストを体系的に管理し、調査・設計・計画・実行の各プロセスを通じて作業を完遂します。
 
 ## プロジェクト概要
 
 ### 目的
 
-このリポジトリ（`.claude/skills`）は、Claude AIエージェントが複雑なタスクを体系的に処理するためのスキル定義を提供します。
+このリポジトリ（`.claude/skills`）は、Claude AIエージェントが複雑なリクエストを体系的に処理するためのスキル定義を提供します。
 
 ### General-Purpose Managerの役割
 
 General-Purpose Manager（`manager.agent.md`）は、プロジェクトマネージャーとして機能するエージェントです。直接作業を行わず、子エージェントに作業を委譲しながら、以下の責務を遂行します：
 
-- タスクの受け取りと分析
+- リクエストの受け取りと分析
 - ドキュメント出力先の決定と作成
 - 各プロセスディレクトリの事前作成
 - 子エージェントへの作業依頼
@@ -87,13 +87,13 @@ sequenceDiagram
     participant OC as child-agent<br/>(opus-child-agent.md)
     participant GP as general-purpose<br/>(general-purpose.agent.md)
     
-    %% フェーズ1: タスク受け取り・初期化
+    %% フェーズ1: リクエスト受け取り・初期化
     rect rgb(230, 245, 255)
-        Note over User,GP: フェーズ1: タスク受け取り・初期化
-        User->>CM: タスク依頼
+        Note over User,GP: フェーズ1: リクエスト受け取り・初期化
+        User->>CM: リクエスト
         CM->>M: Opus-4.5で呼び出し
         M->>M: 出力先決定<br/>(DOCS_DIR確認、タイムスタンプ生成)
-        M->>M: タスクフォルダ作成<br/>(01_調査/, 02_設計/, 03_計画/, 04_実行/)
+        M->>M: リクエストフォルダ作成<br/>(01_調査/, 02_設計/, 03_計画/, 04_実行/)
         M->>M: 実行履歴.md初期化
     end
     
@@ -133,10 +133,10 @@ sequenceDiagram
     %% フェーズ5: 実行プロセス
     rect rgb(255, 230, 230)
         Note over User,GP: フェーズ5: 実行プロセス (executionスキル + worktree管理)
-        M->>M: メインworktree作成<br/>(/tmp/タスク名/)
+        M->>M: メインworktree作成<br/>(/tmp/リクエスト名/)
         
         loop 各タスク (直列/並列)
-            M->>M: サブworktree作成<br/>(/tmp/タスク名-taskID/)
+            M->>M: サブworktree作成<br/>(/tmp/リクエスト名-taskID/)
             M->>OC: タスク実行依頼<br/>(worktreeパス指定)
             OC->>OC: executionスキル実行
             OC->>OC: worktree-commitスキルでコミット
@@ -166,7 +166,7 @@ sequenceDiagram
 |------|------|
 | **目的** | 既存コードベース、要件、リスクを把握する |
 | **スキル** | `/.claude/skills/general-purpose/investigation/SKILL.md` |
-| **入力（前提条件）** | タスク依頼内容、リポジトリアクセス |
+| **入力（前提条件）** | リクエスト内容、リポジトリアクセス |
 | **出力（成果物）** | `investigation-report.md`, `risk-analysis.md` |
 
 **成果物の内容:**
@@ -272,14 +272,14 @@ sequenceDiagram
 
 ---
 
-## タスクフォルダ構造
+## リクエストフォルダ構造
 
-manager.agent.mdがタスク開始時に作成するフォルダ構造:
+manager.agent.mdがリクエスト開始時に作成するフォルダ構造:
 
 ```
 {出力先ディレクトリ}/
-└── YYYYMMDD-HHMM-{タスク名}/
-    ├── 実行履歴.md              # タスク進行状況の記録
+└── YYYYMMDD-HHMM-{リクエスト名}/
+    ├── 実行履歴.md              # リクエスト進行状況の記録
     ├── 01_調査/
     │   ├── investigation-report.md
     │   └── risk-analysis.md
@@ -306,7 +306,7 @@ manager.agent.mdがタスク開始時に作成するフォルダ構造:
 
 | 項目 | 形式 | 例 |
 |------|------|-----|
-| タスクフォルダ | `YYYYMMDD-HHMM-{タスク名}` | `20260208-0149-機能追加` |
+| リクエストフォルダ | `YYYYMMDD-HHMM-{リクエスト名}` | `20260208-0149-機能追加` |
 | プロセスフォルダ | `{番号}_{プロセス名}` | `01_調査`, `02_設計` |
 | 実行タスクフォルダ | `{タスク識別子}` | `task01`, `task02-01` |
 
@@ -339,14 +339,14 @@ manager.agent.mdがタスク開始時に作成するフォルダ構造:
 ```mermaid
 flowchart TD
     subgraph "初期化"
-        A[実行開始] --> B["メインworktree作成<br/>/tmp/{タスク名}/"]
-        B --> C["タスク名ブランチ作成"]
+        A[実行開始] --> B["メインworktree作成<br/>/tmp/{リクエスト名}/"]
+        B --> C["リクエスト名ブランチ作成"]
     end
     
     subgraph "タスク実行ループ"
         C --> D{次のタスク?}
-        D -->|Yes| E["サブworktree作成<br/>/tmp/{タスク名}-{taskID}/"]
-        E --> F["サブブランチ作成<br/>{タスク名}-{taskID}"]
+        D -->|Yes| E["サブworktree作成<br/>/tmp/{リクエスト名}-{taskID}/"]
+        E --> F["サブブランチ作成<br/>{リクエスト名}-{taskID}"]
         F --> G[子エージェントに依頼<br/>worktreeパス指定]
         G --> H[タスク実行]
         H --> I[worktree-commit<br/>日本語コミット]
@@ -371,13 +371,13 @@ graph LR
     end
     
     subgraph "メインworktree"
-        MW["/tmp/{タスク名}/<br/>タスク名ブランチ"]
+        MW["/tmp/{リクエスト名}/<br/>リクエスト名ブランチ"]
     end
     
     subgraph "サブworktree群"
-        SW1["/tmp/{タスク名}-task01/<br/>タスク名-task01ブランチ"]
-        SW2["/tmp/{タスク名}-task02-01/<br/>タスク名-task02-01ブランチ"]
-        SW3["/tmp/{タスク名}-task02-02/<br/>タスク名-task02-02ブランチ"]
+        SW1["/tmp/{リクエスト名}-task01/<br/>リクエスト名-task01ブランチ"]
+        SW2["/tmp/{リクエスト名}-task02-01/<br/>リクエスト名-task02-01ブランチ"]
+        SW3["/tmp/{リクエスト名}-task02-02/<br/>リクエスト名-task02-02ブランチ"]
     end
     
     REPO -->|git worktree add| MW
@@ -447,7 +447,7 @@ graph LR
    ```
 
 2. **managerエージェントが自動的に以下を実行**
-   - タスクフォルダの作成
+   - リクエストフォルダの作成
    - 調査→設計→計画→実行の各プロセスを順次実行
    - 子エージェントへの作業委譲
    - 進行状況の追跡・記録
@@ -472,7 +472,7 @@ designスキルを使用して、ログイン機能の設計を行ってくだ�
 
 - **直接作業禁止**: コード編集、ファイル操作は一切行わない（ディレクトリ作成は例外）
 - **サブエージェント経由**: 全ての作業を子エージェントに依頼
-- **追跡機能**: 実行履歴ファイルで全てのタスク・進行状況を記録
+- **追跡機能**: 実行履歴ファイルで全てのタスクの進行状況を記録
 - **出力先明記**: 子エージェントへの依頼には必ず成果物出力先の絶対パスを含める
 
 ### 子エージェントの制約
