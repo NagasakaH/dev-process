@@ -1,76 +1,76 @@
-# Agent System Documentation
+# エージェントシステムドキュメント
 
-This document describes the hierarchical agent system used for task management and execution in this repository.
+このドキュメントは、本リポジトリで使用される階層的なエージェントシステムについて説明します。
 
-## Agent Hierarchy
+## エージェント階層
 
 ```mermaid
 graph TB
-    subgraph "Call Layer"
-        CM[call-manager.agent.md<br/>Wrapper Agent]
-        CGP[call-general-purpose.agent.md<br/>Wrapper Agent]
+    subgraph "呼び出し層"
+        CM[call-manager.agent.md<br/>ラッパーエージェント]
+        CGP[call-general-purpose.agent.md<br/>ラッパーエージェント]
     end
     
-    subgraph "Management Layer"
-        M[manager.agent.md<br/>Project Manager Agent<br/>Delegates work, no direct execution]
+    subgraph "管理層"
+        M[manager.agent.md<br/>プロジェクトマネージャーエージェント<br/>作業を委譲、直接実行なし]
     end
     
-    subgraph "Execution Layer"
-        GP[general-purpose.agent.md<br/>General Purpose Worker Agent]
-        OC[opus-child-agent.md<br/>Child Agent<br/>Executes delegated tasks]
+    subgraph "実行層"
+        GP[general-purpose.agent.md<br/>汎用作業エージェント]
+        OC[opus-child-agent.md<br/>子エージェント<br/>委譲されたタスクを実行]
     end
     
-    CM -->|Calls with Opus-4.5| M
-    CGP -->|Calls with Opus-4.5| GP
-    M -->|Delegates tasks| OC
-    M -->|Delegates tasks| GP
+    CM -->|Opus-4.5で呼び出し| M
+    CGP -->|Opus-4.5で呼び出し| GP
+    M -->|タスクを委譲| OC
+    M -->|タスクを委譲| GP
 ```
 
-## Agent Roles
+## エージェントの役割
 
-| Agent | File | Purpose | Key Constraints |
+| エージェント | ファイル | 目的 | 主要な制約 |
 |-------|------|---------|----------------|
-| **call-manager** | `call-manager.agent.md` | Wrapper to invoke manager agent with Opus-4.5 model | - |
-| **manager** | `manager.agent.md` | Project Manager - orchestrates work through delegation | **NO direct work**: Cannot edit code or files (except directory creation) |
-| **call-general-purpose** | `call-general-purpose.agent.md` | Wrapper to invoke general-purpose agent | - |
-| **general-purpose** | `general-purpose.agent.md` | Worker agent that executes tasks delegated from parent | Follows process-specific skills |
-| **opus-child-agent** | `opus-child-agent.md` | Child agent that completes delegated tasks | **Trusts parent info**: No re-verification of paths/env vars |
+| **call-manager** | `call-manager.agent.md` | Opus-4.5モデルでマネージャーエージェントを呼び出すラッパー | - |
+| **manager** | `manager.agent.md` | プロジェクトマネージャー - 委譲を通じて作業を調整 | **直接作業禁止**: コードやファイルの編集不可（ディレクトリ作成を除く） |
+| **call-general-purpose** | `call-general-purpose.agent.md` | 汎用エージェントを呼び出すラッパー | - |
+| **general-purpose** | `general-purpose.agent.md` | 親から委譲されたタスクを実行する作業エージェント | プロセス固有のスキルに従う |
+| **opus-child-agent** | `opus-child-agent.md` | 委譲されたタスクを完了する子エージェント | **親の情報を信頼**: パス/環境変数の再検証なし |
 
-## Process Flow
+## プロセスフロー
 
-The manager agent follows a structured process flow:
+マネージャーエージェントは構造化されたプロセスフローに従います：
 
-1. **Investigation** → 2. **Design** → 3. **Planning** → 4. **Execution**
+1. **調査** → 2. **設計** → 3. **計画** → 4. **実行**
 
-Each process generates specific deliverables in dedicated directories.
+各プロセスは専用ディレクトリに特定の成果物を生成します。
 
-## Key Principles
+## 主要原則
 
-### Manager Agent
-- **Delegation-only**: All work must be delegated to child agents
-- **Tracking**: Records all progress in execution history
-- **Path Management**: Pre-creates all output directories and provides absolute paths to child agents
+### マネージャーエージェント
+- **委譲のみ**: すべての作業は子エージェントに委譲する必要があります
+- **追跡**: すべての進捗を実行履歴に記録します
+- **パス管理**: すべての出力ディレクトリを事前作成し、絶対パスを子エージェントに提供します
 
-### Child Agents
-- **Trust parent information**: Use provided paths and environment variables as-is
-- **No re-verification**: Do NOT check environment variables or transform paths
-- **Output deliverables**: Generate process-specific documentation per requirements
+### 子エージェント
+- **親の情報を信頼**: 提供されたパスと環境変数をそのまま使用します
+- **再検証禁止**: 環境変数の確認やパスの変換を行いません
+- **成果物出力**: 要件に従ってプロセス固有のドキュメントを生成します
 
-## Path Handling Rules
+## パス処理ルール
 
-### For Parent (Manager) Agents
-1. Resolve all environment variables before passing to children
-2. Provide absolute paths only
-3. Pre-create output directories
+### 親（マネージャー）エージェント向け
+1. 子に渡す前にすべての環境変数を解決する
+2. 絶対パスのみを提供する
+3. 出力ディレクトリを事前作成する
 
-### For Child Agents
-1. **Use paths as provided** - no transformation or resolution
-2. **Do NOT execute**: `echo $DOCS_ROOT`, `echo $HOME`, `echo $PWD`
-3. **Do NOT convert**: Absolute paths to relative paths or vice versa
+### 子エージェント向け
+1. **提供されたパスをそのまま使用** - 変換や解決を行わない
+2. **実行禁止**: `echo $DOCS_ROOT`、`echo $HOME`、`echo $PWD`
+3. **変換禁止**: 絶対パスから相対パス、またはその逆
 
-## Document Output Standards
+## ドキュメント出力標準
 
-All markdown documents must include frontmatter:
+すべてのマークダウンドキュメントにはフロントマターを含める必要があります：
 
 ```yaml
 ---
@@ -79,24 +79,24 @@ date: {ISO_8601_datetime}
 ---
 ```
 
-Generate timestamp values by executing shell commands at document creation time:
-- `date +%s` for sidebar_position
-- `date -Iseconds` for date field
+ドキュメント作成時にシェルコマンドを実行してタイムスタンプ値を生成します：
+- sidebar_position用に `date +%s`
+- dateフィールド用に `date -Iseconds`
 
-## Deliverables by Process
+## プロセス別成果物
 
-| Process | Default Output Files |
+| プロセス | デフォルト出力ファイル |
 |---------|---------------------|
-| Investigation | `調査レポート.md` |
-| Design | `設計書.md` |
-| Planning | `計画書.md` |
-| Execution | `実装レポート.md` |
+| 調査 | `調査レポート.md` |
+| 設計 | `設計書.md` |
+| 計画 | `計画書.md` |
+| 実行 | `実装レポート.md` |
 
-For detailed templates and content requirements, refer to the system documentation provided to child agents.
+詳細なテンプレートと内容要件については、子エージェントに提供されるシステムドキュメントを参照してください。
 
-## Related Documentation
+## 関連ドキュメント
 
-- **README.md** - General project overview
-- **CLUADE.md** - Detailed workflow diagrams and skill definitions
-- Agent definition files in `/.github/agents/`
-- Skill definitions in `/.claude/skills/`
+- **README.md** - プロジェクト全体の概要
+- **CLUADE.md** - 詳細なワークフロー図とスキル定義
+- `/.github/agents/` のエージェント定義ファイル
+- `/.claude/skills/` のスキル定義
