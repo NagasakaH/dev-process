@@ -1,11 +1,13 @@
 ---
 name: init-work-branch
-description: 作業ブランチ初期化スキル。セットアップYAMLを入力として、featureブランチ作成、サブモジュール追加、worktree作成、設計ドキュメント生成を行う。「作業ブランチを初期化」「init-work-branch」「開発セットアップ」「featureブランチを作成」などのフレーズで発動。
+description: 作業ブランチ初期化スキル。セットアップYAMLを入力として、featureブランチ作成、サブモジュール追加、設計ドキュメント生成を行う。「作業ブランチを初期化」「init-work-branch」「開発セットアップ」「featureブランチを作成」などのフレーズで発動。
 ---
 
 # 作業ブランチ初期化スキル
 
 セットアップYAMLファイルを入力として、開発に必要な環境を自動構築します。
+
+> **設計原則**: `git clone` + `git submodule init && git submodule update` だけで同等の開発環境が再現できること。
 
 ## ユーザー向け手順
 
@@ -38,7 +40,6 @@ init-work-branch を実行して setup.yaml で初期化
 スキル実行後、以下が自動生成されます：
 - `feature/{ticket_id}` ブランチ
 - サブモジュール（submodules/配下）
-- worktree（workspaces/配下）
 - 設計ドキュメント（docs/{ticket_id}.md）
 
 ---
@@ -46,9 +47,8 @@ init-work-branch を実行して setup.yaml で初期化
 ## このスキルの目的
 
 1. **ブランチ管理** - チケットIDに基づいたfeatureブランチを作成
-2. **依存リポジトリ管理** - 関連リポジトリをサブモジュールとして追加
-3. **作業環境構築** - 修正対象リポジトリのworktreeを作成
-4. **ドキュメント準備** - 設計変更ドキュメントのテンプレートを生成
+2. **依存リポジトリ管理** - 関連・修正対象リポジトリをサブモジュールとして追加
+3. **ドキュメント準備** - 設計変更ドキュメントのテンプレートを生成
 
 ## 入力ファイル
 
@@ -114,20 +114,17 @@ if [ -n "{repository.branch}" ]; then
 fi
 ```
 
-### 5. 修正対象リポジトリのworktree作成
+### 5. 修正対象リポジトリをサブモジュールとして追加
 
 `target_repositories` に定義された各リポジトリに対して実行：
 
 ```bash
-WORKTREES_DIR="{options.worktrees_dir:-workspaces}"
-mkdir -p "$WORKTREES_DIR"
-
 # リポジトリ名
 REPO_NAME="{repository.name}"
 BASE_BRANCH="{repository.base_branch:-main}"
 FEATURE_BRANCH="feature/{ticket_id}"
 
-# まずサブモジュールとして追加（存在しない場合）
+# サブモジュールとして追加（存在しない場合）
 if [ ! -d "$SUBMODULES_DIR/$REPO_NAME" ]; then
     git submodule add "{repository.url}" "$SUBMODULES_DIR/$REPO_NAME"
 fi
@@ -140,10 +137,7 @@ git pull origin "$BASE_BRANCH"
 git checkout -b "$FEATURE_BRANCH"
 cd -
 
-# worktreeとして追加
-git -C "$SUBMODULES_DIR/$REPO_NAME" worktree add "../../$WORKTREES_DIR/$REPO_NAME" "$FEATURE_BRANCH"
-
-echo "worktree作成完了: $WORKTREES_DIR/$REPO_NAME (ブランチ: $FEATURE_BRANCH)"
+echo "サブモジュール追加完了: $SUBMODULES_DIR/$REPO_NAME (ブランチ: $FEATURE_BRANCH)"
 ```
 
 ### 6. 設計変更ドキュメントの作成
@@ -203,14 +197,17 @@ git commit -m "feat: {ticket_id} 開発環境を初期化
 
 ### 追加されたサブモジュール
 - submodules/{repo_name1}
-- submodules/{repo_name2}
-
-### 作成されたworktree
-- workspaces/{target_repo1} (feature/{ticket_id})
-- workspaces/{target_repo2} (feature/{ticket_id})
+- submodules/{repo_name2} (feature/{ticket_id})
 
 ### 作成されたドキュメント
 - docs/{ticket_id}.md
+
+### 環境の再構築方法
+```bash
+git clone {repository_url}
+cd {repository_name}
+git submodule init && git submodule update
+```
 
 ### 次のステップ
 1. `docs/{ticket_id}.md` を開いて調査結果を記録
@@ -246,21 +243,10 @@ YAMLファイルを修正してください。
 処理を続行しますか？ [y/N]
 ```
 
-### worktree作成失敗
-```
-エラー: worktreeの作成に失敗しました
-リポジトリ: {repository_name}
-原因: {error_message}
-
-手動で以下のコマンドを実行してください:
-git -C submodules/{repo_name} worktree add ../../workspaces/{repo_name} feature/{ticket_id}
-```
-
 ## 注意事項
 
 - 既存のfeatureブランチがある場合は確認を求める
 - サブモジュールが既に存在する場合はスキップして処理を続行
-- worktreeが既に存在する場合はエラーとして報告
 - YAMLファイルのパスは絶対パスまたは相対パスで指定可能
 - git設定（user.name, user.email）が必要
 
@@ -278,7 +264,7 @@ git -C submodules/{repo_name} worktree add ../../workspaces/{repo_name} feature/
         |
 [サブモジュール追加] --> related_repositories をサブモジュールとして追加
         |
-[worktree作成] --> target_repositories のworktreeを作成
+[修正対象追加] --> target_repositories をサブモジュールとして追加、featureブランチ作成
         |
 [ドキュメント生成] --> {ticket_id}.md を作成
         |
