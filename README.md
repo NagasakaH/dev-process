@@ -18,7 +18,9 @@ call-general-purpose-agent経由で以下を順番に実行：
 2. submodule-overview      - サブモジュール概要作成
 3. dev-investigation       - 詳細調査
 4. dev-design             - 設計
+4a. review-design          - 設計レビュー（指摘があれば4に戻る）
 5. dev-plan               - 計画（タスク分割、TDDプロンプト生成）
+5a. review-plan            - 計画レビュー（指摘があれば5に戻る）
 6. dev-implement          - 実装実行
 ```
 
@@ -47,7 +49,9 @@ graph TB
         SOV[submodule-overview<br/>概要作成]
         DIN[dev-investigation<br/>詳細調査]
         DDE[dev-design<br/>設計]
+        RDE[review-design<br/>設計レビュー]
         DPL[dev-plan<br/>計画]
+        RPL[review-plan<br/>計画レビュー]
         DIM[dev-implement<br/>実装]
     end
     
@@ -68,14 +72,20 @@ graph TB
     IWB --> SOV
     SOV --> DIN
     DIN --> DDE
-    DDE --> DPL
-    DPL --> DIM
+    DDE --> RDE
+    RDE -->|承認| DPL
+    RDE -->|指摘あり| DDE
+    DPL --> RPL
+    RPL -->|承認| DIM
+    RPL -->|指摘あり| DPL
     
     DPM -->|開発計画フロー| IWB
     DPM -->|開発計画フロー| SOV
     DPM -->|開発計画フロー| DIN
     DPM -->|開発計画フロー| DDE
+    DPM -->|開発計画フロー| RDE
     DPM -->|開発計画フロー| DPL
+    DPM -->|開発計画フロー| RPL
     
     GP -->|汎用タスク| INV
     GP -->|汎用タスク| DES
@@ -213,7 +223,9 @@ sequenceDiagram
 | 2 | submodule-overview | サブモジュール概要作成 | `submodules/{repo}.md` |
 | 3 | dev-investigation | 詳細調査 | `docs/{repo}/dev-investigation/` 配下6ファイル |
 | 4 | dev-design | 設計 | `docs/{repo}/dev-design/` 配下6ファイル |
+| 4a | review-design | 設計レビュー（ループ） | `docs/{repo}/review-design/` 配下6ファイル |
 | 5 | dev-plan | 計画（TDDプロンプト生成） | `docs/{repo}/dev-plan/` 配下タスクファイル |
+| 5a | review-plan | 計画レビュー（ループ） | `docs/{repo}/review-plan/` 配下6ファイル |
 | 6 | dev-implement | 実装実行 | コード変更、`docs/{repo}/dev-implement/execution-log.md` |
 
 ---
@@ -300,7 +312,9 @@ sequenceDiagram
 │   ├── submodule-overview/             # 概要作成
 │   ├── dev-investigation/              # 詳細調査
 │   ├── dev-design/                     # 設計
+│   ├── review-design/                  # 設計レビュー
 │   ├── dev-plan/                       # 計画
+│   ├── review-plan/                    # 計画レビュー
 │   ├── dev-implement/                  # 実装
 │   └── commit-multi-repo/              # マルチリポジトリコミット
 └── general-purpose/                    # 汎用スキル
@@ -319,7 +333,9 @@ sequenceDiagram
 | | submodule-overview | サブモジュールの構造概要作成 |
 | | dev-investigation | 6ファイル構成の詳細調査 |
 | | dev-design | 6ファイル構成の設計ドキュメント |
+| | review-design | 設計結果の妥当性レビュー |
 | | dev-plan | タスク分割、TDDプロンプト生成 |
+| | review-plan | タスク計画の妥当性レビュー |
 | | dev-implement | 計画に基づく実装実行 |
 | | commit-multi-repo | マルチリポジトリ環境でのコミット |
 | **General-Purpose（汎用）** | investigation | 汎用的な調査ガイド |
@@ -375,8 +391,12 @@ flowchart TD
         S1 --> S2[2. submodule-overview<br/>概要作成]
         S2 --> S3[3. dev-investigation<br/>詳細調査]
         S3 --> S4[4. dev-design<br/>設計]
-        S4 --> S5[5. dev-plan<br/>計画]
-        S5 --> S6[6. dev-implement<br/>実装]
+        S4 --> S4a[4a. review-design<br/>設計レビュー]
+        S4a -->|承認| S5[5. dev-plan<br/>計画]
+        S4a -->|指摘あり| S4
+        S5 --> S5a[5a. review-plan<br/>計画レビュー]
+        S5a -->|承認| S6[6. dev-implement<br/>実装]
+        S5a -->|指摘あり| S5
         S6 --> DONE[完了 + 全ドキュメント]
     end
 ```
@@ -423,8 +443,16 @@ call-general-purpose-agentを使用して、dev-investigationスキルで調査�
 # Phase 4: 設計
 call-general-purpose-agentを使用して、dev-designスキルで設計を実行してください。
 
+# Phase 4a: 設計レビュー（指摘がなくなるまで繰り返し）
+call-general-purpose-agentを使用して、review-designスキルで設計レビューを実行してください。
+# 指摘があればPhase 4に戻って設計を修正し、再レビューしてください。
+
 # Phase 5: 計画
 call-general-purpose-agentを使用して、dev-planスキルで計画を作成してください。
+
+# Phase 5a: 計画レビュー（指摘がなくなるまで繰り返し）
+call-general-purpose-agentを使用して、review-planスキルで計画レビューを実行してください。
+# 指摘があればPhase 5に戻って計画を修正し、再レビューしてください。
 
 # Phase 6: 実装
 call-general-purpose-agentを使用して、dev-implementスキルで実装を実行してください。
@@ -438,7 +466,9 @@ call-general-purpose-agentを使用して、dev-implementスキルで実装を�
 | submodule-overview | サブモジュール概要 | `submodules/{repo}.md` |
 | dev-investigation | アーキテクチャ調査等 | `docs/{repo}/dev-investigation/` 配下6ファイル |
 | dev-design | 設計ドキュメント | `docs/{repo}/dev-design/` 配下6ファイル |
+| review-design | 設計レビュー結果 | `docs/{repo}/review-design/` 配下6ファイル |
 | dev-plan | タスク計画・プロンプト | `docs/{repo}/dev-plan/` 配下 |
+| review-plan | 計画レビュー結果 | `docs/{repo}/review-plan/` 配下6ファイル |
 | dev-implement | 実行ログ | `docs/{repo}/dev-implement/execution-log.md` |
 
 ---
@@ -547,12 +577,26 @@ call-dev-planning-manager-agentを使用して、ユーザー認証機能の追�
 │       │   ├── 04_process-flow-design.md
 │       │   ├── 05_test-plan.md
 │       │   └── 06_side-effect-verification.md
+│       ├── review-design/
+│       │   ├── 01_requirements-coverage.md
+│       │   ├── 02_technical-validity.md
+│       │   ├── 03_implementation-feasibility.md
+│       │   ├── 04_testability.md
+│       │   ├── 05_risks-and-concerns.md
+│       │   └── 06_review-summary.md
 │       ├── dev-plan/
 │       │   ├── task-list.md
 │       │   ├── task01.md
 │       │   ├── task02-01.md
 │       │   ├── task02-02.md
 │       │   └── parent-agent-prompt.md
+│       ├── review-plan/
+│       │   ├── 01_task-decomposition.md
+│       │   ├── 02_dependency-accuracy.md
+│       │   ├── 03_estimation-validity.md
+│       │   ├── 04_tdd-approach.md
+│       │   ├── 05_acceptance-coverage.md
+│       │   └── 06_review-summary.md
 │       └── dev-implement/
 │           └── execution-log.md
 └── submodules/
