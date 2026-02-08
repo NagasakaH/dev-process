@@ -42,22 +42,24 @@ init-work-branchスキルで生成された設計ドキュメント。
 dev-planスキルで生成されたタスク計画：
 
 ```
-{target_repository}/
-└── dev-plan/
-    ├── task-list.md               # タスク一覧と依存関係
-    ├── task01.md                  # task01用プロンプト
-    ├── task02-01.md               # task02-01用プロンプト
-    ├── task02-02.md               # task02-02用プロンプト
-    ├── ...                        # 各タスク用プロンプト
-    └── parent-agent-prompt.md     # 親エージェント統合管理プロンプト
+docs/
+└── {target_repository}/
+    └── dev-plan/
+        ├── task-list.md               # タスク一覧と依存関係
+        ├── task01.md                  # task01用プロンプト
+        ├── task02-01.md               # task02-01用プロンプト
+        ├── task02-02.md               # task02-02用プロンプト
+        ├── ...                        # 各タスク用プロンプト
+        └── parent-agent-prompt.md     # 親エージェント統合管理プロンプト
 ```
 
 ## 出力ファイル
 
 ```
-{target_repository}/
-└── dev-implement/
-    └── execution-log.md           # 実行ログ
+docs/
+└── {target_repository}/
+    └── dev-implement/
+        └── execution-log.md           # 実行ログ
 ```
 
 ---
@@ -125,7 +127,7 @@ TICKET_ID=$(grep 'ticket_id:' "$YAML_PATH" | sed 's/.*: *"\?\([^"]*\)"\?/\1/')
 
 # dev-plan/確認
 for repo in "${target_repositories[@]}"; do
-    PLAN_DIR="submodules/${repo}/dev-plan"
+    PLAN_DIR="docs/${repo}/dev-plan"
     test -d "$PLAN_DIR" || { echo "Error: $PLAN_DIR not found"; exit 1; }
 done
 ```
@@ -134,7 +136,7 @@ done
 
 ```bash
 # task-list.md からタスク一覧を取得
-TASK_LIST_PATH="submodules/${repo}/dev-plan/task-list.md"
+TASK_LIST_PATH="docs/${repo}/dev-plan/task-list.md"
 
 # タスク識別子、前提条件、並列可否を抽出
 # (実際の処理はLLMが行う)
@@ -143,7 +145,7 @@ TASK_LIST_PATH="submodules/${repo}/dev-plan/task-list.md"
 ### 3. 実行ログ初期化
 
 ```bash
-IMPL_DIR="submodules/${repo}/dev-implement"
+IMPL_DIR="docs/${repo}/dev-implement"
 mkdir -p "$IMPL_DIR"
 
 cat > "$IMPL_DIR/execution-log.md" << EOF
@@ -166,6 +168,7 @@ EOF
 TASK_ID="task01"
 REPO_ROOT=$(git rev-parse --show-toplevel)
 WORK_DIR="submodules/${repo}"
+IMPL_LOG_PATH="${REPO_ROOT}/docs/${repo}/dev-implement/execution-log.md"
 
 # 1. 作業ディレクトリ確認
 cd "$WORK_DIR"
@@ -185,7 +188,7 @@ git add -A
 git commit -m "${TASK_ID}: タスク概要"
 
 # 5. 実行ログ更新
-cat >> "dev-implement/execution-log.md" << EOF
+cat >> "$IMPL_LOG_PATH" << EOF
 
 ### ${TASK_ID}
 - **ステータス**: 完了
