@@ -7,15 +7,18 @@ description: 調査結果を基に設計を行うスキル。setup.yaml + design
 
 setup.yaml + design-document + dev-investigation/を入力として、調査結果を基に詳細設計を行い、design-documentの「設計」セクションを更新します。
 
+> **SSOT**: setup.yaml の `description.requirements` を設計の要件として参照します。
+
 ## 概要
 
 このスキルは以下を実現します：
 
 1. **setup.yaml** からチケット情報・対象リポジトリを取得
-2. **dev-investigation/** の調査結果を読み込み
-3. **dev-design/** ディレクトリに詳細設計結果を出力
-4. **design-document** の設計セクションを更新
-5. **完了条件** を構造化して定義
+2. **setup.yaml の description.requirements** を設計の要件（機能/非機能）として参照
+3. **dev-investigation/** の調査結果を読み込み
+4. **dev-design/** ディレクトリに詳細設計結果を出力
+5. **design-document** の設計セクションを更新
+6. **完了条件** を構造化して定義
 
 ## 入力ファイル
 
@@ -24,7 +27,24 @@ setup.yaml + design-document + dev-investigation/を入力として、調査結�
 ```yaml
 ticket_id: "PROJ-123"
 task_name: "機能追加タスク"
-description: "タスクの説明"
+
+# SSOT: このスキルは description.requirements を参照
+description:
+  overview: "概要..."
+  purpose: "目的..."
+  background: "背景..."
+  requirements:                    # ← このスキルが参照
+    functional:
+      - "ユーザーが○○を実行できること"
+      - "結果が△△形式で出力されること"
+      - "エラー時に適切なメッセージが表示されること"
+    non_functional:
+      - "応答時間: 200ms以内"
+      - "同時リクエスト: 100件/秒対応"
+      - "後方互換性を維持"
+  acceptance_criteria: [...]
+  # ...
+
 target_repositories:
   - name: "target-repo"
     url: "git@github.com:org/target-repo.git"
@@ -54,15 +74,37 @@ dev-investigationスキルで生成された調査結果：
 
 ```mermaid
 flowchart TD
-    A[setup.yaml読み込み] --> B[design-document確認]
-    B --> C[dev-investigation/読み込み]
-    C --> D[設計実施]
-    D --> E[dev-design/配下にファイル生成]
-    E --> F[design-document設計セクション更新]
-    F --> G[完了条件の定義]
-    G --> H[コミット]
-    H --> I[完了レポート]
+    A[setup.yaml読み込み] --> B[description.requirements を参照]
+    B --> C[design-document確認]
+    C --> D[dev-investigation/読み込み]
+    D --> E[設計実施]
+    E --> F[dev-design/配下にファイル生成]
+    F --> G[design-document設計セクション更新]
+    G --> H[完了条件の定義]
+    H --> I[コミット]
+    I --> J[完了レポート]
 ```
+
+## setup.yaml の description.requirements 活用
+
+設計を開始する前に、`setup.yaml` の `description.requirements` を読み込み、設計の基準として活用します：
+
+```yaml
+# setup.yaml から取得
+description:
+  requirements:
+    functional:
+      - "ユーザーが○○を実行できること"
+      - "結果が△△形式で出力されること"
+    non_functional:
+      - "応答時間: 200ms以内"
+      - "同時リクエスト: 100件/秒対応"
+```
+
+**活用方法:**
+- **機能要件** → インターフェース/API設計、データ構造設計の入力
+- **非機能要件** → 実装方針決定、テスト計画の入力
+- 設計が要件を満たしているかの検証基準として使用
 
 ## 設計実施項目
 
@@ -509,6 +551,7 @@ dev-investigationスキルで調査を完了してください。
 - dev-investigation/が存在しない場合はエラー終了
 - 既存の `dev-design/` ディレクトリがある場合は上書き確認を行う
 - シーケンス図は必ず修正前/修正後を対比させる
+- **setup.yaml の description.requirements を設計の要件として参照**
 
 ## 参照ファイル
 
@@ -516,6 +559,13 @@ dev-investigationスキルで調査を完了してください。
 - 前提スキル: `dev-investigation` - 開発タスク用詳細調査
 - 後続スキル: `task-planning` - タスク計画
 - 後続スキル: `execution` - 実行
+
+## SSOT参照
+
+| setup.yaml フィールド | 用途 |
+|----------------------|------|
+| `description.requirements.functional` | 機能要件 → API設計、データ構造設計の入力 |
+| `description.requirements.non_functional` | 非機能要件 → 実装方針、テスト計画の入力 |
 
 ## 典型的なワークフロー
 

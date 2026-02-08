@@ -7,12 +7,15 @@ description: 開発タスク用詳細調査スキル。setup.yamlとdesign-docum
 
 setup.yamlとdesign-documentを入力として、対象リポジトリを体系的に調査し、詳細な調査結果をドキュメント化します。
 
+> **SSOT**: setup.yaml の `description.background` を調査の背景情報として参照します。
+
 ## 概要
 
 このスキルは以下を実現します：
 1. **setup.yaml** から対象リポジトリ・チケット情報を取得
-2. **design-document** の調査結果セクションを要約で更新
-3. **dev-investigation/** ディレクトリに詳細調査結果をファイル分割で出力（UML図含む）
+2. **setup.yaml の description.background** を調査の背景・コンテキストとして参照
+3. **design-document** の調査結果セクションを要約で更新
+4. **dev-investigation/** ディレクトリに詳細調査結果をファイル分割で出力（UML図含む）
 
 ## 入力ファイル
 
@@ -21,7 +24,20 @@ setup.yamlとdesign-documentを入力として、対象リポジトリを体系�
 ```yaml
 ticket_id: "PROJ-123"
 task_name: "機能追加タスク"
-description: "タスクの説明"
+
+# SSOT: このスキルは description.background を参照
+description:
+  overview: "概要..."
+  purpose: "目的..."
+  background: |                    # ← このスキルが参照
+    現在の機能では以下の課題がある:
+    - 課題1: ○○ができない
+    - 課題2: △△に時間がかかる
+  requirements:
+    functional: [...]
+    non_functional: [...]
+  # ...
+
 target_repositories:
   - name: "target-repo"
     url: "git@github.com:org/target-repo.git"
@@ -39,13 +55,34 @@ init-work-branchスキルで生成された設計ドキュメント。
 
 ```mermaid
 flowchart TD
-    A[setup.yaml読み込み] --> B[design-document確認]
-    B --> C[対象リポジトリの調査実施]
-    C --> D[dev-investigation/配下にファイル生成]
-    D --> E[design-document調査結果セクション更新]
-    E --> F[初期コミット]
-    F --> G[完了レポート]
+    A[setup.yaml読み込み] --> B[description.background を参照]
+    B --> C[design-document確認]
+    C --> D[対象リポジトリの調査実施]
+    D --> E[dev-investigation/配下にファイル生成]
+    E --> F[design-document調査結果セクション更新]
+    F --> G[初期コミット]
+    G --> H[完了レポート]
 ```
+
+## setup.yaml の description.background 活用
+
+調査を開始する前に、`setup.yaml` の `description.background` を読み込み、以下の情報として活用します：
+
+```yaml
+# setup.yaml から取得
+description:
+  background: |
+    現在の機能では以下の課題がある:
+    - 課題1: ○○ができない
+    - 課題2: △△に時間がかかる
+    
+    これらの課題を解決するため、機能Aの実装が必要。
+```
+
+**活用方法:**
+- 調査の焦点を明確にする（どの課題に関連するコードを重点的に調査するか）
+- 既存の問題点との関連性を分析する
+- 調査結果レポートに背景情報を含める
 
 ## 調査実施項目
 
@@ -406,9 +443,16 @@ git submodule update --init を実行してください。
 - 調査対象は `target_repositories` のみ（`related_repositories` は参照用）
 - 大規模リポジトリの場合、調査に時間がかかる可能性あり
 - 既存の `dev-investigation/` ディレクトリがある場合は上書き確認を行う
+- **setup.yaml の description.background を調査の背景情報として参照**
 
 ## 参照ファイル
 
 - テンプレート: `references/template.md` - 各調査ファイル用テンプレート
 - 関連スキル: `init-work-branch` - 作業ブランチ初期化
 - 関連スキル: `investigation` - 汎用調査プロセス
+
+## SSOT参照
+
+| setup.yaml フィールド | 用途 |
+|----------------------|------|
+| `description.background` | 調査の背景情報・コンテキスト |

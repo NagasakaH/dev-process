@@ -7,6 +7,8 @@ description: 設計結果からタスク計画を作成するスキル。setup.y
 
 setup.yaml + design-documentを入力として、実行可能なタスク計画を作成し、各タスク用プロンプトと親エージェント用統合管理プロンプトを生成します。
 
+> **SSOT**: setup.yaml の `description.acceptance_criteria` を完了条件の基準として参照します。
+
 **重要**: このスキルは実装を行わず、計画とプロンプト生成のみを担当します。
 
 ## 概要
@@ -14,11 +16,12 @@ setup.yaml + design-documentを入力として、実行可能なタスク計画�
 このスキルは以下を実現します：
 
 1. **setup.yaml** からチケット情報・対象リポジトリを取得
-2. **design-document** と **dev-design/** から設計内容を読み込み
-3. **タスク分割** を実施（依存関係・並列実行可否を判定）
-4. **各タスクプロンプト** を生成（TDD方針を組み込み）
-5. **design-document** の「3. 実装計画」セクションを更新
-6. **親エージェント用統合管理プロンプト** を生成
+2. **setup.yaml の description.acceptance_criteria** を完了条件の基準として参照
+3. **design-document** と **dev-design/** から設計内容を読み込み
+4. **タスク分割** を実施（依存関係・並列実行可否を判定）
+5. **各タスクプロンプト** を生成（TDD方針を組み込み）
+6. **design-document** の「3. 実装計画」セクションを更新
+7. **親エージェント用統合管理プロンプト** を生成
 
 ## 入力ファイル
 
@@ -27,7 +30,25 @@ setup.yaml + design-documentを入力として、実行可能なタスク計画�
 ```yaml
 ticket_id: "PROJ-123"
 task_name: "機能追加タスク"
-description: "タスクの説明"
+
+# SSOT: このスキルは description.acceptance_criteria を参照
+description:
+  overview: "概要..."
+  purpose: "目的..."
+  background: "背景..."
+  requirements:
+    functional: [...]
+    non_functional: [...]
+  acceptance_criteria:             # ← このスキルが参照
+    - "単体テストが全てパスすること"
+    - "結合テストが全てパスすること"
+    - "既存機能の回帰テストがパスすること"
+    - "ドキュメントが更新されていること"
+    - "コードレビューが承認されていること"
+  scope: [...]
+  out_of_scope: [...]
+  # ...
+
 target_repositories:
   - name: "target-repo"
     url: "git@github.com:org/target-repo.git"
@@ -72,17 +93,38 @@ dev-designスキルで生成された詳細設計：
 
 ```mermaid
 flowchart TD
-    A[setup.yaml読み込み] --> B[design-document確認]
-    B --> C[dev-design/読み込み]
-    C --> D[タスク分割ロジック実行]
-    D --> E[依存関係の自動判定]
-    E --> F[並列実行可能グループの特定]
-    F --> G[各タスクプロンプト生成]
-    G --> H[タスク一覧をdesign-documentに追記]
-    H --> I[親エージェント統合管理プロンプト生成]
-    I --> J[コミット]
-    J --> K[完了レポート]
+    A[setup.yaml読み込み] --> B[description.acceptance_criteria を参照]
+    B --> C[design-document確認]
+    C --> D[dev-design/読み込み]
+    D --> E[タスク分割ロジック実行]
+    E --> F[依存関係の自動判定]
+    F --> G[並列実行可能グループの特定]
+    G --> H[各タスクプロンプト生成]
+    H --> I[タスク一覧をdesign-documentに追記]
+    I --> J[親エージェント統合管理プロンプト生成]
+    J --> K[コミット]
+    K --> L[完了レポート]
 ```
+
+## setup.yaml の description.acceptance_criteria 活用
+
+タスク計画を作成する際に、`setup.yaml` の `description.acceptance_criteria` を読み込み、完了条件の基準として活用します：
+
+```yaml
+# setup.yaml から取得
+description:
+  acceptance_criteria:
+    - "単体テストが全てパスすること"
+    - "結合テストが全てパスすること"
+    - "既存機能の回帰テストがパスすること"
+    - "ドキュメントが更新されていること"
+```
+
+**活用方法:**
+- **タスクの完了条件**: 各タスクプロンプトに acceptance_criteria を反映
+- **テストタスクの生成**: acceptance_criteria からテスト関連タスクを自動生成
+- **弊害検証タスク**: 「既存機能の回帰テストがパスすること」から弊害検証タスクを生成
+- **親エージェント用プロンプト**: 全体の完了条件として明記
 
 ---
 
@@ -399,6 +441,7 @@ dev-designスキルで設計を完了してください。
 - TDD方針を全タスクプロンプトに組み込み
 - 並列実行可能なタスクは明確にグループ化
 - 既存の `dev-plan/` ディレクトリがある場合は上書き確認
+- **setup.yaml の description.acceptance_criteria を完了条件の基準として参照**
 
 ---
 
@@ -413,6 +456,12 @@ dev-designスキルで設計を完了してください。
 
 - [references/task-prompt-template.md](references/task-prompt-template.md) - タスクプロンプトテンプレート
 - [references/parent-agent-template.md](references/parent-agent-template.md) - 親エージェント用テンプレート
+
+## SSOT参照
+
+| setup.yaml フィールド | 用途 |
+|----------------------|------|
+| `description.acceptance_criteria` | タスク完了条件の基準、テストタスク生成、弊害検証タスク生成 |
 
 ---
 
