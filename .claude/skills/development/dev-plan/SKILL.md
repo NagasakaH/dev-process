@@ -64,29 +64,31 @@ init-work-branchスキルで生成された設計ドキュメント。
 dev-designスキルで生成された詳細設計：
 
 ```
-{target_repository}/
-└── dev-design/
-    ├── 01_implementation-approach.md
-    ├── 02_interface-api-design.md
-    ├── 03_data-structure-design.md
-    ├── 04_process-flow-design.md
-    ├── 05_test-plan.md
-    └── 06_side-effect-verification.md
+docs/
+└── {target_repository}/
+    └── dev-design/
+        ├── 01_implementation-approach.md
+        ├── 02_interface-api-design.md
+        ├── 03_data-structure-design.md
+        ├── 04_process-flow-design.md
+        ├── 05_test-plan.md
+        └── 06_side-effect-verification.md
 ```
 
 ## 出力ファイル構成
 
-設計結果は対象リポジトリ直下の `dev-plan/` ディレクトリに出力：
+設計結果は `docs/{target_repository}/dev-plan/` に出力：
 
 ```
-{target_repository}/
-└── dev-plan/
-    ├── task-list.md               # タスク一覧と依存関係（design-document用に追記）
-    ├── task01.md                  # task01用プロンプト
-    ├── task02-01.md               # task02-01用プロンプト
-    ├── task02-02.md               # task02-02用プロンプト
-    ├── ...                        # 各タスク用プロンプト
-    └── parent-agent-prompt.md     # 親エージェント統合管理プロンプト
+docs/
+└── {target_repository}/
+    └── dev-plan/
+        ├── task-list.md               # タスク一覧と依存関係（design-document用に追記）
+        ├── task01.md                  # task01用プロンプト
+        ├── task02-01.md               # task02-01用プロンプト
+        ├── task02-02.md               # task02-02用プロンプト
+        ├── ...                        # 各タスク用プロンプト
+        └── parent-agent-prompt.md     # 親エージェント統合管理プロンプト
 ```
 
 ## 処理フロー
@@ -236,7 +238,7 @@ dev-design/の各設計ファイルから以下を抽出してタスク化：
 | task02-02 | 機能B実装 | task01 | 可 | 2h | ⬜ 未着手 |
 | task03 | 統合テスト | task02-01, task02-02 | 不可 | 1h | ⬜ 未着手 |
 
-詳細は [dev-plan/task-list.md](../submodules/{target_repo}/dev-plan/task-list.md) を参照。
+詳細は [dev-plan/task-list.md](./{target_repo}/dev-plan/task-list.md) を参照。
 
 ### 3.2 依存関係
 
@@ -301,7 +303,7 @@ test -f "$DESIGN_DOC" || { echo "Error: $DESIGN_DOC not found"; exit 1; }
 
 ```bash
 for repo in "${target_repositories[@]}"; do
-    DESIGN_DIR="submodules/${repo}/dev-design"
+    DESIGN_DIR="docs/${repo}/dev-design"
     test -d "$DESIGN_DIR" || { echo "Error: $DESIGN_DIR not found"; exit 1; }
 done
 ```
@@ -347,19 +349,11 @@ dev-design/配下の各ファイルを読み込み、タスク化対象を特定
 ### 9. コミット
 
 ```bash
-# 対象サブモジュールでコミット
-for repo in "${target_repositories[@]}"; do
-    cd "submodules/${repo}"
-    git add dev-plan/
-    git commit -m "docs: {ticket_id} タスク計画を作成"
-    cd -
-done
-
-# 親リポジトリでコミット
-git add .
+# 親リポジトリでコミット（docs配下に出力）
+git add docs/ setup.yaml
 git commit -m "docs: {ticket_id} タスク計画を作成
 
-- dev-plan/配下にタスクプロンプトを生成
+- docs/{target_repo}/dev-plan/配下にタスクプロンプトを生成
 - design-documentの実装計画セクションを更新
 - 親エージェント統合管理プロンプトを生成"
 ```
@@ -382,12 +376,12 @@ git commit -m "docs: {ticket_id} タスク計画を作成
 - docs/{ticket_id}.md - 実装計画セクション更新
 
 #### タスク計画
-- submodules/{target_repo}/dev-plan/task-list.md
-- submodules/{target_repo}/dev-plan/task01.md
-- submodules/{target_repo}/dev-plan/task02-01.md
-- submodules/{target_repo}/dev-plan/task02-02.md
+- docs/{target_repo}/dev-plan/task-list.md
+- docs/{target_repo}/dev-plan/task01.md
+- docs/{target_repo}/dev-plan/task02-01.md
+- docs/{target_repo}/dev-plan/task02-02.md
 - ...
-- submodules/{target_repo}/dev-plan/parent-agent-prompt.md
+- docs/{target_repo}/dev-plan/parent-agent-prompt.md
 
 ### 計画サマリー
 - 総タスク数: {task_count}
@@ -427,7 +421,7 @@ init-work-branchスキルでセットアップを完了してください。
 
 ```
 エラー: 設計結果が見つかりません
-ディレクトリ: submodules/{repo}/dev-design/
+ディレクトリ: docs/{target_repo}/dev-design/
 
 dev-designスキルで設計を完了してください。
 ```
