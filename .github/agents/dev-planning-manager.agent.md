@@ -93,16 +93,18 @@ REQUEST_OUTPUT_DIR = {出力先ディレクトリ}/{YYYYMMDD-HHMM}-{リクエス
 {出力先ディレクトリ}/
 └── YYYYMMDD-HHMM-{リクエスト名}/
     ├── 実行履歴.md
-    ├── 01_調査/
-    │   └── (調査プロセスの成果物)
-    ├── 02_設計/
-    │   └── (設計プロセスの成果物)
-    ├── 02a_設計レビュー/
-    │   └── (設計レビューの成果物)
-    ├── 03_計画/
-    │   └── (計画プロセスの成果物)
-    └── 03a_計画レビュー/
-        └── (計画レビューの成果物)
+    └── docs/
+        └── {target_repo}/
+            ├── dev-investigation/
+            │   └── (調査プロセスの成果物)
+            ├── dev-design/
+            │   └── (設計プロセスの成果物)
+            ├── review-design/
+            │   └── (設計レビューの成果物)
+            ├── dev-plan/
+            │   └── (計画プロセスの成果物)
+            └── review-plan/
+                └── (計画レビューの成果物)
 ```
 
 ### ディレクトリ命名規則
@@ -110,7 +112,7 @@ REQUEST_OUTPUT_DIR = {出力先ディレクトリ}/{YYYYMMDD-HHMM}-{リクエス
 | 項目               | 形式                       | 例                       |
 | ------------------ | -------------------------- | ------------------------ |
 | リクエストフォルダ     | `YYYYMMDD-HHMM-{リクエスト名}` | `20260208-0149-機能追加` |
-| プロセスフォルダ   | `{番号}_{プロセス名}`      | `01_調査`, `02_設計`, `02a_設計レビュー` |
+| プロセスフォルダ   | `{スキル名}`      | `dev-investigation`, `dev-design`, `review-design`, `dev-plan`, `review-plan` |
 
 ### ディレクトリ作成コマンド
 
@@ -119,9 +121,10 @@ REQUEST_OUTPUT_DIR = {出力先ディレクトリ}/{YYYYMMDD-HHMM}-{リクエス
 ```bash
 # リクエストフォルダのベースパス（例）
 REQUEST_DIR="/path/to/output/20260208-0149-機能追加"
+TARGET_REPO="target-repo"
 
-# 全ディレクトリを一括作成
-mkdir -p "$REQUEST_DIR"/{01_調査,02_設計,02a_設計レビュー,03_計画,03a_計画レビュー}
+# スキルの出力先ディレクトリを事前作成（スキルは docs/{target_repo}/ 配下に出力）
+mkdir -p "$REQUEST_DIR/docs/${TARGET_REPO}"/{dev-investigation,dev-design,review-design,dev-plan,review-plan}
 
 # 実行履歴ファイルを初期化
 touch "$REQUEST_DIR/実行履歴.md"
@@ -168,12 +171,13 @@ TIMESTAMP=$(date +"%Y%m%d-%H%M")
 OUTPUT_BASE="/path/to/output"
 TIMESTAMP=$(date +"%Y%m%d-%H%M")
 REQUEST_NAME="リクエスト名"
+TARGET_REPO="target-repo"
 
 # リクエストフォルダのフルパス
 REQUEST_DIR="${OUTPUT_BASE}/${TIMESTAMP}-${REQUEST_NAME}"
 
-# ディレクトリ構造を作成
-mkdir -p "$REQUEST_DIR"/{01_調査,02_設計,02a_設計レビュー,03_計画,03a_計画レビュー}
+# ディレクトリ構造を作成（スキルの出力先: docs/{target_repo}/...）
+mkdir -p "$REQUEST_DIR/docs/${TARGET_REPO}"/{dev-investigation,dev-design,review-design,dev-plan,review-plan}
 
 # 実行履歴ファイルを初期化
 cat > "$REQUEST_DIR/実行履歴.md" << 'EOF'
@@ -185,11 +189,11 @@ cat > "$REQUEST_DIR/実行履歴.md" << 'EOF'
 
 ## 出力先情報
 - **リクエストフォルダ**: ${REQUEST_DIR}
-- **調査成果物**: ${REQUEST_DIR}/01_調査/
-- **設計成果物**: ${REQUEST_DIR}/02_設計/
-- **設計レビュー成果物**: ${REQUEST_DIR}/02a_設計レビュー/
-- **計画成果物**: ${REQUEST_DIR}/03_計画/
-- **計画レビュー成果物**: ${REQUEST_DIR}/03a_計画レビュー/
+- **調査成果物**: docs/${TARGET_REPO}/dev-investigation/
+- **設計成果物**: docs/${TARGET_REPO}/dev-design/
+- **設計レビュー成果物**: docs/${TARGET_REPO}/review-design/
+- **計画成果物**: docs/${TARGET_REPO}/dev-plan/
+- **計画レビュー成果物**: docs/${TARGET_REPO}/review-plan/
 
 ## 実行タスク一覧
 
@@ -203,11 +207,12 @@ EOF
 
 ```
 REQUEST_DIR          = {出力先}/{YYYYMMDD-HHMM}-{リクエスト名}/
-INVESTIGATION_DIR = ${REQUEST_DIR}/01_調査/
-DESIGN_DIR        = ${REQUEST_DIR}/02_設計/
-DESIGN_REVIEW_DIR = ${REQUEST_DIR}/02a_設計レビュー/
-PLANNING_DIR      = ${REQUEST_DIR}/03_計画/
-PLAN_REVIEW_DIR   = ${REQUEST_DIR}/03a_計画レビュー/
+DOCS_DIR             = docs/{target_repo}/
+INVESTIGATION_DIR = ${DOCS_DIR}/dev-investigation/
+DESIGN_DIR        = ${DOCS_DIR}/dev-design/
+DESIGN_REVIEW_DIR = ${DOCS_DIR}/review-design/
+PLANNING_DIR      = ${DOCS_DIR}/dev-plan/
+PLAN_REVIEW_DIR   = ${DOCS_DIR}/review-plan/
 ```
 
 ### 2. setup.yaml生成プロセス（Issue入力の場合）
@@ -282,7 +287,7 @@ PLAN_REVIEW_DIR   = ${REQUEST_DIR}/03a_計画レビュー/
 
 **目的**: 既存コードベース、要件、リスクを把握
 
-**成果物出力先**: `${REQUEST_DIR}/01_調査/`
+**成果物出力先**: `docs/{target_repo}/dev-investigation/`
 
 **スキル参照**: `/.claude/skills/development/dev-investigation/SKILL.md` の手順に従って実施
 
@@ -306,9 +311,9 @@ PLAN_REVIEW_DIR   = ${REQUEST_DIR}/03a_計画レビュー/
 
 **目的**: ソリューションのアーキテクチャを決定
 
-**成果物出力先**: `${REQUEST_DIR}/02_設計/`
+**成果物出力先**: `docs/{target_repo}/dev-design/`
 
-**前提条件**: 調査結果（`${REQUEST_DIR}/01_調査/`）
+**前提条件**: 調査結果（`docs/{target_repo}/dev-investigation/`）
 
 **スキル参照**: `/.claude/skills/development/dev-design/SKILL.md` の手順に従って実施
 
@@ -333,9 +338,9 @@ PLAN_REVIEW_DIR   = ${REQUEST_DIR}/03a_計画レビュー/
 
 **目的**: 設計結果の妥当性を検証し、品質を担保
 
-**成果物出力先**: `${REQUEST_DIR}/02a_設計レビュー/`
+**成果物出力先**: `docs/{target_repo}/review-design/`
 
-**前提条件**: 設計結果（`${REQUEST_DIR}/02_設計/`）
+**前提条件**: 設計結果（`docs/{target_repo}/dev-design/`）
 
 **スキル参照**: `/.claude/skills/development/review-design/SKILL.md` の手順に従って実施
 
@@ -393,9 +398,9 @@ PLAN_REVIEW_DIR   = ${REQUEST_DIR}/03a_計画レビュー/
 
 **目的**: 実行可能なタスク計画を作成
 
-**成果物出力先**: `${REQUEST_DIR}/03_計画/`
+**成果物出力先**: `docs/{target_repo}/dev-plan/`
 
-**前提条件**: 設計結果（`${REQUEST_DIR}/02_設計/`）※設計レビュー承認済み
+**前提条件**: 設計結果（`docs/{target_repo}/dev-design/`）※設計レビュー承認済み
 
 **スキル参照**: `/.claude/skills/development/dev-plan/SKILL.md` の手順に従って実施
 
@@ -420,9 +425,9 @@ PLAN_REVIEW_DIR   = ${REQUEST_DIR}/03a_計画レビュー/
 
 **目的**: タスク計画の妥当性を検証し、品質を担保
 
-**成果物出力先**: `${REQUEST_DIR}/03a_計画レビュー/`
+**成果物出力先**: `docs/{target_repo}/review-plan/`
 
-**前提条件**: 計画結果（`${REQUEST_DIR}/03_計画/`）
+**前提条件**: 計画結果（`docs/{target_repo}/dev-plan/`）
 
 **スキル参照**: `/.claude/skills/development/review-plan/SKILL.md` の手順に従って実施
 
@@ -531,11 +536,11 @@ PLAN_REVIEW_DIR   = ${REQUEST_DIR}/03a_計画レビュー/
 | 項目           | パス                  |
 | -------------- | --------------------- |
 | リクエストフォルダ | `{REQUEST_DIR}`          |
-| 調査成果物     | `{REQUEST_DIR}/01_調査/` |
-| 設計成果物     | `{REQUEST_DIR}/02_設計/` |
-| 設計レビュー成果物 | `{REQUEST_DIR}/02a_設計レビュー/` |
-| 計画成果物     | `{REQUEST_DIR}/03_計画/` |
-| 計画レビュー成果物 | `{REQUEST_DIR}/03a_計画レビュー/` |
+| 調査成果物     | `docs/{target_repo}/dev-investigation/` |
+| 設計成果物     | `docs/{target_repo}/dev-design/` |
+| 設計レビュー成果物 | `docs/{target_repo}/review-design/` |
+| 計画成果物     | `docs/{target_repo}/dev-plan/` |
+| 計画レビュー成果物 | `docs/{target_repo}/review-plan/` |
 
 ## 実行タスク一覧
 
@@ -571,7 +576,7 @@ PLAN_REVIEW_DIR   = ${REQUEST_DIR}/03a_計画レビュー/
 - **ステータス**: ✓ 完了
 - **依頼時刻**: YYYY-MM-DD HH:MM
 - **完了時刻**: YYYY-MM-DD HH:MM
-- **成果物出力先**: `{REQUEST_DIR}/01_調査/`
+- **成果物出力先**: `docs/{target_repo}/dev-investigation/`
 - **依頼内容**: [依頼プロンプト概要]
 - **生成された成果物**:
   - 01_architecture.md
@@ -588,7 +593,7 @@ PLAN_REVIEW_DIR   = ${REQUEST_DIR}/03a_計画レビュー/
 - **依頼時刻**: YYYY-MM-DD HH:MM
 - **完了時刻**: YYYY-MM-DD HH:MM
 - **前提条件**: task04
-- **成果物出力先**: `{REQUEST_DIR}/02_設計/`
+- **成果物出力先**: `docs/{target_repo}/dev-design/`
 - **依頼内容**: [依頼プロンプト概要]
 - **生成された成果物**:
   - 01_implementation-approach.md
@@ -605,7 +610,7 @@ PLAN_REVIEW_DIR   = ${REQUEST_DIR}/03a_計画レビュー/
 - **依頼時刻**: YYYY-MM-DD HH:MM
 - **完了時刻**: YYYY-MM-DD HH:MM
 - **前提条件**: task05
-- **成果物出力先**: `{REQUEST_DIR}/02a_設計レビュー/`
+- **成果物出力先**: `docs/{target_repo}/review-design/`
 - **依頼内容**: [依頼プロンプト概要]
 - **生成された成果物**:
   - 01_requirements-coverage.md
@@ -625,7 +630,7 @@ PLAN_REVIEW_DIR   = ${REQUEST_DIR}/03a_計画レビュー/
 - **依頼時刻**: YYYY-MM-DD HH:MM
 - **完了時刻**: YYYY-MM-DD HH:MM
 - **前提条件**: task05a（設計レビュー承認）
-- **成果物出力先**: `{REQUEST_DIR}/03_計画/`
+- **成果物出力先**: `docs/{target_repo}/dev-plan/`
 - **依頼内容**: [依頼プロンプト概要]
 - **生成された成果物**:
   - task-list.md
@@ -639,7 +644,7 @@ PLAN_REVIEW_DIR   = ${REQUEST_DIR}/03a_計画レビュー/
 - **依頼時刻**: YYYY-MM-DD HH:MM
 - **完了時刻**: YYYY-MM-DD HH:MM
 - **前提条件**: task06
-- **成果物出力先**: `{REQUEST_DIR}/03a_計画レビュー/`
+- **成果物出力先**: `docs/{target_repo}/review-plan/`
 - **依頼内容**: [依頼プロンプト概要]
 - **生成された成果物**:
   - 01_task-decomposition.md
