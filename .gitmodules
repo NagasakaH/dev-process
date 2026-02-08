@@ -1,0 +1,3 @@
+[submodule "submodules/opentelemtry"]
+	path = submodules/opentelemtry
+	url = https://github.com/NagasakaH/opentelemtry
