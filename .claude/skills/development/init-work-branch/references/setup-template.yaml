@@ -1,0 +1,50 @@
+# 開発セットアップ設定ファイル
+# このファイルをコピーして、プロジェクト固有の設定を行ってください
+
+# タスク名（作業の概要を記述）
+task_name: "機能Aの実装"
+
+# チケットID（ブランチ名やドキュメントのベースとなる）
+# 例: "PROJ-123", "123", "feature-456"
+ticket_id: "TICKET-001"
+
+# タスクの説明（背景、目的、期待される成果を記述）
+description: |
+  このタスクでは、機能Aを実装します。
+  - 背景: 現在の機能では対応できない要件がある
+  - 目的: 新しい機能を追加してユーザー体験を向上させる
+  - 期待される成果: 機能Aが正常に動作すること
+
+# 関連リポジトリ一覧（submodule用）
+# 参照・調査のためにサブモジュールとして追加するリポジトリ
+related_repositories:
+  - name: "example-library"
+    url: "https://github.com/org/example-library.git"
+    # branch: "main"  # オプション: 特定のブランチを指定する場合
+  # - name: "another-repo"
+  #   url: "https://github.com/org/another-repo.git"
+  #   branch: "develop"
+
+# 修正対象リポジトリ
+# 実際にコード変更を行うリポジトリ（worktreeとして追加される）
+target_repositories:
+  - name: "main-application"
+    url: "https://github.com/org/main-application.git"
+    # base_branch: "main"  # オプション: feature ブランチの作成元となるブランチ（デフォルト: main）
+  # - name: "api-server"
+  #   url: "https://github.com/org/api-server.git"
+  #   base_branch: "develop"
+
+# オプション設定
+options:
+  # 設計ドキュメントを作成するかどうか（デフォルト: true）
+  create_design_document: true
+  
+  # 設計ドキュメントの出力先ディレクトリ（デフォルト: docs）
+  design_document_dir: "docs"
+  
+  # サブモジュールのディレクトリ（デフォルト: submodules）
+  submodules_dir: "submodules"
+  
+  # worktree のディレクトリ（デフォルト: workspaces）
+  worktrees_dir: "workspaces"
