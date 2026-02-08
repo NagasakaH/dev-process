@@ -1,6 +1,6 @@
 ---
 name: dev-design
-description: 調査結果を基に設計を行うスキル。setup.yaml + design-document + dev-investigation/を入力として、実装方針決定、インターフェース/API設計、データ構造設計、処理フロー設計を実施し、dev-design/ディレクトリに詳細設計を出力、design-documentの設計セクションを更新する。「dev-design」「設計して」「詳細設計」「design」「アーキテクチャ設計」「インターフェース設計」「API設計」「データ構造設計」「処理フロー設計」「テスト戦略」などのフレーズで発動。調査プロセス完了後、実装前に使用。
+description: 調査結果を基に設計を行うスキル。setup.yaml + design-document + dev-investigation/を入力として、実装方針決定、インターフェース/API設計、データ構造設計、処理フロー設計を実施し、docs/{target_repo}/dev-design/ディレクトリに詳細設計を出力、design-documentの設計セクションを更新する。「dev-design」「設計して」「詳細設計」「design」「アーキテクチャ設計」「インターフェース設計」「API設計」「データ構造設計」「処理フロー設計」「テスト戦略」などのフレーズで発動。調査プロセス完了後、実装前に使用。
 ---
 
 # 開発設計スキル
@@ -16,7 +16,7 @@ setup.yaml + design-document + dev-investigation/を入力として、調査結�
 1. **setup.yaml** からチケット情報・対象リポジトリを取得
 2. **setup.yaml の description.requirements** を設計の要件（機能/非機能）として参照
 3. **dev-investigation/** の調査結果を読み込み
-4. **dev-design/** ディレクトリに詳細設計結果を出力
+4. **docs/{target_repo}/dev-design/** ディレクトリに詳細設計結果を出力
 5. **design-document** の設計セクションを更新
 6. **完了条件** を構造化して定義
 
@@ -60,14 +60,15 @@ init-work-branchスキルで生成された設計ドキュメント。
 dev-investigationスキルで生成された調査結果：
 
 ```
-{target_repository}/
-└── dev-investigation/
-    ├── 01_architecture.md
-    ├── 02_data-structure.md
-    ├── 03_dependencies.md
-    ├── 04_existing-patterns.md
-    ├── 05_integration-points.md
-    └── 06_risks-and-constraints.md
+docs/
+└── {target_repository}/
+    └── dev-investigation/
+        ├── 01_architecture.md
+        ├── 02_data-structure.md
+        ├── 03_dependencies.md
+        ├── 04_existing-patterns.md
+        ├── 05_integration-points.md
+        └── 06_risks-and-constraints.md
 ```
 
 ## 処理フロー
@@ -153,17 +154,18 @@ description:
 
 ## 出力ファイル構成
 
-設計結果は対象リポジトリ直下の `dev-design/` ディレクトリに出力：
+設計結果は `docs/{target_repository}/dev-design/` に出力：
 
 ```
-{target_repository}/
-└── dev-design/
-    ├── 01_implementation-approach.md    # 実装方針
-    ├── 02_interface-api-design.md       # インターフェース/API設計
-    ├── 03_data-structure-design.md      # データ構造設計
-    ├── 04_process-flow-design.md        # 処理フロー設計
-    ├── 05_test-plan.md                  # テスト計画
-    └── 06_side-effect-verification.md   # 弊害検証計画
+docs/
+└── {target_repository}/
+    └── dev-design/
+        ├── 01_implementation-approach.md    # 実装方針
+        ├── 02_interface-api-design.md       # インターフェース/API設計
+        ├── 03_data-structure-design.md      # データ構造設計
+        ├── 04_process-flow-design.md        # 処理フロー設計
+        ├── 05_test-plan.md                  # テスト計画
+        └── 06_side-effect-verification.md   # 弊害検証計画
 ```
 
 ## シーケンス図のガイドライン
@@ -310,7 +312,7 @@ sequenceDiagram
 
 {実装方針の要約}
 
-詳細は [dev-design/01_implementation-approach.md](../submodules/{target_repo}/dev-design/01_implementation-approach.md) を参照。
+詳細は [dev-design/01_implementation-approach.md](./{target_repo}/dev-design/01_implementation-approach.md) を参照。
 
 ### 2.2 変更箇所
 
@@ -336,13 +338,13 @@ sequenceDiagram
 
 {API/インターフェースの要約}
 
-詳細は [dev-design/02_interface-api-design.md](../submodules/{target_repo}/dev-design/02_interface-api-design.md) を参照。
+詳細は [dev-design/02_interface-api-design.md](./{target_repo}/dev-design/02_interface-api-design.md) を参照。
 
 ### 2.4 データ構造
 
 {データ構造の要約}
 
-詳細は [dev-design/03_data-structure-design.md](../submodules/{target_repo}/dev-design/03_data-structure-design.md) を参照。
+詳細は [dev-design/03_data-structure-design.md](./{target_repo}/dev-design/03_data-structure-design.md) を参照。
 ```
 
 ## 完了条件の定義
@@ -413,7 +415,7 @@ test -f "$DESIGN_DOC" || { echo "Error: $DESIGN_DOC not found"; exit 1; }
 
 ```bash
 for repo in "${target_repositories[@]}"; do
-    INVESTIGATION_DIR="submodules/${repo}/dev-investigation"
+    INVESTIGATION_DIR="docs/${repo}/dev-investigation"
     test -d "$INVESTIGATION_DIR" || { echo "Error: $INVESTIGATION_DIR not found"; exit 1; }
 done
 ```
@@ -444,7 +446,7 @@ dev-investigation/配下の各ファイルを読み込み、設計に必要な�
 
 ```bash
 for repo in "${target_repositories[@]}"; do
-    DESIGN_DIR="submodules/${repo}/dev-design"
+    DESIGN_DIR="docs/${repo}/dev-design"
     mkdir -p "$DESIGN_DIR"
     
     # 各設計ファイルを生成
@@ -464,21 +466,15 @@ done
 ### 8. コミット
 
 ```bash
-# 対象サブモジュールでコミット
-for repo in "${target_repositories[@]}"; do
-    cd "submodules/${repo}"
-    git add dev-design/
-    git commit -m "docs: {ticket_id} 設計結果を追加"
-    cd -
-done
-
-# 親リポジトリでコミット
-git add .
+# 親リポジトリでコミット（docs配下に出力）
+git add docs/ setup.yaml
 git commit -m "docs: {ticket_id} 設計結果を追加
 
-- dev-design/配下に詳細設計を出力
+- docs/{target_repo}/dev-design/配下に詳細設計を出力
 - design-documentの設計セクションを更新
 - 完了条件を定義"
+
+# ※ 対象リポジトリ側にコード変更がある場合は別途コミットを実施
 ```
 
 ## 完了レポート
@@ -497,12 +493,12 @@ git commit -m "docs: {ticket_id} 設計結果を追加
 - docs/{ticket_id}.md - 設計セクション・完了条件更新
 
 #### 詳細設計結果
-- submodules/{target_repo}/dev-design/01_implementation-approach.md
-- submodules/{target_repo}/dev-design/02_interface-api-design.md
-- submodules/{target_repo}/dev-design/03_data-structure-design.md
-- submodules/{target_repo}/dev-design/04_process-flow-design.md
-- submodules/{target_repo}/dev-design/05_test-plan.md
-- submodules/{target_repo}/dev-design/06_side-effect-verification.md
+- docs/{target_repo}/dev-design/01_implementation-approach.md
+- docs/{target_repo}/dev-design/02_interface-api-design.md
+- docs/{target_repo}/dev-design/03_data-structure-design.md
+- docs/{target_repo}/dev-design/04_process-flow-design.md
+- docs/{target_repo}/dev-design/05_test-plan.md
+- docs/{target_repo}/dev-design/06_side-effect-verification.md
 
 ### 設計サマリー
 - 実装方針: {approach_summary}
@@ -540,7 +536,7 @@ init-work-branchスキルでセットアップを完了してください。
 
 ```
 エラー: 調査結果が見つかりません
-ディレクトリ: submodules/{repo}/dev-investigation/
+ディレクトリ: docs/{target_repo}/dev-investigation/
 
 dev-investigationスキルで調査を完了してください。
 ```

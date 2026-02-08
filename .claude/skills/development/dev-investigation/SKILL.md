@@ -1,6 +1,6 @@
 ---
 name: dev-investigation
-description: 開発タスク用詳細調査スキル。setup.yamlとdesign-document（{ticket_id}.md）を読み込み、対象リポジトリを体系的に調査し、dev-investigation/ディレクトリに詳細な調査結果（UML図含む）を出力、design-documentの調査結果セクションを更新する。「dev-investigation」「詳細調査」「開発調査を実行」「調査結果を埋めて」「investigate for development」などのフレーズで発動。
+description: 開発タスク用詳細調査スキル。setup.yamlとdesign-document（{ticket_id}.md）を読み込み、対象リポジトリを体系的に調査し、docs/{target_repo}/dev-investigation/ディレクトリに詳細な調査結果（UML図含む）を出力、design-documentの調査結果セクションを更新する。「dev-investigation」「詳細調査」「開発調査を実行」「調査結果を埋めて」「investigate for development」などのフレーズで発動。
 ---
 
 # 開発タスク用詳細調査スキル
@@ -15,7 +15,7 @@ setup.yamlとdesign-documentを入力として、対象リポジトリを体系�
 1. **setup.yaml** から対象リポジトリ・チケット情報を取得
 2. **setup.yaml の description.background** を調査の背景・コンテキストとして参照
 3. **design-document** の調査結果セクションを要約で更新
-4. **dev-investigation/** ディレクトリに詳細調査結果をファイル分割で出力（UML図含む）
+4. **docs/{target_repo}/dev-investigation/** ディレクトリに詳細調査結果をファイル分割で出力（UML図含む）
 
 ## 入力ファイル
 
@@ -118,14 +118,15 @@ description:
 
 ## 出力ファイル構成
 
-調査結果は対象リポジトリ直下の `dev-investigation/` ディレクトリに出力：
+調査結果は `docs/{target_repository}/dev-investigation/` に出力：
 
 ```
-{target_repository}/
-└── dev-investigation/
-    ├── 01_architecture.md          # アーキテクチャ調査
-    ├── 02_data-structure.md        # データ構造調査
-    ├── 03_dependencies.md          # 依存関係調査
+docs/
+└── {target_repository}/
+    └── dev-investigation/
+        ├── 01_architecture.md          # アーキテクチャ調査
+        ├── 02_data-structure.md        # データ構造調査
+        ├── 03_dependencies.md          # 依存関係調査
     ├── 04_existing-patterns.md     # 既存パターン調査
     ├── 05_integration-points.md    # 統合ポイント調査
     └── 06_risks-and-constraints.md # リスク・制約分析
@@ -199,7 +200,7 @@ grep -r "emit\|publish\|subscribe\|event\|listener" --include="*.ts" --include="
 
 {アーキテクチャ・データ構造・依存関係の要約}
 
-詳細は [dev-investigation/](../submodules/{target_repo}/dev-investigation/) を参照。
+詳細は [dev-investigation/](./{target_repo}/dev-investigation/) を参照。
 
 ### 1.2 関連コード・ファイル
 
@@ -209,12 +210,12 @@ grep -r "emit\|publish\|subscribe\|event\|listener" --include="*.ts" --include="
 
 ### 1.3 参考情報
 
-- [アーキテクチャ調査](../submodules/{target_repo}/dev-investigation/01_architecture.md)
-- [データ構造調査](../submodules/{target_repo}/dev-investigation/02_data-structure.md)
-- [依存関係調査](../submodules/{target_repo}/dev-investigation/03_dependencies.md)
-- [既存パターン調査](../submodules/{target_repo}/dev-investigation/04_existing-patterns.md)
-- [統合ポイント調査](../submodules/{target_repo}/dev-investigation/05_integration-points.md)
-- [リスク・制約分析](../submodules/{target_repo}/dev-investigation/06_risks-and-constraints.md)
+- [アーキテクチャ調査](./{target_repo}/dev-investigation/01_architecture.md)
+- [データ構造調査](./{target_repo}/dev-investigation/02_data-structure.md)
+- [依存関係調査](./{target_repo}/dev-investigation/03_dependencies.md)
+- [既存パターン調査](./{target_repo}/dev-investigation/04_existing-patterns.md)
+- [統合ポイント調査](./{target_repo}/dev-investigation/05_integration-points.md)
+- [リスク・制約分析](./{target_repo}/dev-investigation/06_risks-and-constraints.md)
 ```
 
 ## UML/図表ガイドライン
@@ -348,10 +349,11 @@ test -f "$DESIGN_DOC" || { echo "Error: $DESIGN_DOC not found"; exit 1; }
 ```bash
 for repo in "${target_repositories[@]}"; do
     REPO_PATH="submodules/${repo}"
+    OUTPUT_DIR="docs/${repo}/dev-investigation"
     cd "$REPO_PATH"
     
-    # dev-investigation ディレクトリ作成
-    mkdir -p dev-investigation
+    # dev-investigation ディレクトリ作成（出力先はdocs配下）
+    mkdir -p "../${OUTPUT_DIR}"
     
     # 各調査を実施し、結果をファイルに出力
     # ... (調査処理)
@@ -367,20 +369,14 @@ done
 ### 5. コミット
 
 ```bash
-# 親リポジトリでコミット
-git add .
+# 親リポジトリでコミット（docs配下に出力）
+git add docs/ setup.yaml
 git commit -m "docs: {ticket_id} 調査結果を追加
 
-- dev-investigation/配下に詳細調査結果を出力
+- docs/{target_repo}/dev-investigation/配下に詳細調査結果を出力
 - design-documentの調査結果セクションを更新"
 
-# 対象サブモジュールでもコミット
-for repo in "${target_repositories[@]}"; do
-    cd "submodules/${repo}"
-    git add dev-investigation/
-    git commit -m "docs: {ticket_id} 調査結果を追加"
-    cd -
-done
+# ※ 対象リポジトリ側にコード変更がある場合は別途コミットを実施
 ```
 
 ## 完了レポート
@@ -399,12 +395,12 @@ done
 - docs/{ticket_id}.md - 調査結果セクション更新
 
 #### 詳細調査結果
-- submodules/{target_repo}/dev-investigation/01_architecture.md
-- submodules/{target_repo}/dev-investigation/02_data-structure.md
-- submodules/{target_repo}/dev-investigation/03_dependencies.md
-- submodules/{target_repo}/dev-investigation/04_existing-patterns.md
-- submodules/{target_repo}/dev-investigation/05_integration-points.md
-- submodules/{target_repo}/dev-investigation/06_risks-and-constraints.md
+- docs/{target_repo}/dev-investigation/01_architecture.md
+- docs/{target_repo}/dev-investigation/02_data-structure.md
+- docs/{target_repo}/dev-investigation/03_dependencies.md
+- docs/{target_repo}/dev-investigation/04_existing-patterns.md
+- docs/{target_repo}/dev-investigation/05_integration-points.md
+- docs/{target_repo}/dev-investigation/06_risks-and-constraints.md
 
 ### 次のステップ
 1. 調査結果をレビュー

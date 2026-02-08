@@ -122,7 +122,7 @@ sequenceDiagram
         User->>CGP: submodule-overview実行依頼
         CGP->>GP: スキル実行
         GP->>Code: サブモジュール構造把握
-        GP->>Docs: OVERVIEW.md作成
+        GP->>Code: submodules/{repo}.md作成
         GP-->>User: 概要作成完了
     end
     
@@ -134,7 +134,7 @@ sequenceDiagram
         GP->>Code: リポジトリ構造調査
         GP->>Code: 依存関係分析
         GP->>Code: リスク分析
-        GP->>Docs: dev-investigation/配下に6ファイル生成
+        GP->>Docs: docs/{repo}/dev-investigation/配下に6ファイル生成
         GP->>Docs: design-document更新（調査結果）
         GP-->>User: 調査完了
     end
@@ -150,7 +150,7 @@ sequenceDiagram
         GP->>Docs: データ構造設計
         GP->>Docs: 処理フロー設計（修正前/後対比）
         GP->>Docs: テスト計画作成
-        GP->>Docs: dev-design/配下に6ファイル生成
+        GP->>Docs: docs/{repo}/dev-design/配下に6ファイル生成
         GP->>Docs: design-document更新（設計結果）
         GP-->>User: 設計完了
     end
@@ -164,7 +164,7 @@ sequenceDiagram
         GP->>Docs: タスク分割
         GP->>Docs: 依存関係整理
         GP->>Docs: 各タスクプロンプト生成（TDD方針込み）
-        GP->>Docs: dev-plan/配下に各タスクファイル生成
+        GP->>Docs: docs/{repo}/dev-plan/配下に各タスクファイル生成
         GP->>Docs: parent-agent-prompt.md生成
         GP->>Docs: design-document更新（実装計画）
         GP-->>User: 計画完了
@@ -189,7 +189,7 @@ sequenceDiagram
             end
         end
         
-        GP->>Docs: dev-implement/execution-log.md生成
+        GP->>Docs: docs/{repo}/dev-implement/execution-log.md生成
         GP-->>User: 実装完了
     end
 ```
@@ -199,11 +199,11 @@ sequenceDiagram
 | ステップ | スキル | 目的 | 主な成果物 |
 |----------|--------|------|------------|
 | 1 | init-work-branch | 開発環境初期化 | featureブランチ、`docs/{ticket_id}.md` |
-| 2 | submodule-overview | サブモジュール概要作成 | `OVERVIEW.md` |
-| 3 | dev-investigation | 詳細調査 | `dev-investigation/` 配下6ファイル |
-| 4 | dev-design | 設計 | `dev-design/` 配下6ファイル |
-| 5 | dev-plan | 計画（TDDプロンプト生成） | `dev-plan/` 配下タスクファイル |
-| 6 | dev-implement | 実装実行 | コード変更、`execution-log.md` |
+| 2 | submodule-overview | サブモジュール概要作成 | `submodules/{repo}.md` |
+| 3 | dev-investigation | 詳細調査 | `docs/{repo}/dev-investigation/` 配下6ファイル |
+| 4 | dev-design | 設計 | `docs/{repo}/dev-design/` 配下6ファイル |
+| 5 | dev-plan | 計画（TDDプロンプト生成） | `docs/{repo}/dev-plan/` 配下タスクファイル |
+| 6 | dev-implement | 実装実行 | コード変更、`docs/{repo}/dev-implement/execution-log.md` |
 
 ---
 
@@ -424,11 +424,11 @@ call-general-purpose-agentを使用して、dev-implementスキルで実装を�
 | フェーズ | 成果物 | 出力先 |
 |----------|--------|--------|
 | init-work-branch | 設計ドキュメント | `docs/{ticket_id}.md` |
-| submodule-overview | サブモジュール概要 | `submodules/{repo}/OVERVIEW.md` |
-| dev-investigation | アーキテクチャ調査等 | `submodules/{repo}/dev-investigation/` 配下6ファイル |
-| dev-design | 設計ドキュメント | `submodules/{repo}/dev-design/` 配下6ファイル |
-| dev-plan | タスク計画・プロンプト | `submodules/{repo}/dev-plan/` 配下 |
-| dev-implement | 実行ログ | `submodules/{repo}/dev-implement/execution-log.md` |
+| submodule-overview | サブモジュール概要 | `submodules/{repo}.md` |
+| dev-investigation | アーキテクチャ調査等 | `docs/{repo}/dev-investigation/` 配下6ファイル |
+| dev-design | 設計ドキュメント | `docs/{repo}/dev-design/` 配下6ファイル |
+| dev-plan | タスク計画・プロンプト | `docs/{repo}/dev-plan/` 配下 |
+| dev-implement | 実行ログ | `docs/{repo}/dev-implement/execution-log.md` |
 
 ---
 
@@ -499,32 +499,33 @@ call-general-purpose-manager-agentを使用して、ログ出力を全モジュ�
 {project-root}/
 ├── setup.yaml                          # セットアップ定義
 ├── docs/
-│   └── {ticket_id}.md                  # 設計ドキュメント（全フェーズで更新）
+│   ├── {ticket_id}.md                  # 設計ドキュメント（全フェーズで更新）
+│   └── {target-repo}/                  # フェーズ別成果物
+│       ├── dev-investigation/
+│       │   ├── 01_architecture.md
+│       │   ├── 02_data-structure.md
+│       │   ├── 03_dependencies.md
+│       │   ├── 04_existing-patterns.md
+│       │   ├── 05_integration-points.md
+│       │   └── 06_risks-and-constraints.md
+│       ├── dev-design/
+│       │   ├── 01_implementation-approach.md
+│       │   ├── 02_interface-api-design.md
+│       │   ├── 03_data-structure-design.md
+│       │   ├── 04_process-flow-design.md
+│       │   ├── 05_test-plan.md
+│       │   └── 06_side-effect-verification.md
+│       ├── dev-plan/
+│       │   ├── task-list.md
+│       │   ├── task01.md
+│       │   ├── task02-01.md
+│       │   ├── task02-02.md
+│       │   └── parent-agent-prompt.md
+│       └── dev-implement/
+│           └── execution-log.md
 └── submodules/
-    └── {target-repo}/
-        ├── OVERVIEW.md                 # サブモジュール概要
-        ├── dev-investigation/          # 調査結果
-        │   ├── 01_architecture.md
-        │   ├── 02_data-structure.md
-        │   ├── 03_dependencies.md
-        │   ├── 04_existing-patterns.md
-        │   ├── 05_integration-points.md
-        │   └── 06_risks-and-constraints.md
-        ├── dev-design/                 # 設計結果
-        │   ├── 01_implementation-approach.md
-        │   ├── 02_interface-api-design.md
-        │   ├── 03_data-structure-design.md
-        │   ├── 04_process-flow-design.md
-        │   ├── 05_test-plan.md
-        │   └── 06_side-effect-verification.md
-        ├── dev-plan/                   # 計画結果
-        │   ├── task-list.md
-        │   ├── task01.md
-        │   ├── task02-01.md
-        │   ├── task02-02.md
-        │   └── parent-agent-prompt.md
-        └── dev-implement/              # 実行結果
-            └── execution-log.md
+    ├── {target-repo}/                  # 対象リポジトリの作業コピー
+    └── {target-repo}.md                # サブモジュール概要（フォルダ単位）
 ```
 
 ---
