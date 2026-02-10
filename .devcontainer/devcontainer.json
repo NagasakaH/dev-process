@@ -14,8 +14,7 @@
 				"ms-dotnettools.vscodeintellicode-csharp"
 			],
 			"settings": {
-				"dotnet.server.useOmnisharp": false,
-				"omnisharp.useModernNet": true
+				"dotnet.server.useOmnisharp": false
 			}
 		}
 	},
