@@ -1,0 +1,24 @@
+{
+	"name": "dotnet 8 Development",
+	"image": "mcr.microsoft.com/devcontainers/dotnet:8.0",
+	"features": {
+		"ghcr.io/devcontainers/features/git:1": {},
+		"ghcr.io/devcontainers/features/github-cli:1": {}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-dotnettools.csharp",
+				"ms-dotnettools.csdevkit",
+				"ms-dotnettools.vscode-dotnet-runtime",
+				"ms-dotnettools.vscodeintellicode-csharp"
+			],
+			"settings": {
+				"dotnet.server.useOmnisharp": false,
+				"omnisharp.useModernNet": true
+			}
+		}
+	},
+	"postCreateCommand": "dotnet --version",
+	"remoteUser": "vscode"
+}
