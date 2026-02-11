@@ -1,51 +1,41 @@
 # エージェント一覧と運用ガイド
 
-このドキュメントは本リポジトリで提供する主要エージェントの一覧と、短い運用ガイドを示します。
+本リポジトリの主要エージェントと運用ルールを示す。
 
-## 目的
-- ユーザーが利用する呼び出し用エージェント（call-*）と、実行を行うエージェントを明確に整理する。
-- call-* はユーザーが直接呼ぶラッパーで、実行ロジックはラッパーが実行エージェントを呼び出す形にする。
+## エージェント構成
 
-## 維持するエージェント（必須）
-- call-general-purpose.agent.md
-  - 役割: ユーザーが単発のタスクや小規模作業を依頼するためのラッパー。
-  - 備考: 既存のワークフローと互換性あり。
-- general-purpose.agent.md
-  - 役割: 汎用実行エージェント。スキルを実行し成果物を作成する。
-  - 運用ルール: サブエージェント呼び出し時は Opus-4.5 を利用すること。
+| ラッパー (call-*) | 実行エージェント | 役割 |
+|---|---|---|
+| call-general-purpose | general-purpose | 汎用タスク実行 |
+| call-environment-setup | environment-setup | 開発環境構築 |
+| call-pre-implementation-planning | pre-implementation-planning | 調査・設計・計画 |
+| call-plan-migration | plan-migration | 計画のリポジトリ移行 |
 
-## 本運用で追加したエージェント
-- environment-setup.agent.md
-  - 役割: 開発環境の構築（サブモジュール追加・初期セットアップまで自動化）。
-  - ラッパー: call-environment-setup.agent.md
-- pre-implementation-planning.agent.md
-  - 役割: 実装前の調査と設計、setup.yaml の生成補助、タスク分割の下準備。
-  - ラッパー: call-pre-implementation-planning.agent.md
-- plan-migration.agent.md
-  - 役割: 生成された計画（docs/plan）をリポジトリに移行し、ブランチとファイルを作成する。
-  - ラッパー: call-plan-migration.agent.md
+## 呼び出しルール
 
-## 削除または統合したエージェント
-- dev-planning-manager.agent.md（機能を pre-implementation-planning に統合）
-- call-dev-planning-manager.agent.md（不要のため削除）
-- code-reviewer.agent.md（不要のため削除）
+1. **ユーザーは call-* ラッパーを呼ぶ**（直接実行エージェントを呼ばない）
+2. **実行エージェントは Opus-4.5 を指定**（call-* 内部でモデル指定）
+3. サブエージェント起動時: `model: "claude-opus-4.5"` を必ず指定
 
-## 呼び出しルール（簡潔）
-- ユーザーは call-* ラッパーを呼ぶ。ラッパーは内部で該当実行エージェントを呼び出す。
-- ラッパー側（call-*）は Opus-4.6 等を使って外部呼び出しのラップを行っても良いが、実際にサブエージェントを起動する際は必ず Opus-4.5 を指定する運用とする。
-- 既存スキルやスクリプト内で "call-" 接頭辞で参照している箇所は、内部呼び出しを呼び出し先の実行エージェント名（call-を外した名前）に書き換えてある。
+```yaml
+# 呼び出し例（call-* 内部での実行エージェント起動）
+- agent_type: "general-purpose"
+  model: "claude-opus-4.5"
+  prompt: "タスク内容"
+```
 
-## 簡易利用例
-- 環境構築:
-  - ユーザー -> call-environment-setup.agent.md -> environment-setup.agent.md（内部で Opus-4.5 指定）
-- 実装前計画:
-  - ユーザー -> call-pre-implementation-planning.agent.md -> pre-implementation-planning.agent.md
-- 計画移行:
-  - ユーザー -> call-plan-migration.agent.md -> plan-migration.agent.md
+## implement スキルの並列化
+
+- 独立タスク → 並列実行（高速化）
+- 依存タスク → 順次実行（整合性確保）
+- 各タスク完了時は TDD/verification スキルで検証
+
+## 削除・統合済み
+
+- dev-planning-manager → pre-implementation-planning に統合
+- code-reviewer → 削除
 
 ## 変更履歴
-- 2026-02-11: エージェント整理実行。不要エージェントを削除し、新規に3エージェントとラッパー3つを追加。
 
----
-
-(約100行以内に収めています。詳細は各 agent.md を参照してください。)
+- 2026-02-11: エージェント整理、3エージェント+ラッパー追加
+- 2026-02-12: 並列化判断・Opus-4.5 指定ルール明確化
