@@ -1,138 +1,47 @@
 ---
 name: verification-before-completion
-description: Use when about to claim work is complete, fixed, or passing, before committing or creating PRs - requires running verification commands and confirming output before making any success claims; evidence before assertions always
+description: 作業完了、修正済み、テスト通過などを主張する前、コミットやPR作成前に使用。検証コマンドを実行し出力を確認してから成功を主張する。「検証」「確認して」「テスト実行」などのフレーズで発動。
 ---
 
-# Verification Before Completion
+# 完了前検証スキル
 
-## Overview
+検証なしに完了を主張することは効率ではなく不誠実です。主張の前に常に証拠を示してください。
 
-Claiming work is complete without verification is dishonesty, not efficiency.
+## 主要機能
 
-**Core principle:** Evidence before claims, always.
+### ゲート関数
 
-**Violating the letter of this rule is violating the spirit of this rule.**
+1. **IDENTIFY**: この主張を証明するコマンドは何か？
+2. **RUN**: 完全なコマンドを実行（新規、完全）
+3. **READ**: 出力全体を読み、終了コードを確認
+4. **VERIFY**: 出力が主張を裏付けるか？
+5. **CLAIM**: 証拠と共に主張
 
-## The Iron Law
-
-```
-NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
-```
-
-If you haven't run the verification command in this message, you cannot claim it passes.
-
-## The Gate Function
+## 鉄則
 
 ```
-BEFORE claiming any status or expressing satisfaction:
-
-1. IDENTIFY: What command proves this claim?
-2. RUN: Execute the FULL command (fresh, complete)
-3. READ: Full output, check exit code, count failures
-4. VERIFY: Does output confirm the claim?
-   - If NO: State actual status with evidence
-   - If YES: State claim WITH evidence
-5. ONLY THEN: Make the claim
-
-Skip any step = lying, not verifying
+新しい検証証拠なしに完了を主張しない
 ```
 
-## Common Failures
+## よくある失敗
 
-| Claim                 | Requires                        | Not Sufficient                 |
-| --------------------- | ------------------------------- | ------------------------------ |
-| Tests pass            | Test command output: 0 failures | Previous run, "should pass"    |
-| Linter clean          | Linter output: 0 errors         | Partial check, extrapolation   |
-| Build succeeds        | Build command: exit 0           | Linter passing, logs look good |
-| Bug fixed             | Test original symptom: passes   | Code changed, assumed fixed    |
-| Regression test works | Red-green cycle verified        | Test passes once               |
-| Agent completed       | VCS diff shows changes          | Agent reports "success"        |
-| Requirements met      | Line-by-line checklist          | Tests passing                  |
+| 主張 | 必要なもの | 不十分なもの |
+|------|------------|--------------|
+| テスト通過 | テストコマンド出力: 0失敗 | 前回の実行、「通るはず」 |
+| リンタークリア | リンター出力: 0エラー | 部分チェック |
+| ビルド成功 | ビルドコマンド: exit 0 | リンター通過 |
+| バグ修正済み | 元の症状のテスト通過 | コード変更、修正済み仮定 |
 
-## Red Flags - STOP
+## レッドフラグ
 
-- Using "should", "probably", "seems to"
-- Expressing satisfaction before verification ("Great!", "Perfect!", "Done!", etc.)
-- About to commit/push/PR without verification
-- Trusting agent success reports
-- Relying on partial verification
-- Thinking "just this once"
-- Tired and wanting work over
-- **ANY wording implying success without having run verification**
+- 「〜はず」「おそらく」「〜のようだ」を使用
+- 検証前に満足を表明（「完了！」「完璧！」）
+- 検証なしでコミット/PR作成
+- エージェントの成功報告を信頼
 
-## Rationalization Prevention
+## 関連スキル
 
-| Excuse                                  | Reality                |
-| --------------------------------------- | ---------------------- |
-| "Should work now"                       | RUN the verification   |
-| "I'm confident"                         | Confidence ≠ evidence  |
-| "Just this once"                        | No exceptions          |
-| "Linter passed"                         | Linter ≠ compiler      |
-| "Agent said success"                    | Verify independently   |
-| "I'm tired"                             | Exhaustion ≠ excuse    |
-| "Partial check is enough"               | Partial proves nothing |
-| "Different words so rule doesn't apply" | Spirit over letter     |
-
-## Key Patterns
-
-**Tests:**
-```
-✅ [Run test command] [See: 34/34 pass] "All tests pass"
-❌ "Should pass now" / "Looks correct"
-```
-
-**Regression tests (TDD Red-Green):**
-```
-✅ Write → Run (pass) → Revert fix → Run (MUST FAIL) → Restore → Run (pass)
-❌ "I've written a regression test" (without red-green verification)
-```
-
-**Build:**
-```
-✅ [Run build] [See: exit 0] "Build passes"
-❌ "Linter passed" (linter doesn't check compilation)
-```
-
-**Requirements:**
-```
-✅ Re-read plan → Create checklist → Verify each → Report gaps or completion
-❌ "Tests pass, phase complete"
-```
-
-**Agent delegation:**
-```
-✅ Agent reports success → Check VCS diff → Verify changes → Report actual state
-❌ Trust agent report
-```
-
-## When To Apply
-
-**ALWAYS before:**
-- ANY variation of success/completion claims
-- ANY expression of satisfaction
-- ANY positive statement about work state
-- Committing, PR creation, task completion
-- Moving to next task
-- Delegating to agents
-
-**Rule applies to:**
-- Exact phrases
-- Paraphrases and synonyms
-- Implications of success
-- ANY communication suggesting completion/correctness
-
-## Integration
-
-**Referenced by:**
-- `implement` — verification gate before task completion
-- `commit` / `commit-multi-repo` — verification before committing
-- `finishing-branch` — verification before presenting options
-- `systematic-debugging` — verify fix before claiming success
-
-## The Bottom Line
-
-**No shortcuts for verification.**
-
-Run the command. Read the output. THEN claim the result.
-
-This is non-negotiable.
+- 参照元: `implement` - タスク完了前の検証ゲート
+- 参照元: `commit` - コミット前検証
+- 参照元: `finishing-branch` - オプション提示前検証
+- 参照元: `systematic-debugging` - 修正成功確認

@@ -1,110 +1,54 @@
 ---
 name: requesting-code-review
-description: Use when completing tasks, implementing major features, or before merging to verify work meets requirements
+description: タスク完了時、主要機能実装後、またはマージ前に作業が要件を満たすことを確認するために使用。code-reviewerエージェントを呼び出す。「レビュー依頼」「レビューして」などのフレーズで発動。
 ---
 
-# Requesting Code Review
+# コードレビュー依頼スキル
 
-Dispatch `code-reviewer` agent to catch issues before they cascade.
+`code-reviewer`エージェントを呼び出して、問題が連鎖する前にキャッチします。早期にレビュー、頻繁にレビューが原則です。
 
-**Core principle:** Review early, review often.
+## 主要機能
 
-## When to Request Review
+### レビュー依頼方法
 
-**Mandatory:**
-- After each task in subagent-driven development
-- After completing major feature
-- Before merge to main
+1. **git SHA取得**:
+   ```bash
+   BASE_SHA=$(git rev-parse HEAD~1)  # or origin/main
+   HEAD_SHA=$(git rev-parse HEAD)
+   ```
 
-**Optional but valuable:**
-- When stuck (fresh perspective)
-- Before refactoring (baseline check)
-- After fixing complex bug
+2. **code-reviewerエージェント呼び出し**: 以下のコンテキストを提供
+   - `WHAT_WAS_IMPLEMENTED`: 実装内容
+   - `PLAN_OR_REQUIREMENTS`: 要件
+   - `BASE_SHA`: 開始コミット
+   - `HEAD_SHA`: 終了コミット
 
-## How to Request
+3. **フィードバック対応**:
+   - Critical問題 → 即座に修正
+   - Important問題 → 進む前に修正
+   - Minor問題 → 後で対応
 
-**1. Get git SHAs:**
-```bash
-BASE_SHA=$(git rev-parse HEAD~1)  # or origin/main
-HEAD_SHA=$(git rev-parse HEAD)
-```
+## 使用タイミング
 
-**2. Dispatch code-reviewer agent:**
+**必須:**
+- サブエージェント駆動開発の各タスク後
+- 主要機能完了後
+- mainへのマージ前
 
-Provide the following context to the `code-reviewer` agent:
+**推奨:**
+- 行き詰まったとき（新鮮な視点）
+- リファクタリング前（ベースラインチェック）
+- 複雑なバグ修正後
 
-| Placeholder            | Description         |
-| ---------------------- | ------------------- |
-| `WHAT_WAS_IMPLEMENTED` | What you just built |
-| `PLAN_OR_REQUIREMENTS` | What it should do   |
-| `BASE_SHA`             | Starting commit     |
-| `HEAD_SHA`             | Ending commit       |
-| `DESCRIPTION`          | Brief summary       |
+## レッドフラグ
 
-**3. Act on feedback:**
-- Fix Critical issues immediately
-- Fix Important issues before proceeding
-- Note Minor issues for later
-- Push back if reviewer is wrong (with reasoning)
+**絶対にしない:**
+- 「簡単だから」でレビューをスキップ
+- Critical問題を無視
+- 未修正のImportant問題で進む
 
-## Example
+## 関連スキル
 
-```
-[Just completed Task 2: Add verification function]
-
-You: Let me request code review before proceeding.
-
-BASE_SHA=$(git log --oneline | grep "Task 1" | head -1 | awk '{print $1}')
-HEAD_SHA=$(git rev-parse HEAD)
-
-[Dispatch code-reviewer agent]
-  WHAT_WAS_IMPLEMENTED: Verification and repair functions for conversation index
-  PLAN_OR_REQUIREMENTS: Task 2 from docs/plans/deployment-plan.md
-  BASE_SHA: a7981ec
-  HEAD_SHA: 3df7661
-  DESCRIPTION: Added verifyIndex() and repairIndex() with 4 issue types
-
-[Agent returns]:
-  Strengths: Clean architecture, real tests
-  Issues:
-    Important: Missing progress indicators
-    Minor: Magic number (100) for reporting interval
-  Assessment: Ready to proceed
-
-You: [Fix progress indicators]
-[Continue to Task 3]
-```
-
-## project.yaml Integration
-
-Update `project.yaml` with:
-```yaml
-code_review:
-  status: approved  # or revision_required
-  rounds:
-    - { round: 1, result: revision_required, issues: 2 }
-    - { round: 2, result: approved, issues: 0 }
-```
-
-Commit: `docs: code review 結果を記録`
-
-## Red Flags
-
-**Never:**
-- Skip review because "it's simple"
-- Ignore Critical issues
-- Proceed with unfixed Important issues
-- Argue with valid technical feedback
-
-**If reviewer wrong:**
-- Push back with technical reasoning
-- Show code/tests that prove it works
-- Request clarification
-
-## Integration
-
-**Position in flow:** `verification-before-completion` → **requesting-code-review** → `receiving-code-review`
-
-**Related:**
-- `code-reviewer` agent (`.github/agents/code-reviewer.agent.md`)
-- `review-design` / `review-plan` — for design/plan phase reviews
+- 前提: `verification-before-completion` - 完了前検証
+- 後続: `receiving-code-review` - レビュー受信
+- 関連: `review-design` / `review-plan` - 設計/計画フェーズレビュー

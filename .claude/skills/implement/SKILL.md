@@ -9,6 +9,8 @@ planで作成されたタスク計画に従い、サブエージェントへの�
 
 ## 概要
 
+> **品質ガイドライン**: このスキルは `test-driven-development` と `verification-before-completion` スキルの原則に従います。
+
 このスキルは以下を実現します：
 
 1. **plan/配下のタスク定義読み込み**
