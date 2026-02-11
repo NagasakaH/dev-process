@@ -13,6 +13,8 @@ setup.yaml + design-documentを入力として、実行可能なタスク計画�
 
 ## 概要
 
+> **TDD方針**: タスクプロンプト生成時は `test-driven-development` スキルを参照してください。
+
 このスキルは以下を実現します：
 
 1. **setup.yaml** からチケット情報・対象リポジトリを取得

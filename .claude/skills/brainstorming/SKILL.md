@@ -1,66 +1,30 @@
 ---
 name: brainstorming
-description: Use before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design before implementation.
+description: 創造的な作業（機能追加、コンポーネント作成、動作変更など）の前に使用。ユーザーの意図、要件、設計を実装前に探求する。「ブレスト」「アイデア出し」「設計を考えて」などのフレーズで発動。
 ---
 
-# Brainstorming Ideas Into Designs
+# ブレインストーミングスキル
 
-## Overview
+アイデアを対話を通じて完全な設計仕様に発展させるスキルです。プロジェクトの現状を理解し、一度に1つずつ質問してアイデアを洗練させ、設計を小さなセクションで提示しながら確認を取ります。
 
-Help turn ideas into fully formed designs and specs through natural collaborative dialogue.
+## 主要機能
 
-Start by understanding the current project context, then ask questions one at a time to refine the idea. Once you understand what you're building, present the design in small sections (200-300 words), checking after each section whether it looks right so far.
+- プロジェクトコンテキストの理解（ファイル、ドキュメント、最近のコミット確認）
+- 段階的な質問による要件の明確化
+- 2〜3つのアプローチ提案とトレードオフ説明
+- 設計の段階的提示と確認
+- 設計ドキュメントの作成（`docs/plans/`配下）
+- `project.yaml`への決定事項記録
 
-## The Process
+## 使用タイミング
 
-**Understanding the idea:**
-- Check out the current project state first (files, docs, recent commits)
-- Read `setup.yaml` or `project.yaml` if they exist for context
-- Ask questions one at a time to refine the idea
-- Prefer multiple choice questions when possible, but open-ended is fine too
-- Only one question per message - if a topic needs more exploration, break it into multiple questions
-- Focus on understanding: purpose, constraints, success criteria
+- 新機能の設計前
+- コンポーネントの構築前
+- 機能追加や動作変更の前
+- 要件が曖昧なとき
 
-**Exploring approaches:**
-- Propose 2-3 different approaches with trade-offs
-- Present options conversationally with your recommendation and reasoning
-- Lead with your recommended option and explain why
+## 関連スキル
 
-**Presenting the design:**
-- Once you believe you understand what you're building, present the design
-- Break it into sections of 200-300 words
-- Ask after each section whether it looks right so far
-- Cover: architecture, components, data flow, error handling, testing
-- Be ready to go back and clarify if something doesn't make sense
-
-## After the Design
-
-**Documentation:**
-- Write the validated design to `docs/plans/YYYY-MM-DD-<topic>-design.md`
-- Commit the design document to git
-
-**project.yaml Integration:**
-- If `setup.yaml` exists, generate `project.yaml` from it
-- Record brainstorming decisions, refined requirements, and artifact paths in `project.yaml`
-- Commit: `docs: project.yaml を生成`
-
-**Implementation (if continuing):**
-- Ask: "Ready to set up for implementation?"
-- Use `init-work-branch` skill to create isolated workspace
-- Use `plan` skill to create detailed implementation plan
-
-## Key Principles
-
-- **One question at a time** - Don't overwhelm with multiple questions
-- **Multiple choice preferred** - Easier to answer than open-ended when possible
-- **YAGNI ruthlessly** - Remove unnecessary features from all designs
-- **Explore alternatives** - Always propose 2-3 approaches before settling
-- **Incremental validation** - Present design in sections, validate each
-- **Be flexible** - Go back and clarify when something doesn't make sense
-
-## Integration
-
-**Position in flow:** `issue-to-setup-yaml` → **brainstorming** → `init-work-branch`
-
-**Inputs:** `setup.yaml` (initial context)
-**Outputs:** `project.yaml`, design document in `docs/plans/`
+- 前提: `issue-to-setup-yaml` - setup.yamlの生成
+- 後続: `init-work-branch` - 作業ブランチ初期化
+- 後続: `plan` - 詳細な実装計画作成

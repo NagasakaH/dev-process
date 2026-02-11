@@ -1,333 +1,51 @@
 ---
 name: test-driven-development
-description: Use when implementing any feature or bugfix, before writing implementation code
+description: 機能実装やバグ修正の際、実装コードを書く前に使用。テストファーストで開発を進める。「TDD」「テスト駆動」「テストを先に書いて」などのフレーズで発動。
 ---
 
-# Test-Driven Development (TDD)
+# テスト駆動開発（TDD）スキル
 
-## Overview
+テストを先に書き、失敗を確認し、最小限のコードで通す開発手法です。テストが失敗するのを見なければ、そのテストが正しいものをテストしているかわかりません。
 
-Write the test first. Watch it fail. Write minimal code to pass.
+## 主要機能
 
-**Core principle:** If you didn't watch the test fail, you don't know if it tests the right thing.
+- **RED**: 失敗するテストを1つ書く
+- **Verify RED**: テストが正しく失敗することを確認
+- **GREEN**: テストを通す最小限のコードを書く
+- **Verify GREEN**: テストが通ることを確認
+- **REFACTOR**: テストを緑のままコードを改善
 
-**Violating the letter of the rules is violating the spirit of the rules.**
-
-## When to Use
-
-**Always:**
-- New features
-- Bug fixes
-- Refactoring
-- Behavior changes
-
-**Exceptions (ask your human partner):**
-- Throwaway prototypes
-- Generated code
-- Configuration files
-
-Thinking "skip TDD just this once"? Stop. That's rationalization.
-
-## The Iron Law
+## 鉄則
 
 ```
-NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST
+失敗するテストなしに本番コードを書かない
 ```
 
-Write code before the test? Delete it. Start over.
+テスト前にコードを書いた？ 削除して最初からやり直す。
 
-**No exceptions:**
-- Don't keep it as "reference"
-- Don't "adapt" it while writing tests
-- Don't look at it
-- Delete means delete
+## 使用タイミング
 
-Implement fresh from tests. Period.
+- 新機能の実装
+- バグ修正
+- リファクタリング
+- 動作変更
 
-## Red-Green-Refactor
+## 良いテストの条件
 
-```dot
-digraph tdd_cycle {
-    rankdir=LR;
-    red [label="RED\nWrite failing test", shape=box, style=filled, fillcolor="#ffcccc"];
-    verify_red [label="Verify fails\ncorrectly", shape=diamond];
-    green [label="GREEN\nMinimal code", shape=box, style=filled, fillcolor="#ccffcc"];
-    verify_green [label="Verify passes\nAll green", shape=diamond];
-    refactor [label="REFACTOR\nClean up", shape=box, style=filled, fillcolor="#ccccff"];
-    next [label="Next", shape=ellipse];
+| 品質 | 良い例 | 悪い例 |
+|------|--------|--------|
+| 最小限 | 1つの振る舞いのみ | `test('emailとドメインとスペースを検証')` |
+| 明確 | 名前が振る舞いを説明 | `test('test1')` |
+| 意図表示 | 望ましいAPIを示す | コードの動作を隠す |
 
-    red -> verify_red;
-    verify_red -> green [label="yes"];
-    verify_red -> red [label="wrong\nfailure"];
-    green -> verify_green;
-    verify_green -> refactor [label="yes"];
-    verify_green -> green [label="no"];
-    refactor -> verify_green [label="stay\ngreen"];
-    verify_green -> next;
-    next -> red;
-}
-```
+## レッドフラグ
 
-### RED - Write Failing Test
+- テスト前にコードを書いた
+- テストがすぐに通った
+- 「今回だけ」と合理化している
 
-Write one minimal test showing what should happen.
+## 関連スキル
 
-<Good>
-```typescript
-test('retries failed operations 3 times', async () => {
-  let attempts = 0;
-  const operation = () => {
-    attempts++;
-    if (attempts < 3) throw new Error('fail');
-    return 'success';
-  };
-
-  const result = await retryOperation(operation);
-
-  expect(result).toBe('success');
-  expect(attempts).toBe(3);
-});
-```
-Clear name, tests real behavior, one thing
-</Good>
-
-<Bad>
-```typescript
-test('retry works', async () => {
-  const mock = jest.fn()
-    .mockRejectedValueOnce(new Error())
-    .mockRejectedValueOnce(new Error())
-    .mockResolvedValueOnce('success');
-  await retryOperation(mock);
-  expect(mock).toHaveBeenCalledTimes(3);
-});
-```
-Vague name, tests mock not code
-</Bad>
-
-**Requirements:**
-- One behavior
-- Clear name
-- Real code (no mocks unless unavoidable)
-
-### Verify RED - Watch It Fail
-
-**MANDATORY. Never skip.**
-
-```bash
-npm test path/to/test.test.ts
-```
-
-Confirm:
-- Test fails (not errors)
-- Failure message is expected
-- Fails because feature missing (not typos)
-
-**Test passes?** You're testing existing behavior. Fix test.
-
-**Test errors?** Fix error, re-run until it fails correctly.
-
-### GREEN - Minimal Code
-
-Write simplest code to pass the test.
-
-<Good>
-```typescript
-async function retryOperation<T>(fn: () => Promise<T>): Promise<T> {
-  for (let i = 0; i < 3; i++) {
-    try {
-      return await fn();
-    } catch (e) {
-      if (i === 2) throw e;
-    }
-  }
-  throw new Error('unreachable');
-}
-```
-Just enough to pass
-</Good>
-
-<Bad>
-```typescript
-async function retryOperation<T>(
-  fn: () => Promise<T>,
-  options?: {
-    maxRetries?: number;
-    backoff?: 'linear' | 'exponential';
-    onRetry?: (attempt: number) => void;
-  }
-): Promise<T> {
-  // YAGNI
-}
-```
-Over-engineered
-</Bad>
-
-Don't add features, refactor other code, or "improve" beyond the test.
-
-### Verify GREEN - Watch It Pass
-
-**MANDATORY.**
-
-```bash
-npm test path/to/test.test.ts
-```
-
-Confirm:
-- Test passes
-- Other tests still pass
-- Output pristine (no errors, warnings)
-
-**Test fails?** Fix code, not test.
-
-**Other tests fail?** Fix now.
-
-### REFACTOR - Clean Up
-
-After green only:
-- Remove duplication
-- Improve names
-- Extract helpers
-
-Keep tests green. Don't add behavior.
-
-### Repeat
-
-Next failing test for next feature.
-
-## Good Tests
-
-| Quality          | Good                                | Bad                                                 |
-| ---------------- | ----------------------------------- | --------------------------------------------------- |
-| **Minimal**      | One thing. "and" in name? Split it. | `test('validates email and domain and whitespace')` |
-| **Clear**        | Name describes behavior             | `test('test1')`                                     |
-| **Shows intent** | Demonstrates desired API            | Obscures what code should do                        |
-
-## Why Order Matters
-
-**"I'll write tests after to verify it works"**
-
-Tests written after code pass immediately. Passing immediately proves nothing:
-- Might test wrong thing
-- Might test implementation, not behavior
-- Might miss edge cases you forgot
-- You never saw it catch the bug
-
-Test-first forces you to see the test fail, proving it actually tests something.
-
-**"Deleting X hours of work is wasteful"**
-
-Sunk cost fallacy. The time is already gone. Your choice now:
-- Delete and rewrite with TDD (X more hours, high confidence)
-- Keep it and add tests after (30 min, low confidence, likely bugs)
-
-The "waste" is keeping code you can't trust.
-
-## Common Rationalizations
-
-| Excuse                                 | Reality                                                                 |
-| -------------------------------------- | ----------------------------------------------------------------------- |
-| "Too simple to test"                   | Simple code breaks. Test takes 30 seconds.                              |
-| "I'll test after"                      | Tests passing immediately prove nothing.                                |
-| "Tests after achieve same goals"       | Tests-after = "what does this do?" Tests-first = "what should this do?" |
-| "Already manually tested"              | Ad-hoc ≠ systematic. No record, can't re-run.                           |
-| "Deleting X hours is wasteful"         | Sunk cost fallacy. Keeping unverified code is technical debt.           |
-| "Keep as reference, write tests first" | You'll adapt it. That's testing after. Delete means delete.             |
-| "Need to explore first"                | Fine. Throw away exploration, start with TDD.                           |
-| "TDD will slow me down"                | TDD faster than debugging. Pragmatic = test-first.                      |
-
-## Red Flags - STOP and Start Over
-
-- Code before test
-- Test after implementation
-- Test passes immediately
-- Can't explain why test failed
-- Rationalizing "just this once"
-- "Keep as reference" or "adapt existing code"
-- "Already spent X hours, deleting is wasteful"
-- "TDD is dogmatic, I'm being pragmatic"
-
-**All of these mean: Delete code. Start over with TDD.**
-
-## Example: Bug Fix
-
-**Bug:** Empty email accepted
-
-**RED**
-```typescript
-test('rejects empty email', async () => {
-  const result = await submitForm({ email: '' });
-  expect(result.error).toBe('Email required');
-});
-```
-
-**Verify RED**
-```bash
-$ npm test
-FAIL: expected 'Email required', got undefined
-```
-
-**GREEN**
-```typescript
-function submitForm(data: FormData) {
-  if (!data.email?.trim()) {
-    return { error: 'Email required' };
-  }
-  // ...
-}
-```
-
-**Verify GREEN**
-```bash
-$ npm test
-PASS
-```
-
-**REFACTOR**
-Extract validation for multiple fields if needed.
-
-## Verification Checklist
-
-Before marking work complete:
-
-- [ ] Every new function/method has a test
-- [ ] Watched each test fail before implementing
-- [ ] Each test failed for expected reason (feature missing, not typo)
-- [ ] Wrote minimal code to pass each test
-- [ ] All tests pass
-- [ ] Output pristine (no errors, warnings)
-- [ ] Tests use real code (mocks only if unavoidable)
-- [ ] Edge cases and errors covered
-
-Can't check all boxes? You skipped TDD. Start over.
-
-## When Stuck
-
-| Problem                | Solution                                                             |
-| ---------------------- | -------------------------------------------------------------------- |
-| Don't know how to test | Write wished-for API. Write assertion first. Ask your human partner. |
-| Test too complicated   | Design too complicated. Simplify interface.                          |
-| Must mock everything   | Code too coupled. Use dependency injection.                          |
-| Test setup huge        | Extract helpers. Still complex? Simplify design.                     |
-
-## Debugging Integration
-
-Bug found? Write failing test reproducing it. Follow TDD cycle. Test proves fix and prevents regression.
-
-Never fix bugs without a test.
-
-## Integration
-
-**Referenced by:**
-- `implement` — TDD cycle during task implementation
-- `systematic-debugging` — Phase 4 failing test creation
-- `plan` — TDD approach in task prompts
-
-## Final Rule
-
-```
-Production code → test exists and failed first
-Otherwise → not TDD
-```
-
-No exceptions without your human partner's permission.
+- 参照元: `implement` - タスク実装時のTDDサイクル
+- 参照元: `systematic-debugging` - Phase 4の失敗テスト作成
+- 参照元: `plan` - タスクプロンプトのTDD方針

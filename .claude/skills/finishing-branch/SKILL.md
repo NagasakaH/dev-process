@@ -1,192 +1,57 @@
 ---
 name: finishing-branch
-description: Use when implementation is complete, all tests pass, and you need to decide how to integrate the work - guides completion of development work by presenting structured options for merge, PR, or cleanup
+description: 実装完了、全テスト通過後、作業を統合する方法を決定する際に使用。マージ、PR、クリーンアップの選択肢を提示して開発作業の完了をガイドする。「ブランチ完了」「マージ」「PR作成」などのフレーズで発動。
 ---
 
-# Finishing a Development Branch
+# ブランチ完了スキル
 
-## Overview
+開発作業の完了を明確な選択肢の提示と選択されたワークフローの実行でガイドします。
 
-Guide completion of development work by presenting clear options and handling chosen workflow.
+## 主要機能
 
-**Core principle:** Verify tests → Present options → Execute choice → Clean up.
+### プロセス
 
-## The Process
+1. **テスト検証**: テストが通ることを確認
+2. **ベースブランチ決定**: main/masterから分岐したか確認
+3. **オプション提示**: 4つの選択肢を提示
+4. **選択実行**: 選択されたワークフローを実行
+5. **Worktreeクリーンアップ**: 必要に応じて削除
 
-### Step 1: Verify Tests
-
-**Before presenting options, verify tests pass:**
-
-```bash
-# Run project's test suite
-npm test / cargo test / pytest / go test ./...
-```
-
-**If tests fail:**
-```
-Tests failing (<N> failures). Must fix before completing:
-
-[Show failures]
-
-Cannot proceed with merge/PR until tests pass.
-```
-
-Stop. Don't proceed to Step 2.
-
-**If tests pass:** Continue to Step 2.
-
-### Step 2: Determine Base Branch
-
-```bash
-# Try common base branches
-git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null
-```
-
-Or ask: "This branch split from main - is that correct?"
-
-### Step 3: Present Options
-
-Present exactly these 4 options:
+### 4つの選択肢
 
 ```
-Implementation complete. What would you like to do?
+実装完了。次に何をしますか？
 
-1. Merge back to <base-branch> locally
-2. Push and create a Pull Request
-3. Keep the branch as-is (I'll handle it later)
-4. Discard this work
-
-Which option?
+1. ローカルで <base-branch> にマージ
+2. プッシュしてPRを作成
+3. ブランチをそのまま保持（後で対応）
+4. この作業を破棄
 ```
 
-**Don't add explanation** - keep options concise.
+## クイックリファレンス
 
-### Step 4: Execute Choice
+| オプション | マージ | プッシュ | Worktree保持 | ブランチ削除 |
+|------------|--------|----------|--------------|--------------|
+| 1. ローカルマージ | ✓ | - | - | ✓ |
+| 2. PR作成 | - | ✓ | ✓ | - |
+| 3. そのまま | - | - | ✓ | - |
+| 4. 破棄 | - | - | - | ✓（強制） |
 
-#### Option 1: Merge Locally
+## レッドフラグ
 
-```bash
-# Switch to base branch
-git checkout <base-branch>
+**絶対にしない:**
+- テスト失敗のまま進む
+- マージ結果のテスト検証なし
+- 確認なしで作業削除
 
-# Pull latest
-git pull
+## 使用タイミング
 
-# Merge feature branch
-git merge <feature-branch>
+- 実装完了後
+- 全テスト通過後
+- 作業統合方法の決定時
 
-# Verify tests on merged result
-<test command>
+## 関連スキル
 
-# If tests pass
-git branch -d <feature-branch>
-```
-
-Then: Cleanup worktree (Step 5)
-
-#### Option 2: Push and Create PR
-
-```bash
-# Push branch
-git push -u origin <feature-branch>
-
-# Create PR
-gh pr create --title "<title>" --body "$(cat <<'EOF'
-## Summary
-<2-3 bullets of what changed>
-
-## Test Plan
-- [ ] <verification steps>
-EOF
-)"
-```
-
-Then: Cleanup worktree (Step 5)
-
-#### Option 3: Keep As-Is
-
-Report: "Keeping branch <name>. Worktree preserved at <path>."
-
-**Don't cleanup worktree.**
-
-#### Option 4: Discard
-
-**Confirm first:**
-```
-This will permanently delete:
-- Branch <name>
-- All commits: <commit-list>
-- Worktree at <path>
-
-Type 'discard' to confirm.
-```
-
-Wait for exact confirmation.
-
-If confirmed:
-```bash
-git checkout <base-branch>
-git branch -D <feature-branch>
-```
-
-Then: Cleanup worktree (Step 5)
-
-### Step 5: Cleanup Worktree
-
-**For Options 1, 2, 4:**
-
-Check if in worktree:
-```bash
-git worktree list | grep $(git branch --show-current)
-```
-
-If yes:
-```bash
-git worktree remove <worktree-path>
-```
-
-**For Option 3:** Keep worktree.
-
-## project.yaml Integration
-
-Update `project.yaml` with:
-```yaml
-finishing:
-  status: completed
-  completed_at: "<timestamp>"
-  action: merge  # merge | pr | keep | discard
-  pr_url: "https://github.com/..."  # if PR created
-```
-
-Commit: `chore: ブランチ完了処理`
-
-## Quick Reference
-
-| Option           | Merge | Push | Keep Worktree | Cleanup Branch |
-| ---------------- | ----- | ---- | ------------- | -------------- |
-| 1. Merge locally | ✓     | -    | -             | ✓              |
-| 2. Create PR     | -     | ✓    | ✓             | -              |
-| 3. Keep as-is    | -     | -    | ✓             | -              |
-| 4. Discard       | -     | -    | -             | ✓ (force)      |
-
-## Red Flags
-
-**Never:**
-- Proceed with failing tests
-- Merge without verifying tests on result
-- Delete work without confirmation
-- Force-push without explicit request
-
-**Always:**
-- Verify tests before offering options
-- Present exactly 4 options
-- Get typed confirmation for Option 4
-- Clean up worktree for Options 1 & 4 only
-
-## Integration
-
-**Position in flow:** `receiving-code-review` → **finishing-branch**
-
-**Referenced by:**
-- `commit` / `commit-multi-repo` — as post-commit workflow
-- `implement` — after all batches complete
+- 前提: `receiving-code-review` - レビュー対応後
+- 参照元: `commit` - コミット後ワークフロー
+- 参照元: `implement` - 全バッチ完了後
