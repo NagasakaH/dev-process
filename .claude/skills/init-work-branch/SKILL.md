@@ -164,21 +164,21 @@ OUTPUT_PATH="$DOCS_DIR/{ticket_id}.md"
 
 **置換対象プレースホルダー（SSOT対応）:**
 
-| プレースホルダー | 置換内容 |
-|------------------|----------|
-| `{{TICKET_ID}}` | setup.yaml の ticket_id |
-| `{{TASK_NAME}}` | setup.yaml の task_name |
-| `{{CREATED_DATE}}` | 現在日付（YYYY-MM-DD形式） |
-| `{{AUTHOR}}` | git の user.name |
-| `{{DESCRIPTION_OVERVIEW}}` | setup.yaml の description.overview |
-| `{{DESCRIPTION_PURPOSE}}` | setup.yaml の description.purpose |
-| `{{DESCRIPTION_BACKGROUND}}` | setup.yaml の description.background |
-| `{{REQUIREMENTS_FUNCTIONAL}}` | setup.yaml の description.requirements.functional（リスト形式） |
+| プレースホルダー                  | 置換内容                                                            |
+| --------------------------------- | ------------------------------------------------------------------- |
+| `{{TICKET_ID}}`                   | setup.yaml の ticket_id                                             |
+| `{{TASK_NAME}}`                   | setup.yaml の task_name                                             |
+| `{{CREATED_DATE}}`                | 現在日付（YYYY-MM-DD形式）                                          |
+| `{{AUTHOR}}`                      | git の user.name                                                    |
+| `{{DESCRIPTION_OVERVIEW}}`        | setup.yaml の description.overview                                  |
+| `{{DESCRIPTION_PURPOSE}}`         | setup.yaml の description.purpose                                   |
+| `{{DESCRIPTION_BACKGROUND}}`      | setup.yaml の description.background                                |
+| `{{REQUIREMENTS_FUNCTIONAL}}`     | setup.yaml の description.requirements.functional（リスト形式）     |
 | `{{REQUIREMENTS_NON_FUNCTIONAL}}` | setup.yaml の description.requirements.non_functional（リスト形式） |
-| `{{DESCRIPTION_SCOPE}}` | setup.yaml の description.scope（リスト形式） |
-| `{{DESCRIPTION_OUT_OF_SCOPE}}` | setup.yaml の description.out_of_scope（リスト形式） |
-| `{{ACCEPTANCE_CRITERIA}}` | setup.yaml の description.acceptance_criteria（リスト形式） |
-| `{{DESCRIPTION_NOTES}}` | setup.yaml の description.notes |
+| `{{DESCRIPTION_SCOPE}}`           | setup.yaml の description.scope（リスト形式）                       |
+| `{{DESCRIPTION_OUT_OF_SCOPE}}`    | setup.yaml の description.out_of_scope（リスト形式）                |
+| `{{ACCEPTANCE_CRITERIA}}`         | setup.yaml の description.acceptance_criteria（リスト形式）         |
+| `{{DESCRIPTION_NOTES}}`           | setup.yaml の description.notes                                     |
 
 **リスト形式の変換例:**
 
@@ -307,6 +307,7 @@ YAMLファイルを修正してください。
 - YAMLファイルのパスは絶対パスまたは相対パスで指定可能
 - git設定（user.name, user.email）が必要
 - **description が旧形式（文字列）の場合は overview として処理**
+- **Worktree安全確認**: `/tmp/` 配下にworktreeを作成する場合、`.gitignore` に `/tmp/` パターンが含まれていることを確認し、worktreeディレクトリがリポジトリにコミットされないようにする
 
 ## 参照ファイル
 
