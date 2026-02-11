@@ -487,12 +487,12 @@ git cherry-pick --abort
 - **総所要時間**: {duration}
 
 ### コミット履歴
-| タスク | コミット | メッセージ |
-|--------|----------|------------|
-| task01 | abc1234 | task01: 基盤準備 |
-| task02-01 | def5678 | task02-01: 機能A実装 |
-| task02-02 | ghi9012 | task02-02: 機能B実装 |
-| task03 | jkl3456 | task03: 統合テスト |
+| タスク    | コミット | メッセージ           |
+| --------- | -------- | -------------------- |
+| task01    | abc1234  | task01: 基盤準備     |
+| task02-01 | def5678  | task02-01: 機能A実装 |
+| task02-02 | ghi9012  | task02-02: 機能B実装 |
+| task03    | jkl3456  | task03: 統合テスト   |
 
 ### 生成されたファイル
 - implement/execution-log.md
@@ -515,9 +515,35 @@ git cherry-pick --abort
 
 ---
 
+## サブエージェント2段階レビュー
+
+各タスク実装完了時に、サブエージェントの成果物を以下の2段階でレビュー：
+
+### Stage 1: 仕様準拠確認
+- task0X.md のプロンプト要件を全て満たしているか
+- 完了条件が全てクリアされているか
+- design-document の設計に従っているか
+
+### Stage 2: コード品質確認
+- `test-driven-development` スキルの原則に従っているか（テストが先に書かれているか）
+- `verification-before-completion` スキルの基準を満たしているか（証拠ベースの完了主張）
+- リント・型チェック・テストが全てパスしているか
+
+### 並列化判断ガイドライン
+
+以下の条件を全て満たす場合、並列実行を検討：
+- 3つ以上の独立タスクが同一フェーズに存在
+- タスク間でファイル編集の衝突がない
+- 各タスクが独立したテストファイルを持つ
+
+---
+
 ## 参照ファイル
 
 - 前提スキル: `plan` - タスク計画作成
+- 品質スキル: `test-driven-development` - TDDサイクル
+- 品質スキル: `verification-before-completion` - 完了前検証
+- 後続スキル: `finishing-branch` - ブランチ完了管理
 - 参照: [references/worktree-management-guide.md](references/worktree-management-guide.md) - Worktree管理ガイド
 - 参照: [references/parallel-execution-guide.md](references/parallel-execution-guide.md) - 並列実行管理ガイド
 
