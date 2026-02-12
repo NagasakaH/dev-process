@@ -4,11 +4,11 @@ Claude向けの開発プロセス用スキル集とエージェント構成を�
 
 ## プロジェクト概要
 
-本リポジトリは、AIエージェントによる開発プロセスを体系化し、6ステップワークフローで高品質なソフトウェア開発を実現します。
+本リポジトリは、AIエージェントによる開発プロセスを体系化し、7ステップワークフローで高品質なソフトウェア開発を実現します。
 
 ### 主な特徴
 
-- **6ステップワークフロー**: 初期化 → 調査 → 設計 → 計画 → 実装の体系的プロセス
+- **7ステップワークフロー**: 初期化 → ブレスト → 調査 → 設計 → 計画 → 実装の体系的プロセス
 - **エージェント階層構造**: call-* ラッパー → 実行エージェント → サブエージェント
 - **品質スキル統合**: TDD、検証、デバッグ、コードレビューの組み込み
 - **並列実行対応**: 独立タスクの並列処理によるスループット向上
@@ -42,15 +42,16 @@ call-* ラッパー (Opus-4.6 指定可)
 
 ---
 
-## 6ステップワークフロー
+## 7ステップワークフロー
 
 ```mermaid
 flowchart LR
     init[1. init-work-branch] --> overview[2. submodule-overview]
-    overview --> investigation[3. investigation]
-    investigation --> design[4. design]
-    design --> plan[5. plan]
-    plan --> implement[6. implement]
+    overview --> brainstorm[3. brainstorming]
+    brainstorm --> investigation[4. investigation]
+    investigation --> design[5. design]
+    design --> plan[6. plan]
+    plan --> implement[7. implement]
     implement --> finish[finishing-branch]
 ```
 
@@ -66,27 +67,31 @@ flowchart LR
 - 技術スタック、API、依存関係を分析
 - `submodules/{name}.md` に概要ドキュメント生成
 
-### 3. investigation（詳細調査）
+### 3. brainstorming（要件探索）
+
+調査開始前にユーザーと短い対話ループを行い、要件の明確化と妥当性評価を実施します。ユーザーの意図や背景を質問形式で掘り下げ、機能要件・非機能要件の候補を洗い出し、技術的制約や優先度を確認します。出力として「要件候補リスト」と「各要件の妥当性評価（実現可能性・リスク・依存関係）」を生成し、後続の investigation フェーズで何を調査すべきかを明確にします。
+
+### 4. investigation（詳細調査）
 
 - アーキテクチャ、データ構造、依存関係を調査
 - UML図（Mermaid形式）を含む調査結果を生成
 - `docs/{target_repo}/investigation/` に出力
 
-### 4. design（設計）
+### 5. design（設計）
 
 - 調査結果を基に詳細設計を実施
 - API設計、データ構造設計、処理フロー設計
 - 修正前/修正後のシーケンス図を作成
 - `docs/{target_repo}/design/` に出力
 
-### 5. plan（タスク計画）
+### 6. plan（タスク計画）
 
 - 設計からタスクを分割、依存関係を整理
 - 各タスク用プロンプト（task0X.md）を生成
 - 親エージェント用統合管理プロンプトを生成
 - `docs/{target_repo}/plan/` に出力
 
-### 6. implement（実装）
+### 7. implement（実装）
 
 - タスク計画に従ってサブエージェントに実装を依頼
 - 並列タスクはworktreeを使用して並行実行
@@ -130,6 +135,9 @@ claude --agent call-pre-implementation-planning.agent.md
 
 # 汎用作業
 claude --agent call-general-purpose.agent.md
+
+# brainstorming（要件探索）- 汎用エージェント経由
+claude --agent call-general-purpose.agent.md --prompt "brainstormingスキルを使って要件を探索してください"
 ```
 
 ---
