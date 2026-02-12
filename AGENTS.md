@@ -58,7 +58,8 @@ call-* ラッパー         # Opus-4.6 指定可能
 ## 削除・統合済み
 
 - dev-planning-manager → pre-implementation-planning に統合
-- code-reviewer → 削除
+- manager → 削除
+- code-reviewer → requesting-code-review スキルに統合
 
 ## 変更履歴
 

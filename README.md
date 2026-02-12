@@ -291,7 +291,7 @@ flowchart LR
 | **verification-before-completion** | 完了主張前に検証コマンドを実行し証拠を確認               |
 | **writing-skills**                 | スキルファイル（SKILL.md）の作成・編集ガイド             |
 | **receiving-code-review**          | レビューフィードバック受信時の技術的検証プロセス         |
-| **requesting-code-review**         | code-reviewerエージェントへのレビュー依頼手順            |
+| **requesting-code-review**         | SHAベースの差分レビュー依頼手順                          |
 | **finishing-branch**               | 実装完了後のマージ/PR/クリーンアップオプション提示       |
 
 ### レビュースキル
@@ -432,7 +432,6 @@ project/
 
 - **AGENTS.md**: プロジェクト固有の運用ルールとモデル指定
 - **setup-template.yaml**: セットアップYAMLのテンプレート
-- **.claude/agents/code-reviewer.agent.md**: コードレビューエージェント定義
 - **docs/templates/pr-template.md**: PRテンプレート
 
 ---
@@ -666,15 +665,13 @@ echo "✅ クリーンアップ完了"
 
 ---
 
-## code-reviewer エージェントとSHAベースレビュー
+## SHAベースコードレビュー
 
 ### 概要
 
-コード変更をSHAベースで指定し、`code-reviewer`エージェントにレビューを依頼します。
+コード変更をSHAベースで指定し、`requesting-code-review` スキルに従ってレビューを実施します。
 
-### エージェント定義
-
-詳細は `.claude/agents/code-reviewer.agent.md` を参照。
+詳細は `.claude/skills/requesting-code-review/SKILL.md` を参照。
 
 ### SHAベースレビュー依頼テンプレート
 

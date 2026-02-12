@@ -74,8 +74,8 @@ digraph skill_flow {
 ## Development Flow
 
 ```
-issue-to-setup-yaml → brainstorming → init-work-branch →
-submodule-overview → investigation → design → review-design →
+issue-to-setup-yaml → init-work-branch → submodule-overview →
+brainstorming → investigation → design → review-design →
 plan → review-plan → implement (+ test-driven-development) →
 verification-before-completion → requesting-code-review →
 receiving-code-review → finishing-branch
@@ -103,16 +103,16 @@ finishing:       # 完了アクション
 
 ### スキルとproject.yamlセクションの対応
 
-| スキル | 更新セクション |
-|--------|----------------|
-| `investigation` | `investigation` |
-| `design` | `design` |
-| `plan` | `plan` |
-| `implement` | `implementation` |
-| `verification-before-completion` | `verification` |
-| `requesting-code-review` | `code_review`（開始） |
-| `receiving-code-review` | `code_review`（更新） |
-| `finishing-branch` | `finishing` |
+| スキル                           | 更新セクション        |
+| -------------------------------- | --------------------- |
+| `investigation`                  | `investigation`       |
+| `design`                         | `design`              |
+| `plan`                           | `plan`                |
+| `implement`                      | `implementation`      |
+| `verification-before-completion` | `verification`        |
+| `requesting-code-review`         | `code_review`（開始） |
+| `receiving-code-review`          | `code_review`（更新） |
+| `finishing-branch`               | `finishing`           |
 
 ### ワークフロー
 
