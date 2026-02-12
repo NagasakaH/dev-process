@@ -387,8 +387,7 @@ designスキルで設計を完了してください。
 - 前提スキル: `investigation` - 開発タスク用詳細調査
 - 前提スキル: `design` - 設計
 - 後続スキル: `plan` - タスク計画
-- 関連スキル: `requesting-code-review` — 設計レビュー後のコードレビュー依頼
-- 関連エージェント: `code-reviewer` (`.github/agents/code-reviewer.agent.md`) — コード品質レビュー
+- 関連スキル: `requesting-code-review` — 設計レビュー後のコードレビュー依頼（コード品質レビュー機能を含む）
 - 参照テンプレート: [references/review-template.md](references/review-template.md) - レビューテンプレート
 
 ## SSOT参照
