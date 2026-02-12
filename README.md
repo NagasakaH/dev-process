@@ -57,28 +57,87 @@ flowchart LR
 
 ### 1. init-work-branch（作業ブランチ初期化）
 
+**インプット:**
+- `setup.yaml`: プロジェクト設定ファイル（SSOT）
+
+**成果物:**
+- `feature/{ticket_id}` ブランチ
+- `submodules/{repo_name}/`: サブモジュール追加
+- `docs/{ticket_id}.md`: 設計ドキュメント
+
+**説明:**
 - `setup.yaml` を読み込み、featureブランチを作成
 - 関連・修正対象リポジトリをサブモジュールとして追加
 - 設計ドキュメント（`docs/{ticket_id}.md`）を生成
 
 ### 2. submodule-overview（サブモジュール概要作成）
 
+**インプット:**
+- `submodules/{repo_name}/`: サブモジュールディレクトリ
+- `submodules/{repo_name}/README.md`: プロジェクト概要
+- `submodules/{repo_name}/CLAUDE.md`: Claude向けコンテキスト（任意）
+- `submodules/{repo_name}/AGENTS.md`: エージェント向け指示（任意）
+
+**成果物:**
+- `submodules/{name}.md`: サブモジュール概要ドキュメント
+
+**説明:**
 - サブモジュールのREADME/CLAUDE.md/AGENTS.mdから情報収集
 - 技術スタック、API、依存関係を分析
 - `submodules/{name}.md` に概要ドキュメント生成
 
 ### 3. brainstorming（要件探索）
 
+**インプット:**
+- `setup.yaml`: プロジェクト設定ファイル
+- ユーザーとの対話: 意図・要件・背景の聞き取り
+
+**成果物:**
+- 要件候補リスト
+- 各要件の妥当性評価（実現可能性・リスク・依存関係）
+- `docs/plans/`: 設計ドキュメント（任意）
+
+**説明:**
 調査開始前にユーザーと短い対話ループを行い、要件の明確化と妥当性評価を実施します。ユーザーの意図や背景を質問形式で掘り下げ、機能要件・非機能要件の候補を洗い出し、技術的制約や優先度を確認します。出力として「要件候補リスト」と「各要件の妥当性評価（実現可能性・リスク・依存関係）」を生成し、後続の investigation フェーズで何を調査すべきかを明確にします。
 
 ### 4. investigation（詳細調査）
 
+**インプット:**
+- `setup.yaml`: プロジェクト設定（`description.background` を背景情報として参照）
+- `docs/{ticket_id}.md`: 設計ドキュメント
+- `submodules/{target_repo}/`: 調査対象リポジトリ
+
+**成果物:**
+- `docs/{target_repo}/investigation/01_architecture.md`: アーキテクチャ調査
+- `docs/{target_repo}/investigation/02_data-structure.md`: データ構造調査
+- `docs/{target_repo}/investigation/03_dependencies.md`: 依存関係調査
+- `docs/{target_repo}/investigation/04_existing-patterns.md`: 既存パターン調査
+- `docs/{target_repo}/investigation/05_integration-points.md`: 統合ポイント調査
+- `docs/{target_repo}/investigation/06_risks-and-constraints.md`: リスク・制約分析
+- `docs/{ticket_id}.md`: 調査結果セクション更新
+
+**説明:**
 - アーキテクチャ、データ構造、依存関係を調査
 - UML図（Mermaid形式）を含む調査結果を生成
 - `docs/{target_repo}/investigation/` に出力
 
 ### 5. design（設計）
 
+**インプット:**
+- `setup.yaml`: プロジェクト設定（`description.requirements` を設計要件として参照）
+- `docs/{ticket_id}.md`: 設計ドキュメント
+- `docs/{target_repo}/investigation/`: 調査結果
+
+**成果物:**
+- `docs/{target_repo}/design/01_implementation-approach.md`: 実装方針
+- `docs/{target_repo}/design/02_interface-api-design.md`: インターフェース/API設計
+- `docs/{target_repo}/design/03_data-structure-design.md`: データ構造設計
+- `docs/{target_repo}/design/04_process-flow-design.md`: 処理フロー設計
+- `docs/{target_repo}/design/05_test-plan.md`: テスト計画
+- `docs/{target_repo}/design/06_side-effect-verification.md`: 弊害検証計画
+- `docs/{ticket_id}.md`: 設計セクション・完了条件更新
+
+**説明:**
 - 調査結果を基に詳細設計を実施
 - API設計、データ構造設計、処理フロー設計
 - 修正前/修正後のシーケンス図を作成
@@ -86,6 +145,18 @@ flowchart LR
 
 ### 6. plan（タスク計画）
 
+**インプット:**
+- `setup.yaml`: プロジェクト設定（`description.acceptance_criteria` を完了条件基準として参照）
+- `docs/{ticket_id}.md`: 設計ドキュメント
+- `docs/{target_repo}/design/`: 詳細設計結果
+
+**成果物:**
+- `docs/{target_repo}/plan/task-list.md`: タスク一覧と依存関係
+- `docs/{target_repo}/plan/task01.md`, `task02-01.md`, ...: 各タスク用プロンプト
+- `docs/{target_repo}/plan/parent-agent-prompt.md`: 親エージェント統合管理プロンプト
+- `docs/{ticket_id}.md`: 実装計画セクション更新
+
+**説明:**
 - 設計からタスクを分割、依存関係を整理
 - 各タスク用プロンプト（task0X.md）を生成
 - 親エージェント用統合管理プロンプトを生成
@@ -93,6 +164,21 @@ flowchart LR
 
 ### 7. implement（実装）
 
+**インプット:**
+- `setup.yaml`: プロジェクト設定
+- `docs/{ticket_id}.md`: 設計ドキュメント
+- `docs/{target_repo}/plan/`: タスク計画
+- `docs/{target_repo}/plan/task-list.md`: タスク一覧
+- `docs/{target_repo}/plan/task0X.md`: 各タスクプロンプト
+- `docs/{target_repo}/plan/parent-agent-prompt.md`: 統合管理プロンプト
+
+**成果物:**
+- `docs/{target_repo}/implement/execution-log.md`: 実行ログ
+- 実装コード（サブモジュール内）
+- テストコード（サブモジュール内）
+- コミット履歴（各タスク完了時）
+
+**説明:**
 - タスク計画に従ってサブエージェントに実装を依頼
 - 並列タスクはworktreeを使用して並行実行
 - cherry-pickで親ブランチに統合
