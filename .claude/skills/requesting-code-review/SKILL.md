@@ -47,6 +47,25 @@ description: タスク完了時、主要機能実装後、またはマージ前�
 - Critical問題を無視
 - 未修正のImportant問題で進む
 
+## project.yaml への記録
+
+レビュー依頼時、`project.yaml` の `code_review` セクションを開始してください：
+
+```yaml
+code_review:
+  status: in_progress
+  started_at: "2025-01-15T12:00:00+09:00"
+  base_sha: "abc1234"
+  head_sha: "def5678"
+  rounds: []
+```
+
+### 記録タイミング
+
+- **status**: `in_progress` で開始（`receiving-code-review`で更新）
+- **started_at**: レビュー依頼時のタイムスタンプ
+- **base_sha / head_sha**: 比較対象のコミット
+
 ## 関連スキル
 
 - 前提: `verification-before-completion` - 完了前検証

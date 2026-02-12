@@ -1,86 +1,147 @@
 ---
 name: investigation
-description: 開発タスク用詳細調査スキル。setup.yamlとdesign-document（{ticket_id}.md）を読み込み、対象リポジトリを体系的に調査し、docs/{target_repo}/investigation/ディレクトリに詳細な調査結果（UML図含む）を出力、design-documentの調査結果セクションを更新する。「investigation」「詳細調査」「開発調査を実行」「調査結果を埋めて」「investigate for development」などのフレーズで発動。
+description: 開発タスク用詳細調査スキル。project.yaml（または setup.yaml）を読み込み、対象リポジトリを体系的に調査し、docs/{target_repo}/investigation/ディレクトリに詳細な調査結果（UML図含む）を出力、project.yamlのinvestigationセクションを更新する。「investigation」「詳細調査」「開発調査を実行」「調査結果を埋めて」「investigate for development」などのフレーズで発動。
 ---
 
 # 開発タスク用詳細調査スキル
 
-setup.yamlとdesign-documentを入力として、対象リポジトリを体系的に調査し、詳細な調査結果をドキュメント化します。
+project.yaml（または setup.yaml）を入力として、対象リポジトリを体系的に調査し、詳細な調査結果をドキュメント化します。
 
-> **SSOT**: setup.yaml の `description.background` を調査の背景情報として参照します。
+> **SSOT**: project.yaml を全プロセスの Single Source of Truth として使用します。
+> - 調査の背景情報: `setup.description.background`
+> - 調査結果の出力: `investigation` セクション
 
 ## 概要
 
 このスキルは以下を実現します：
-1. **setup.yaml** から対象リポジトリ・チケット情報を取得
-2. **setup.yaml の description.background** を調査の背景・コンテキストとして参照
-3. **design-document** の調査結果セクションを要約で更新
-4. **docs/{target_repo}/investigation/** ディレクトリに詳細調査結果をファイル分割で出力（UML図含む）
+1. **project.yaml** から対象リポジトリ・チケット情報を取得（`meta` + `setup` セクション）
+2. **project.yaml の setup.description.background** を調査の背景・コンテキストとして参照
+3. **docs/{target_repo}/investigation/** ディレクトリに詳細調査結果をファイル分割で出力（UML図含む）
+4. **project.yaml の investigation セクション** を更新してコミット
 
 ## 入力ファイル
 
-### 1. setup.yaml（必須）
+### 1. project.yaml（推奨・SSOT）
+
+`brainstorming` スキルで生成されたプロジェクトコンテキストファイル。
+
+```yaml
+# project.yaml から参照するセクション
+meta:
+  ticket_id: "PROJ-123"
+  task_name: "機能追加タスク"
+  target_repo: "target-repo"
+  branch: "feature/PROJ-123"
+
+setup:
+  description:
+    overview: "概要..."
+    purpose: "目的..."
+    background: |                    # ← このスキルが参照
+      現在の機能では以下の課題がある:
+      - 課題1: ○○ができない
+      - 課題2: △△に時間がかかる
+    requirements:
+      functional: [...]
+      non_functional: [...]
+  target_repositories:
+    - name: "target-repo"
+      url: "git@github.com:org/target-repo.git"
+      base_branch: "main"
+  related_repositories:
+    - name: "related-repo"
+      url: "git@github.com:org/related-repo.git"
+
+# brainstorming の結果（参照可能）
+brainstorming:
+  status: completed
+  refined_requirements: [...]        # 深掘りされた要件も参照
+```
+
+### 2. setup.yaml（fallback）
+
+project.yaml が存在しない場合のみ使用。
 
 ```yaml
 ticket_id: "PROJ-123"
 task_name: "機能追加タスク"
 
-# SSOT: このスキルは description.background を参照
 description:
   overview: "概要..."
   purpose: "目的..."
-  background: |                    # ← このスキルが参照
+  background: |
     現在の機能では以下の課題がある:
     - 課題1: ○○ができない
     - 課題2: △△に時間がかかる
   requirements:
     functional: [...]
     non_functional: [...]
-  # ...
 
 target_repositories:
   - name: "target-repo"
     url: "git@github.com:org/target-repo.git"
     base_branch: "main"
-related_repositories:
-  - name: "related-repo"
-    url: "git@github.com:org/related-repo.git"
 ```
 
-### 2. design-document: docs/{ticket_id}.md（必須）
+### 3. design-document: docs/{ticket_id}.md（任意）
 
-init-work-branchスキルで生成された設計ドキュメント。
+init-work-branchスキルで生成された設計ドキュメント。存在する場合は調査結果セクションも更新。
 
 ## 処理フロー
 
 ```mermaid
 flowchart TD
-    A[setup.yaml読み込み] --> B[description.background を参照]
-    B --> C[design-document確認]
-    C --> D[対象リポジトリの調査実施]
-    D --> E[investigation/配下にファイル生成]
-    E --> F[design-document調査結果セクション更新]
-    F --> G[初期コミット]
-    G --> H[完了レポート]
+    A[project.yaml存在確認] --> B{project.yaml存在?}
+    B -->|Yes| C[project.yamlから情報取得]
+    B -->|No| D[setup.yamlから情報取得]
+    C --> E[setup.description.background を参照]
+    D --> E
+    E --> F[brainstorming.refined_requirements 参照]
+    F --> G[対象リポジトリの調査実施]
+    G --> H[investigation/配下にファイル生成]
+    H --> I[project.yaml investigationセクション更新]
+    I --> J[design-document更新（存在する場合）]
+    J --> K[コミット]
+    K --> L[完了レポート]
 ```
 
-## setup.yaml の description.background 活用
+## project.yaml からの情報取得
 
-調査を開始する前に、`setup.yaml` の `description.background` を読み込み、以下の情報として活用します：
+### 背景情報の参照
+
+`project.yaml` の `setup.description.background` を調査のコンテキストとして活用します：
 
 ```yaml
-# setup.yaml から取得
-description:
-  background: |
-    現在の機能では以下の課題がある:
-    - 課題1: ○○ができない
-    - 課題2: △△に時間がかかる
-    
-    これらの課題を解決するため、機能Aの実装が必要。
+# project.yaml から取得
+setup:
+  description:
+    background: |
+      現在の機能では以下の課題がある:
+      - 課題1: ○○ができない
+      - 課題2: △△に時間がかかる
+      
+      これらの課題を解決するため、機能Aの実装が必要。
+```
+
+### brainstorming 結果の参照
+
+`brainstorming` セクションが完了している場合、深掘りされた要件も参照します：
+
+```yaml
+# project.yaml から取得
+brainstorming:
+  status: completed
+  refined_requirements:
+    - "リフレッシュトークンによる自動更新"
+    - "OAuth2.0 プロバイダ連携"
+  decisions:
+    - question: "認証方式は？"
+      decision: "JWTベース"
 ```
 
 **活用方法:**
 - 調査の焦点を明確にする（どの課題に関連するコードを重点的に調査するか）
+- brainstorming で決定された方針に関連する既存実装を重点的に調査
 - 既存の問題点との関連性を分析する
 - 調査結果レポートに背景情報を含める
 
@@ -321,25 +382,36 @@ graph LR
 
 ## 実行手順
 
-### 1. setup.yaml読み込み
+### 1. project.yaml / setup.yaml 読み込み
 
 ```bash
-# setup.yamlの存在確認
-YAML_PATH="${1:-setup.yaml}"
-test -f "$YAML_PATH" || { echo "Error: $YAML_PATH not found"; exit 1; }
+# project.yaml を優先、なければ setup.yaml を使用
+if [ -f "project.yaml" ]; then
+    CONFIG_FILE="project.yaml"
+    echo "project.yaml を使用"
+else
+    CONFIG_FILE="${1:-setup.yaml}"
+    test -f "$CONFIG_FILE" || { echo "Error: $CONFIG_FILE not found"; exit 1; }
+    echo "setup.yaml を使用（project.yaml なし）"
+fi
 ```
 
-YAMLからの情報抽出：
-- `ticket_id` - チケットID
-- `task_name` - タスク名
-- `target_repositories` - 調査対象リポジトリ一覧
+**project.yaml からの情報抽出:**
+- `meta.ticket_id` - チケットID
+- `meta.task_name` - タスク名
+- `meta.target_repo` - 主要調査対象リポジトリ
+- `setup.target_repositories` - 調査対象リポジトリ一覧
+- `setup.description.background` - 調査の背景情報
+- `brainstorming.refined_requirements` - 深掘りされた要件（存在する場合）
 
-### 2. design-document確認
+### 2. design-document確認（任意）
 
 ```bash
 DOCS_DIR="${options.design_document_dir:-docs}"
 DESIGN_DOC="$DOCS_DIR/${ticket_id}.md"
-test -f "$DESIGN_DOC" || { echo "Error: $DESIGN_DOC not found"; exit 1; }
+if [ -f "$DESIGN_DOC" ]; then
+    echo "design-document を発見: $DESIGN_DOC"
+fi
 ```
 
 ### 3. 対象リポジトリの調査
@@ -362,21 +434,39 @@ for repo in "${target_repositories[@]}"; do
 done
 ```
 
-### 4. design-document更新
+### 4. project.yaml の investigation セクション更新
 
-調査結果の要約を `docs/{ticket_id}.md` の「1. 調査結果」セクションに埋め込み。
+調査結果の要約を project.yaml に追記：
 
-### 5. コミット
+```yaml
+# project.yaml に追記
+investigation:
+  status: completed
+  completed_at: "2025-02-11T12:00:00+09:00"
+  summary: |
+    {アーキテクチャ・データ構造・依存関係の要約（3行以内）}
+  key_findings:
+    - "{重要な発見1}"
+    - "{重要な発見2}"
+    - "{重要な発見3}"
+  risks:
+    - "{特定されたリスク}"
+  artifacts: "docs/{target_repo}/investigation/"
+```
+
+### 5. design-document更新（存在する場合）
+
+調査結果の要約を `docs/{ticket_id}.md` の「1. 調査結果」セクションにも埋め込み。
+
+### 6. コミット
 
 ```bash
-# 親リポジトリでコミット（docs配下に出力）
-git add docs/ setup.yaml
-git commit -m "docs: {ticket_id} 調査結果を追加
+# project.yaml と調査結果をコミット
+git add project.yaml docs/
+git commit -m "docs: investigation 完了
 
-- docs/{target_repo}/investigation/配下に詳細調査結果を出力
-- design-documentの調査結果セクションを更新"
-
-# ※ 対象リポジトリ側にコード変更がある場合は別途コミットを実施
+- project.yaml の investigation セクションを更新
+- docs/{target_repo}/investigation/ に詳細調査結果を出力"
 ```
 
 ## 完了レポート
@@ -389,10 +479,23 @@ git commit -m "docs: {ticket_id} 調査結果を追加
 - タスク: {task_name}
 - リポジトリ: {target_repositories}
 
-### 生成されたファイル
+### project.yaml 更新内容
 
-#### design-document更新
-- docs/{ticket_id}.md - 調査結果セクション更新
+\`\`\`yaml
+investigation:
+  status: completed
+  completed_at: "{timestamp}"
+  summary: |
+    {調査結果の要約}
+  key_findings:
+    - "{発見1}"
+    - "{発見2}"
+  risks:
+    - "{リスク}"
+  artifacts: "docs/{target_repo}/investigation/"
+\`\`\`
+
+### 生成されたファイル
 
 #### 詳細調査結果
 - docs/{target_repo}/investigation/01_architecture.md
@@ -405,25 +508,26 @@ git commit -m "docs: {ticket_id} 調査結果を追加
 ### 次のステップ
 1. 調査結果をレビュー
 2. 設計スキル（design）を使用して詳細設計を開始
-3. タスク計画スキル（task-planning）でタスク分割を実施
+3. タスク計画スキル（plan）でタスク分割を実施
 ```
 
 ## エラーハンドリング
 
-### setup.yamlが見つからない
+### project.yaml も setup.yaml も見つからない
 ```
-エラー: setup.yamlが見つかりません
-ファイル: {yaml_path}
+エラー: project.yaml も setup.yaml も見つかりません
 
-init-work-branchスキルでセットアップを完了してください。
+brainstorming スキルで project.yaml を生成するか、
+init-work-branch スキルで setup.yaml を作成してください。
 ```
 
 ### design-documentが見つからない
 ```
-エラー: design-documentが見つかりません
+警告: design-documentが見つかりません
 ファイル: docs/{ticket_id}.md
 
-init-work-branchスキルでセットアップを完了してください。
+design-document の更新はスキップします。
+project.yaml の investigation セクションは更新されます。
 ```
 
 ### 対象リポジトリにアクセスできない
@@ -439,16 +543,34 @@ git submodule update --init を実行してください。
 - 調査対象は `target_repositories` のみ（`related_repositories` は参照用）
 - 大規模リポジトリの場合、調査に時間がかかる可能性あり
 - 既存の `investigation/` ディレクトリがある場合は上書き確認を行う
-- **setup.yaml の description.background を調査の背景情報として参照**
+- **project.yaml を SSOT として使用し、investigation セクションを更新**
+- brainstorming が完了している場合、`refined_requirements` も参照
 
 ## 参照ファイル
 
 - テンプレート: `references/template.md` - 各調査ファイル用テンプレート
-- 関連スキル: `init-work-branch` - 作業ブランチ初期化
-- 関連スキル: `investigation` - 汎用調査プロセス
+- 前提スキル: `brainstorming` - 要件深掘り（project.yaml を生成）
+- 前提スキル: `init-work-branch` - 作業ブランチ初期化
+- 後続スキル: `design` - 詳細設計
 
 ## SSOT参照
 
-| setup.yaml フィールド | 用途 |
-|----------------------|------|
-| `description.background` | 調査の背景情報・コンテキスト |
+| project.yaml フィールド | 用途 |
+|------------------------|------|
+| `meta.ticket_id` | チケットID |
+| `meta.task_name` | タスク名 |
+| `meta.target_repo` | 主要調査対象リポジトリ |
+| `setup.description.background` | 調査の背景情報・コンテキスト |
+| `setup.target_repositories` | 調査対象リポジトリ一覧 |
+| `brainstorming.refined_requirements` | 深掘りされた要件（参照） |
+
+## 出力（project.yaml への書き込み）
+
+| investigation フィールド | 説明 |
+|-------------------------|------|
+| `status` | `pending` / `in_progress` / `completed` |
+| `completed_at` | 完了日時（ISO 8601形式） |
+| `summary` | 調査結果の要約（3行以内） |
+| `key_findings` | 重要な発見（5件以内） |
+| `risks` | 特定されたリスク（3件以内） |
+| `artifacts` | 詳細調査ドキュメントのパス |

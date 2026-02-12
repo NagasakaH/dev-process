@@ -50,6 +50,28 @@ description: 実装完了、全テスト通過後、作業を統合する方法�
 - 全テスト通過後
 - 作業統合方法の決定時
 
+## project.yaml への記録
+
+選択した最終アクション実行後、`project.yaml` の `finishing` セクションを更新してください：
+
+```yaml
+finishing:
+  status: completed
+  completed_at: "2025-01-15T14:00:00+09:00"
+  action: merge  # merge | pr | keep | discard
+  pr_url: "https://github.com/org/repo/pull/42"  # PR作成時のみ
+  merge_commit: "abc1234"  # マージ時のみ
+```
+
+### actionの値
+
+| action | 説明 |
+|--------|------|
+| `merge` | ローカルでベースブランチにマージ |
+| `pr` | プッシュしてPR作成 |
+| `keep` | ブランチをそのまま保持 |
+| `discard` | 作業を破棄 |
+
 ## 関連スキル
 
 - 前提: `receiving-code-review` - レビュー対応後
