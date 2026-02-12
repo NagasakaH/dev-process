@@ -154,6 +154,59 @@ claude --agent call-general-purpose.agent.md
 - ファイル編集の衝突がないことを確認
 - 各タスクが独立したテストファイルを持つこと
 
+#### 並列化判断フローチャート
+
+```
+[タスクリスト確認]
+      ↓
+[Q1] 独立タスクが3つ以上ある？
+      ↓ Yes                    ↓ No → 順次実行
+[Q2] ファイル編集の衝突がない？
+      ↓ Yes                    ↓ No → 順次実行
+[Q3] 各タスクが独立テストを持つ？
+      ↓ Yes                    ↓ No → 順次実行
+[Q4] リスクスコア ≤ 速度スコア？
+      ↓ Yes                    ↓ No → 順次実行
+      ↓
+[並列実行を選択]
+```
+
+**判断アルゴリズム:**
+
+```
+function shouldParallelize(tasks):
+  # Step 1: 独立タスク数の確認
+  independentTasks = tasks.filter(t => t.dependencies.isEmpty())
+  if independentTasks.count < 3:
+    return false
+
+  # Step 2: ファイル衝突チェック
+  allTargetFiles = independentTasks.flatMap(t => t.targetFiles)
+  if allTargetFiles.hasDuplicates():
+    return false
+
+  # Step 3: テスト独立性チェック
+  for task in independentTasks:
+    if not task.hasIndependentTestFile():
+      return false
+
+  # Step 4: リスク vs 速度スコアリング
+  riskScore = calculateRisk(independentTasks)
+  speedScore = calculateSpeedGain(independentTasks)
+  return speedScore >= riskScore
+```
+
+**リスクスコアリング基準:**
+
+| 要素 | 低リスク (1) | 中リスク (2) | 高リスク (3) |
+|------|-------------|-------------|-------------|
+| モジュール結合度 | 完全独立 | 共有ユーティリティ使用 | 共有状態あり |
+| 変更規模 | 〜50行 | 50-200行 | 200行超 |
+| テスト範囲 | 単体のみ | 単体+結合 | E2E必要 |
+
+**速度スコア計算:**
+- 並列タスク数 × 平均タスク時間 / 最大タスク時間
+
 ---
 
 ## ファイル・ディレクトリ成果物例
@@ -190,3 +243,375 @@ project/
 
 - **AGENTS.md**: プロジェクト固有の運用ルールとモデル指定
 - **setup-template.yaml**: セットアップYAMLのテンプレート
+- **.claude/agents/code-reviewer.agent.md**: コードレビューエージェント定義
+- **docs/templates/pr-template.md**: PRテンプレート
+
+---
+
+## サブエージェント駆動開発（Subagent-Driven Development）
+
+### 概要
+
+親エージェントがサブエージェントに実装を委譲し、その戻り値を検証する開発パターンです。
+
+### 同一セッションでのサブエージェント派遣手順
+
+```mermaid
+flowchart TD
+    A[タスク計画読み込み] --> B[サブエージェント派遣]
+    B --> C[Stage 1: 仕様準拠確認]
+    C --> D{仕様準拠?}
+    D -->|No| E[フィードバック付き再派遣]
+    E --> B
+    D -->|Yes| F[Stage 2: コード品質確認]
+    F --> G{品質OK?}
+    G -->|No| H[修正依頼]
+    H --> B
+    G -->|Yes| I[コミット実行]
+    I --> J[次タスクへ]
+```
+
+### 2段階レビュー手順
+
+#### Stage 1: 仕様準拠確認
+
+```markdown
+## Stage 1 チェックリスト
+
+- [ ] task0X.md のプロンプト要件を全て満たしているか
+- [ ] 完了条件が全てクリアされているか
+- [ ] design-document の設計に従っているか
+- [ ] 期待されるファイルが作成/変更されているか
+```
+
+#### Stage 2: コード品質確認
+
+```markdown
+## Stage 2 チェックリスト
+
+- [ ] テストが先に書かれているか（TDD原則）
+- [ ] テストが全てパスしているか
+- [ ] リントエラーがないか
+- [ ] 型エラーがないか
+- [ ] result.md が作成されているか
+```
+
+### 具体的ワークフロー例
+
+```bash
+# 1. タスクプロンプト読み込み
+TASK_PROMPT=$(cat docs/target-repo/plan/task01.md)
+
+# 2. サブエージェント派遣
+claude --agent general-purpose --model claude-opus-4.5 --prompt "
+## 実装タスク
+
+$TASK_PROMPT
+
+## 完了時の成果物
+- 実装コード
+- テストコード
+- result.md
+"
+
+# 3. Stage 1: 仕様準拠確認
+echo "=== Stage 1: 仕様準拠確認 ==="
+# - 要件チェック
+# - 成果物確認
+
+# 4. Stage 2: コード品質確認
+echo "=== Stage 2: コード品質確認 ==="
+cd submodules/target-repo
+npm test && npm run lint && npm run typecheck
+
+# 5. 問題なければコミット
+git add -A
+git commit -m "task01: 機能実装完了"
+```
+
+---
+
+## finishing-branch 自動化手順
+
+### 概要
+
+実装完了後、テスト検証からPR作成・マージまでを自動化するワークフローです。
+
+### 自動化フロー
+
+```mermaid
+flowchart TD
+    A[実装完了] --> B[テスト検証]
+    B --> C{全テスト通過?}
+    C -->|No| D[修正]
+    D --> B
+    C -->|Yes| E[PRテンプレート適用]
+    E --> F[オプション提示]
+    F --> G{選択}
+    G -->|1. マージ| H[ローカルマージ]
+    G -->|2. PR作成| I[プッシュ + PR作成]
+    G -->|3. 保持| J[ブランチ保持]
+    G -->|4. 破棄| K[クリーンアップ]
+    H --> L[Worktree削除]
+    I --> M[PR URL表示]
+    K --> L
+```
+
+### 具体的コマンド例
+
+#### 1. テスト検証
+
+```bash
+#!/bin/bash
+# finishing-branch-verify.sh
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "$REPO_ROOT"
+
+echo "=== テスト検証 ==="
+
+# ビルド確認
+npm run build || { echo "ビルド失敗"; exit 1; }
+
+# テスト実行
+npm test || { echo "テスト失敗"; exit 1; }
+
+# リント
+npm run lint || { echo "リントエラー"; exit 1; }
+
+# 型チェック
+npm run typecheck || { echo "型エラー"; exit 1; }
+
+echo "✅ 全検証通過"
+```
+
+#### 2. PRテンプレート適用
+
+```bash
+#!/bin/bash
+# generate-pr-description.sh
+
+TICKET_ID="${1:-UNKNOWN}"
+BRANCH_NAME=$(git branch --show-current)
+BASE_SHA=$(git merge-base HEAD origin/main)
+HEAD_SHA=$(git rev-parse HEAD)
+FILE_COUNT=$(git diff $BASE_SHA..$HEAD_SHA --name-only | wc -l)
+
+# テンプレートを読み込み、変数を置換
+cat docs/templates/pr-template.md | \
+  sed "s|{{timestamp}}|$(date '+%Y-%m-%d %H:%M:%S')|g" | \
+  sed "s|{{branch_name}}|$BRANCH_NAME|g" | \
+  sed "s|{{base_sha}}|$BASE_SHA|g" | \
+  sed "s|{{head_sha}}|$HEAD_SHA|g" | \
+  sed "s|{{file_count}}|$FILE_COUNT|g"
+```
+
+#### 3. オプション実行
+
+```bash
+#!/bin/bash
+# finishing-branch-execute.sh
+
+OPTION="${1:-3}"  # デフォルトは保持
+TICKET_ID="${2:-UNKNOWN}"
+BASE_BRANCH="${3:-main}"
+
+case $OPTION in
+  1)
+    echo "=== ローカルマージ ==="
+    git checkout "$BASE_BRANCH"
+    git merge "feature/$TICKET_ID"
+    git branch -d "feature/$TICKET_ID"
+    echo "✅ マージ完了"
+    ;;
+  2)
+    echo "=== PR作成 ==="
+    git push -u origin "feature/$TICKET_ID"
+    
+    # gh CLIでPR作成
+    PR_BODY=$(./generate-pr-description.sh "$TICKET_ID")
+    gh pr create \
+      --base "$BASE_BRANCH" \
+      --title "[$TICKET_ID] 機能実装" \
+      --body "$PR_BODY"
+    
+    echo "✅ PR作成完了"
+    ;;
+  3)
+    echo "=== ブランチ保持 ==="
+    echo "ブランチ feature/$TICKET_ID を保持します"
+    ;;
+  4)
+    echo "=== 破棄 ==="
+    git checkout "$BASE_BRANCH"
+    git branch -D "feature/$TICKET_ID"
+    echo "✅ ブランチ削除完了"
+    ;;
+esac
+```
+
+#### 4. Worktreeクリーンアップ
+
+```bash
+#!/bin/bash
+# cleanup-worktrees.sh
+
+TICKET_ID="${1:-UNKNOWN}"
+
+echo "=== Worktree クリーンアップ ==="
+
+# 並列タスク用worktreeを検索して削除
+for WT in $(git worktree list | grep "/tmp/$TICKET_ID" | awk '{print $1}'); do
+  echo "削除: $WT"
+  git worktree remove "$WT" --force 2>/dev/null || true
+done
+
+# 対応するブランチも削除
+for BR in $(git branch | grep "feature/$TICKET_ID-task"); do
+  echo "ブランチ削除: $BR"
+  git branch -D "$BR" 2>/dev/null || true
+done
+
+echo "✅ クリーンアップ完了"
+```
+
+---
+
+## code-reviewer エージェントとSHAベースレビュー
+
+### 概要
+
+コード変更をSHAベースで指定し、`code-reviewer`エージェントにレビューを依頼します。
+
+### エージェント定義
+
+詳細は `.claude/agents/code-reviewer.agent.md` を参照。
+
+### SHAベースレビュー依頼テンプレート
+
+```yaml
+# 基本テンプレート
+- agent_type: "code-review"
+  prompt: |
+    ## SHAベースレビュー依頼
+
+    ### 対象コミット
+    - ベースSHA: {BASE_SHA}
+    - ヘッドSHA: {HEAD_SHA}
+    - 変更ファイル: {file_list}
+
+    ### 実装内容
+    {implementation_summary}
+
+    ### 要件ドキュメント
+    {requirements_path}
+
+    ### レビュー観点
+    1. 要件との整合性
+    2. コード品質
+    3. テストカバレッジ
+    4. セキュリティ
+```
+
+### 運用例
+
+#### 例1: 単一タスク完了後
+
+```bash
+# SHA取得
+BASE_SHA=$(git rev-parse HEAD~1)
+HEAD_SHA=$(git rev-parse HEAD)
+
+# レビュー依頼
+claude --agent code-review --prompt "
+## レビュー依頼: task01
+
+### コミット範囲
+- BASE: $BASE_SHA
+- HEAD: $HEAD_SHA
+
+### 実装内容
+- ユーザー認証機能の追加
+- JWT トークン生成/検証
+- ログイン/ログアウトAPI
+
+### 要件
+docs/target-repo/plan/task01.md の内容に準拠
+
+### 確認ポイント
+- セキュリティ（トークン有効期限、HTTPS強制）
+- エラーハンドリング
+- テストカバレッジ
+"
+```
+
+#### 例2: 並列タスク統合後
+
+```bash
+# 統合前のベースと統合後のHEADを取得
+BASE_SHA=$(git rev-parse HEAD~3)  # 3つの並列タスク
+HEAD_SHA=$(git rev-parse HEAD)
+
+# 統合レビュー
+claude --agent code-review --prompt "
+## 統合レビュー依頼
+
+### コミット範囲
+- BASE: $BASE_SHA
+- HEAD: $HEAD_SHA
+- 統合タスク: task02-01, task02-02, task02-03
+
+### 確認ポイント
+- 並列実装間の整合性
+- 共有リソースへの影響
+- 統合テストの通過
+"
+```
+
+#### 例3: PR作成前最終レビュー
+
+```bash
+# mainとの差分全体をレビュー
+BASE_SHA=$(git merge-base HEAD origin/main)
+HEAD_SHA=$(git rev-parse HEAD)
+
+# 変更ファイル一覧
+FILES=$(git diff $BASE_SHA..$HEAD_SHA --name-only | tr '\n' ', ')
+
+claude --agent code-review --prompt "
+## PR前最終レビュー
+
+### ブランチ情報
+- ブランチ: feature/PROJ-123
+- ベース: origin/main
+
+### コミット範囲
+- BASE: $BASE_SHA
+- HEAD: $HEAD_SHA
+
+### 変更ファイル
+$FILES
+
+### 全体チェック
+- [ ] Critical問題なし
+- [ ] Important問題なし
+- [ ] テスト全通過
+- [ ] ドキュメント更新済み
+"
+```
+
+### レビュー結果の対応
+
+```
+[Critical問題検出]
+      ↓
+即座に修正 → 再コミット → 再レビュー
+      ↓
+[Important問題検出]
+      ↓
+修正 → 再コミット → 再レビュー
+      ↓
+[Minor問題のみ or 問題なし]
+      ↓
+finishing-branch へ進む
+```

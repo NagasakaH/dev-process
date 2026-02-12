@@ -52,3 +52,5 @@ description: タスク完了時、主要機能実装後、またはマージ前�
 - 前提: `verification-before-completion` - 完了前検証
 - 後続: `receiving-code-review` - レビュー受信
 - 関連: `review-design` / `review-plan` - 設計/計画フェーズレビュー
+- 参照: [.claude/agents/code-reviewer.agent.md](../agents/code-reviewer.agent.md) - エージェント定義
+- 参照: [README.md#code-reviewer-エージェントとSHAベースレビュー](../../README.md#code-reviewer-エージェントとshaベースレビュー) - 運用例

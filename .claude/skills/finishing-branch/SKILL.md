@@ -55,3 +55,5 @@ description: 実装完了、全テスト通過後、作業を統合する方法�
 - 前提: `receiving-code-review` - レビュー対応後
 - 参照元: `commit` - コミット後ワークフロー
 - 参照元: `implement` - 全バッチ完了後
+- 参照: [README.md#finishing-branch-自動化手順](../../README.md#finishing-branch-自動化手順) - 自動化コマンド例
+- 参照: [docs/templates/pr-template.md](../../docs/templates/pr-template.md) - PRテンプレート
