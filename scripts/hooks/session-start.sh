@@ -39,9 +39,12 @@ content = sys.stdin.read()
 print(json.dumps(content))
 ")
 
-# Output JSON with additionalContext
+# Output JSON with hookSpecificOutput.additionalContext
 cat <<EOF
 {
-  "additionalContext": $ESCAPED_CONTENT
+  "hookSpecificOutput": {
+    "hookEventName": "SessionStart",
+    "additionalContext": $ESCAPED_CONTENT
+  }
 }
 EOF
