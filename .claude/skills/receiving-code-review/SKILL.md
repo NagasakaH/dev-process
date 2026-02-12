@@ -44,6 +44,41 @@ description: コードレビューフィードバックを受け取った際、�
 - 提案実装前
 - フィードバックが不明確なとき
 
+## project.yaml への記録
+
+レビュー対応後、`project.yaml` の `code_review` セクションを更新してください：
+
+```yaml
+code_review:
+  status: approved  # approved | revision_required | rejected
+  completed_at: "2025-01-15T15:00:00+09:00"
+  rounds:
+    - round: 1
+      result: revision_required
+      issues: 2
+      feedback_summary: "エラーハンドリング追加"
+    - round: 2
+      result: approved
+      issues: 0
+```
+
+### statusの値
+
+| status | 説明 |
+|--------|------|
+| `in_progress` | レビュー進行中 |
+| `revision_required` | 修正が必要 |
+| `approved` | 承認済み |
+| `rejected` | 却下 |
+
+### roundsの記録
+
+各レビューラウンドで以下を記録：
+- **round**: ラウンド番号
+- **result**: そのラウンドの結果
+- **issues**: 指摘された問題数
+- **feedback_summary**: 主なフィードバック内容（任意）
+
 ## 関連スキル
 
 - 前提: `requesting-code-review` - レビュー依頼

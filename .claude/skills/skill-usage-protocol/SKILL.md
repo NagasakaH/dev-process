@@ -83,8 +83,45 @@ receiving-code-review → finishing-branch
 
 ## Project Context
 
-- `project.yaml` が存在する場合、必ず最初に読み込んでください
-- `setup.yaml` がプロジェクトの初期入力ファイルです
+### project.yaml について
+
+`project.yaml` はプロジェクトの進捗管理のためのSSOT（Single Source of Truth）です。
+
+**存在する場合は必ず最初に読み込んでください**。各スキルは対応するセクションを更新します。
+
+```yaml
+# project.yaml の主要セクション
+setup:           # setup.yamlの内容（初期設定）
+investigation:   # 調査フェーズの結果
+design:          # 設計フェーズの結果
+plan:            # 計画フェーズの結果
+implementation:  # 実装進捗
+verification:    # 検証結果
+code_review:     # コードレビュー進捗
+finishing:       # 完了アクション
+```
+
+### スキルとproject.yamlセクションの対応
+
+| スキル | 更新セクション |
+|--------|----------------|
+| `investigation` | `investigation` |
+| `design` | `design` |
+| `plan` | `plan` |
+| `implement` | `implementation` |
+| `verification-before-completion` | `verification` |
+| `requesting-code-review` | `code_review`（開始） |
+| `receiving-code-review` | `code_review`（更新） |
+| `finishing-branch` | `finishing` |
+
+### ワークフロー
+
+1. **project.yamlが存在する場合**: 現在のステータスを確認し、適切なフェーズから継続
+2. **存在しない場合**: `setup.yaml` から開始し、必要に応じて `project.yaml` を生成
+
+### setup.yaml
+
+`setup.yaml` はプロジェクトの初期入力ファイルです（チケット情報、要件など）。
 
 ## Red Flags
 

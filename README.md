@@ -70,9 +70,12 @@ flowchart LR
 - 関連・修正対象リポジトリをサブモジュールとして追加
 - 設計ドキュメント（`docs/{ticket_id}.md`）を生成
 
+> **Note**: このステップでは `project.yaml` はまだ存在しない（`brainstorming` で生成される）
+
 ### 2. submodule-overview（サブモジュール概要作成）
 
 **インプット:**
+- `project.yaml`（存在する場合）
 - `submodules/{repo_name}/`: サブモジュールディレクトリ
 - `submodules/{repo_name}/README.md`: プロジェクト概要
 - `submodules/{repo_name}/CLAUDE.md`: Claude向けコンテキスト（任意）
@@ -80,6 +83,7 @@ flowchart LR
 
 **成果物:**
 - `submodules/{name}.md`: サブモジュール概要ドキュメント
+- `project.yaml` の `overview` セクション更新
 
 **説明:**
 - サブモジュールのREADME/CLAUDE.md/AGENTS.mdから情報収集
@@ -96,13 +100,17 @@ flowchart LR
 - 要件候補リスト
 - 各要件の妥当性評価（実現可能性・リスク・依存関係）
 - `docs/plans/`: 設計ドキュメント（任意）
+- **`project.yaml` の初期生成**（`meta`, `setup`, `brainstorming` セクション）
 
 **説明:**
 調査開始前にユーザーと短い対話ループを行い、要件の明確化と妥当性評価を実施します。ユーザーの意図や背景を質問形式で掘り下げ、機能要件・非機能要件の候補を洗い出し、技術的制約や優先度を確認します。出力として「要件候補リスト」と「各要件の妥当性評価（実現可能性・リスク・依存関係）」を生成し、後続の investigation フェーズで何を調査すべきかを明確にします。
 
+> **Note**: `brainstorming` は `setup.yaml` を基に `project.yaml` を初期生成する唯一のプロセスです。以降の全プロセスは `project.yaml` を参照・更新します。
+
 ### 4. investigation（詳細調査）
 
 **インプット:**
+- `project.yaml`（存在する場合）
 - `setup.yaml`: プロジェクト設定（`description.background` を背景情報として参照）
 - `docs/{ticket_id}.md`: 設計ドキュメント
 - `submodules/{target_repo}/`: 調査対象リポジトリ
@@ -115,6 +123,7 @@ flowchart LR
 - `docs/{target_repo}/investigation/05_integration-points.md`: 統合ポイント調査
 - `docs/{target_repo}/investigation/06_risks-and-constraints.md`: リスク・制約分析
 - `docs/{ticket_id}.md`: 調査結果セクション更新
+- `project.yaml` の `investigation` セクション更新
 
 **説明:**
 - アーキテクチャ、データ構造、依存関係を調査
@@ -124,6 +133,7 @@ flowchart LR
 ### 5. design（設計）
 
 **インプット:**
+- `project.yaml`（存在する場合）
 - `setup.yaml`: プロジェクト設定（`description.requirements` を設計要件として参照）
 - `docs/{ticket_id}.md`: 設計ドキュメント
 - `docs/{target_repo}/investigation/`: 調査結果
@@ -136,6 +146,7 @@ flowchart LR
 - `docs/{target_repo}/design/05_test-plan.md`: テスト計画
 - `docs/{target_repo}/design/06_side-effect-verification.md`: 弊害検証計画
 - `docs/{ticket_id}.md`: 設計セクション・完了条件更新
+- `project.yaml` の `design` セクション更新
 
 **説明:**
 - 調査結果を基に詳細設計を実施
@@ -146,6 +157,7 @@ flowchart LR
 ### 6. plan（タスク計画）
 
 **インプット:**
+- `project.yaml`（存在する場合）
 - `setup.yaml`: プロジェクト設定（`description.acceptance_criteria` を完了条件基準として参照）
 - `docs/{ticket_id}.md`: 設計ドキュメント
 - `docs/{target_repo}/design/`: 詳細設計結果
@@ -155,6 +167,7 @@ flowchart LR
 - `docs/{target_repo}/plan/task01.md`, `task02-01.md`, ...: 各タスク用プロンプト
 - `docs/{target_repo}/plan/parent-agent-prompt.md`: 親エージェント統合管理プロンプト
 - `docs/{ticket_id}.md`: 実装計画セクション更新
+- `project.yaml` の `plan` セクション更新
 
 **説明:**
 - 設計からタスクを分割、依存関係を整理
@@ -165,6 +178,7 @@ flowchart LR
 ### 7. implement（実装）
 
 **インプット:**
+- `project.yaml`（存在する場合）
 - `setup.yaml`: プロジェクト設定
 - `docs/{ticket_id}.md`: 設計ドキュメント
 - `docs/{target_repo}/plan/`: タスク計画
@@ -177,12 +191,71 @@ flowchart LR
 - 実装コード（サブモジュール内）
 - テストコード（サブモジュール内）
 - コミット履歴（各タスク完了時）
+- `project.yaml` の `implement` セクション更新
 
 **説明:**
 - タスク計画に従ってサブエージェントに実装を依頼
 - 並列タスクはworktreeを使用して並行実行
 - cherry-pickで親ブランチに統合
 - `docs/{target_repo}/implement/` に実行ログ出力
+
+---
+
+## project.yaml — プロジェクトコンテキストファイル
+
+全プロセスの **SSOT（Single Source of Truth）** として機能するYAMLファイルです。
+
+### 概要
+
+- **生成**: `brainstorming` スキルが `setup.yaml` を基に初期生成
+- **更新**: 各プロセスが完了時に自セクションを追記
+- **参照**: 以降の全プロセスがこのファイルを入力として使用
+
+### 設計方針
+
+| 方針 | 説明 |
+|------|------|
+| **YAMLはインデックス** | 各プロセスの状態・要約・成果物パスを記録。詳細は外部ドキュメントに委譲 |
+| **肥大化防止** | 各セクションの `summary` は3行以内。詳細は `artifacts` パスで参照 |
+| **累積更新** | 各プロセスは自セクションのみ追記/更新。他セクションは読み取り専用 |
+| **setup.yaml互換** | `meta` + `setup` セクションに setup.yaml の内容をそのまま保持 |
+
+### セクション構成
+
+| プロセス | project.yaml セクション | 記録内容 |
+|----------|-------------------------|----------|
+| brainstorming | `meta`, `setup`, `brainstorming` | 要件探索結果、決定事項 |
+| submodule-overview | `overview` | サブモジュール概要 |
+| investigation | `investigation` | 調査結果、リスク |
+| design | `design` | 設計方針、レビュー結果 |
+| plan | `plan` | タスク一覧、依存関係 |
+| implement | `implement` | 実行状況、コミットハッシュ |
+| verification | `verification` | テスト結果、証拠 |
+| code_review | `code_review` | レビューラウンド、結果 |
+| finishing | `finishing` | 最終アクション、PR URL |
+
+### ワークフロー
+
+```mermaid
+flowchart LR
+    SY[setup.yaml] --> BS[brainstorming]
+    BS --> PY[project.yaml 生成]
+    PY --> INV[investigation]
+    INV --> DES[design]
+    DES --> PLN[plan]
+    PLN --> IMP[implement]
+    IMP --> VER[verification]
+    VER --> CR[code_review]
+    CR --> FIN[finishing]
+    
+    INV -.->|更新| PY
+    DES -.->|更新| PY
+    PLN -.->|更新| PY
+    IMP -.->|更新| PY
+    VER -.->|更新| PY
+    CR -.->|更新| PY
+    FIN -.->|更新| PY
+```
 
 ---
 
@@ -307,7 +380,8 @@ function shouldParallelize(tasks):
 
 ```
 project/
-├── setup.yaml                          # プロジェクト設定（SSOT）
+├── setup.yaml                          # プロジェクト設定（初期入力）
+├── project.yaml                        # プロジェクトコンテキスト（SSOT）
 ├── docs/
 │   ├── {ticket_id}.md                  # 設計ドキュメント
 │   └── {target_repo}/
