@@ -50,7 +50,7 @@ flowchart TD
     Approach --> Present[設計を段階的に提示<br/>セクション毎に確認]
     Present --> Confirm{ユーザー<br/>承認?}
     Confirm -->|No| Present
-    Confirm -->|Yes| WriteDocs[成果物ドキュメント作成<br/>docs/{repo}/brainstorming/]
+    Confirm -->|Yes| WriteDocs[成果物ドキュメント作成<br/>docs/REPO/brainstorming/]
     
     WriteDocs --> UpdateProject[project.yaml の<br/>brainstorming セクション記入]
     UpdateProject --> Commit[💾 コミット<br/>docs: project.yaml を生成]
