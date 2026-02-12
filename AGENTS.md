@@ -4,12 +4,12 @@
 
 ## エージェント構成
 
-| ラッパー (call-*) | 実行エージェント | 役割 |
-|---|---|---|
-| call-general-purpose | general-purpose | 汎用タスク実行 |
-| call-environment-setup | environment-setup | 開発環境構築 |
-| call-pre-implementation-planning | pre-implementation-planning | 調査・設計・計画 |
-| call-plan-migration | plan-migration | 計画のリポジトリ移行 |
+| ラッパー (call-\*)               | 実行エージェント            | 役割                 |
+| -------------------------------- | --------------------------- | -------------------- |
+| call-general-purpose             | general-purpose             | 汎用タスク実行       |
+| call-environment-setup           | environment-setup           | 開発環境構築         |
+| call-pre-implementation-planning | pre-implementation-planning | 調査・設計・計画     |
+| call-plan-migration              | plan-migration              | 計画のリポジトリ移行 |
 
 ## モデル指定ルール（重要）
 
@@ -21,22 +21,22 @@ call-* ラッパー         # Opus-4.6 指定可能
   ↓
 実行エージェント        # Opus-4.6 指定可能
   ↓
-サブエージェント        # Opus-4.5 必須
+サブエージェント        # Opus-4.6 必須
 ```
 
 ### サブエージェント起動時（必須）
 
 ```yaml
 - agent_type: "general-purpose"
-  model: "claude-opus-4.5"    # ← 必ず Opus-4.5
+  model: "claude-opus-4.6" # ← 必ず Opus-4.6
   prompt: "タスク内容"
 ```
 
-### call-* / 実行エージェント（オプション）
+### call-\* / 実行エージェント（オプション）
 
 ```yaml
 - agent_type: "call-general-purpose"
-  model: "claude-opus-4.6"    # ← Opus-4.6 可能
+  model: "claude-opus-4.6" # ← Opus-4.6 可能
   prompt: "タスク内容"
 ```
 
@@ -62,4 +62,4 @@ call-* ラッパー         # Opus-4.6 指定可能
 
 ## 変更履歴
 
-- 2026-02-12: Opus-4.6/4.5 モデル指定ルール明確化、README.md全面更新
+- 2026-02-12: Opus-4.6 モデル指定ルール明確化、README.md全面更新
