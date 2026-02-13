@@ -5,122 +5,103 @@ description: 設計結果の妥当性をレビューするスキル。setup.yaml
 
 # 設計レビュースキル（review-design）
 
-setup.yaml + design-document + design/を入力として、設計結果の妥当性を体系的にレビューし、レビュー結果をドキュメント化します。
+project.yaml + design/ を入力として、設計結果の妥当性を体系的にレビューし、レビュー結果をドキュメント化します。
 
-> **SSOT**: setup.yaml の `description.requirements` を設計の妥当性判断基準として参照します。
+> **SSOT**: `project.yaml` を全プロセスの Single Source of Truth として使用します。
+> - 設計要件の参照: `setup.description.requirements`
+> - 調査結果の参照: `investigation` セクション
+> - レビュー結果の出力: `design.review` セクション
 
 ## 概要
 
 このスキルは以下を実現します：
 
-1. **setup.yaml** からチケット情報・対象リポジトリ・要件を取得
-2. **setup.yaml の description.requirements** を設計の妥当性判断基準として参照
-3. **design-document** と **design/** から設計内容を読み込み
+1. **project.yaml** からチケット情報・対象リポジトリ・要件を取得
+2. **project.yaml の setup.description.requirements** を設計の妥当性判断基準として参照
+3. **design/** から設計内容を読み込み
 4. **investigation/** から調査結果を読み込み（設計が調査結果に基づいているか検証）
 5. **docs/{target_repo}/review-design/** ディレクトリにレビュー結果を出力
-6. **design-document** のレビューセクションを更新
+6. **project.yaml の design.review セクション** を更新してコミット
+
+## 再帰的レビューループ
+
+```mermaid
+flowchart TD
+    A[design 完了] --> B[review-design 実施]
+    B --> C{総合判定}
+    C -->|✅ 承認| D[plan へ進行]
+    C -->|⚠️ 条件付き承認| E[design で指摘対応]
+    C -->|❌ 差し戻し| F[design を再実施]
+    E --> G[review-design 再レビュー\nround++]
+    F --> G
+    G --> C
+```
+
+指摘がなくなるまで design ⇄ review-design を再帰的に繰り返します。
+各ラウンドの指摘内容は `project.yaml` の `design.review` セクションで追跡されます。
 
 ## 入力ファイル
 
-### 1. setup.yaml（必須）
+### 1. project.yaml（必須・SSOT）
 
 ```yaml
-ticket_id: "PROJ-123"
-task_name: "機能追加タスク"
+# project.yaml から参照するセクション
+setup:
+  ticket_id: "PROJ-123"
+  description:
+    requirements:                  # ← このスキルが参照（妥当性判断基準）
+      functional:
+        - "ユーザーが○○を実行できること"
+      non_functional:
+        - "応答時間: 200ms以内"
+  target_repositories:
+    - name: "target-repo"
 
-# SSOT: このスキルは description.requirements を参照
-description:
-  overview: "概要..."
-  purpose: "目的..."
-  background: "背景..."
-  requirements:                    # ← このスキルが参照
-    functional:
-      - "ユーザーが○○を実行できること"
-      - "結果が△△形式で出力されること"
-      - "エラー時に適切なメッセージが表示されること"
-    non_functional:
-      - "応答時間: 200ms以内"
-      - "同時リクエスト: 100件/秒対応"
-      - "後方互換性を維持"
-  acceptance_criteria: [...]
-
-target_repositories:
-  - name: "target-repo"
-    url: "git@github.com:org/target-repo.git"
-    base_branch: "main"
+design:
+  status: completed
+  review:                          # ← このスキルが更新
+    round: 1
+    status: pending
 ```
 
-### 2. design-document: docs/{ticket_id}.md（必須）
+### 2. design/（必須）
 
-init-work-branchスキルで生成され、designスキルで設計セクションが更新された設計ドキュメント。
+designスキルで生成された詳細設計ドキュメント。
 
-### 3. design/（必須）
+### 3. investigation/（参照）
 
-designスキルで生成された詳細設計：
-
-```
-docs/
-└── {target_repository}/
-    └── design/
-        ├── 01_implementation-approach.md
-        ├── 02_interface-api-design.md
-        ├── 03_data-structure-design.md
-        ├── 04_process-flow-design.md
-        ├── 05_test-plan.md
-        └── 06_side-effect-verification.md
-```
-
-### 4. investigation/（参照）
-
-investigationスキルで生成された調査結果（設計が調査結果に基づいているかの検証に使用）：
-
-```
-docs/
-└── {target_repository}/
-    └── investigation/
-        ├── 01_architecture.md
-        ├── 02_data-structure.md
-        ├── 03_dependencies.md
-        ├── 04_existing-patterns.md
-        ├── 05_integration-points.md
-        └── 06_risks-and-constraints.md
-```
+investigationスキルで生成された調査結果（設計が調査結果に基づいているかの検証に使用）。
 
 ## 処理フロー
 
 ```mermaid
 flowchart TD
-    A[setup.yaml読み込み] --> B[description.requirements を参照]
-    B --> C[design-document確認]
+    A[project.yaml読み込み] --> B[setup.description.requirements を参照]
+    B --> C[design.review.round を確認]
     C --> D[design/読み込み]
     D --> E[investigation/読み込み]
     E --> F[レビュー実施]
     F --> G[review-design/配下にレビュー結果生成]
-    G --> H[design-documentレビューセクション更新]
+    G --> H[project.yaml の design.review セクション更新]
     H --> I[コミット]
-    I --> J[完了レポート]
+    I --> J{総合判定}
+    J -->|✅ 承認| K[完了レポート → plan へ]
+    J -->|⚠️ 条件付き| L[design で指摘対応 → 再レビュー]
+    J -->|❌ 差し戻し| M[design を再実施 → 再レビュー]
 ```
 
-## setup.yaml の description.requirements 活用
+## project.yaml の setup.description.requirements 活用
 
-レビューを実施する際に、`setup.yaml` の `description.requirements` を読み込み、設計の妥当性判断基準として活用します：
-
-```yaml
-# setup.yaml から取得
-description:
-  requirements:
-    functional:
-      - "ユーザーが○○を実行できること"
-      - "結果が△△形式で出力されること"
-    non_functional:
-      - "応答時間: 200ms以内"
-      - "同時リクエスト: 100件/秒対応"
-```
+レビューを実施する際に、`project.yaml` の `setup.description.requirements` を読み込み、設計の妥当性判断基準として活用します。
 
 **活用方法:**
 - **機能要件** → インターフェース/API設計が全機能要件をカバーしているか検証
 - **非機能要件** → 実装方針・アーキテクチャが非機能要件を満たせるか検証
 - 各設計項目が要件に対して過不足ないかの検証基準として使用
+
+**再レビュー時（round > 1）:**
+- 前ラウンドの `design.review.issues` から `status: open` の指摘を優先確認
+- 対応済み指摘の `status` を `resolved` に更新、`resolved_in_round` を記録
 
 ## レビュー実施項目
 
@@ -205,46 +186,58 @@ docs/
 | ⚠️ 条件付き承認 | Majorの指摘あり、Criticalなし | 指摘事項を修正後、再レビュー |
 | ❌ 差し戻し     | Criticalの指摘あり            | designスキルの再実施         |
 
-## design-document更新内容
+## project.yaml 更新内容
 
-`docs/{ticket_id}.md` に「2.5 設計レビュー」セクションを追加：
+`project.yaml` の `design.review` セクションを更新：
 
-```markdown
-### 2.5 設計レビュー
-
-#### レビュー結果
-
-- **総合判定**: {✅ 承認 / ⚠️ 条件付き承認 / ❌ 差し戻し}
-- **レビュー日**: {date}
-
-#### 指摘事項サマリー
-
-| No  | 重大度  | カテゴリ       | 指摘内容   | 対応状況 |
-| --- | ------- | -------------- | ---------- | -------- |
-| 1   | 🟠 Major | 要件カバレッジ | {指摘内容} | ⬜ 未対応 |
-| 2   | 🟡 Minor | 技術的妥当性   | {指摘内容} | ⬜ 未対応 |
-
-詳細は [review-design/](./{target_repo}/review-design/) を参照。
+```yaml
+design:
+  status: completed
+  review:
+    round: 1                        # ラウンド番号（再レビュー時にインクリメント）
+    status: approved                # approved / conditional / rejected
+    latest_verdict: "承認"          # 日本語判定テキスト
+    completed_at: "2025-01-15T10:30:00+09:00"
+    summary: "Critical/Major指摘なし。Minor 2件は実装フェーズで対応可能。"
+    issues:
+      - id: DR-001
+        severity: major             # critical / major / minor / info
+        category: "要件カバレッジ"
+        description: "非機能要件の応答時間に関する設計が不足"
+        status: resolved            # open / resolved / deferred
+        resolved_in_round: 2
+      - id: DR-002
+        severity: minor
+        category: "テスト可能性"
+        description: "モックの注入方法が未定義"
+        status: open
+    artifacts:
+      - "docs/{target_repo}/review-design/06_review-summary.md"
 ```
+
+### ラウンド管理ルール
+
+- **初回レビュー**: `round: 1` で開始
+- **再レビュー**: 前ラウンドの `round` をインクリメント
+- **issues**: 全ラウンドの指摘を累積保持（`resolved_in_round` で解決ラウンドを追跡）
+- **status 遷移**: `pending` → `rejected` / `conditional` / `approved`
 
 ## 実行手順
 
-### 1. setup.yaml読み込み
+### 1. project.yaml読み込み
 
 ```bash
-YAML_PATH="${1:-setup.yaml}"
-test -f "$YAML_PATH" || { echo "Error: $YAML_PATH not found"; exit 1; }
+test -f "project.yaml" || { echo "Error: project.yaml not found"; exit 1; }
 ```
 
-### 2. design-document確認
+`project.yaml` から以下を取得:
+- `setup.ticket_id`
+- `setup.description.requirements`（妥当性判断基準）
+- `setup.target_repositories`
+- `design.review.round`（存在する場合、再レビュー）
+- `design.review.issues`（再レビュー時、前回指摘の確認）
 
-```bash
-DOCS_DIR="${options.design_document_dir:-docs}"
-DESIGN_DOC="$DOCS_DIR/${ticket_id}.md"
-test -f "$DESIGN_DOC" || { echo "Error: $DESIGN_DOC not found"; exit 1; }
-```
-
-### 3. design/確認
+### 2. design/確認
 
 ```bash
 for repo in "${target_repositories[@]}"; do
@@ -253,7 +246,7 @@ for repo in "${target_repositories[@]}"; do
 done
 ```
 
-### 4. investigation/確認
+### 3. investigation/確認
 
 ```bash
 for repo in "${target_repositories[@]}"; do
@@ -262,7 +255,7 @@ for repo in "${target_repositories[@]}"; do
 done
 ```
 
-### 5. レビューの実施
+### 4. レビューの実施
 
 各設計ファイルについて、レビュー項目に従い検証を実施：
 
@@ -273,36 +266,41 @@ done
 5. **リスク・懸念事項**: リスク分析と対応確認
 6. **レビューサマリー**: 総合判定と指摘事項一覧
 
-### 6. review-design/配下にファイル生成
+**再レビュー時（round > 1）の追加手順:**
+- 前ラウンドの `design.review.issues` で `status: open` の指摘を優先確認
+- 対応された指摘は `status: resolved`、`resolved_in_round: {current_round}` に更新
+- 新規指摘は新しい `id` で追加
+
+### 5. review-design/配下にファイル生成
 
 ```bash
 for repo in "${target_repositories[@]}"; do
     REVIEW_DIR="docs/${repo}/review-design"
     mkdir -p "$REVIEW_DIR"
-
-    # 各レビューファイルを生成
-    # 01_requirements-coverage.md
-    # 02_technical-validity.md
-    # 03_implementation-feasibility.md
-    # 04_testability.md
-    # 05_risks-and-concerns.md
-    # 06_review-summary.md
 done
 ```
 
-### 7. design-document更新
+### 6. project.yaml 更新
 
-`docs/{ticket_id}.md` に「2.5 設計レビュー」セクションを追加。
+`project.yaml` の `design.review` セクションを更新:
+- `round`: ラウンド番号（初回=1、再レビュー時にインクリメント）
+- `status`: `approved` / `conditional` / `rejected`
+- `latest_verdict`: 日本語の判定テキスト
+- `completed_at`: レビュー完了タイムスタンプ
+- `summary`: レビュー結果の要約（3行以内）
+- `issues`: 指摘事項リスト（累積）
+- `artifacts`: レビュー結果ファイルパス
 
-### 8. コミット
+`meta.updated_at` も更新。
+
+### 7. コミット
 
 ```bash
-# 親リポジトリでコミット（docs配下に出力）
-git add docs/ setup.yaml
-git commit -m "docs: {ticket_id} 設計レビュー結果を追加
+git add docs/ project.yaml
+git commit -m "docs: {ticket_id} 設計レビュー結果を追加 (round {round})
 
 - docs/{target_repo}/review-design/配下にレビュー結果を出力
-- design-documentの設計レビューセクションを更新"
+- project.yaml の design.review セクションを更新"
 ```
 
 ## 完了レポート
@@ -377,32 +375,33 @@ designスキルで設計を完了してください。
 - レビューは `target_repositories` の設計のみ対象
 - design/が存在しない場合はエラー終了
 - investigation/が存在しない場合は警告を出し、調査結果との整合性チェックをスキップ
-- 既存の `review-design/` ディレクトリがある場合は上書き確認を行う
-- **setup.yaml の description.requirements を設計の妥当性判断基準として参照**
+- 既存の `review-design/` ディレクトリがある場合は上書き（再レビュー時）
+- **project.yaml の setup.description.requirements を設計の妥当性判断基準として参照**
 - レビューは客観的な基準に基づいて実施し、主観的な判断は避ける
+- **再帰ループ**: 差し戻し/条件付き承認 → design で指摘対応 → review-design 再レビューを繰り返す
 
 ## 参照ファイル
 
 - 前提スキル: `init-work-branch` - 作業ブランチ初期化
 - 前提スキル: `investigation` - 開発タスク用詳細調査
-- 前提スキル: `design` - 設計
-- 後続スキル: `plan` - タスク計画
-- 関連スキル: `requesting-code-review` — 設計レビュー後のコードレビュー依頼（コード品質レビュー機能を含む）
-- 参照テンプレート: [references/review-template.md](references/review-template.md) - レビューテンプレート
+- 前提スキル: `design` - 設計（差し戻し時に再実施）
+- 後続スキル: `plan` - タスク計画（承認後に進行）
+- 関連スキル: `requesting-code-review` — コードレビュー依頼
 
 ## SSOT参照
 
-| setup.yaml フィールド                     | 用途                         |
-| ----------------------------------------- | ---------------------------- |
-| `description.requirements.functional`     | 機能要件カバレッジの検証基準 |
-| `description.requirements.non_functional` | 非機能要件の充足確認基準     |
+| project.yaml フィールド                         | 用途                         |
+| ----------------------------------------------- | ---------------------------- |
+| `setup.description.requirements.functional`     | 機能要件カバレッジの検証基準 |
+| `setup.description.requirements.non_functional` | 非機能要件の充足確認基準     |
+| `design.review` (出力)                          | レビュー結果・指摘の追跡     |
 
 ## 典型的なワークフロー
 
 ```
-[setup.yaml読み込み] --> YAMLをパースしてバリデーション
+[project.yaml読み込み] --> パースしてバリデーション
         |
-[design-document確認] --> docs/{ticket_id}.md の存在確認
+[design.review確認] --> 再レビューの場合、前回指摘を読み込み
         |
 [design/読み込み] --> 設計結果の読み込み
         |
@@ -412,9 +411,9 @@ designスキルで設計を完了してください。
         |
 [review-design/生成] --> レビュー結果ファイルを生成
         |
-[design-document更新] --> レビューセクションを更新
+[project.yaml更新] --> design.review セクションを更新
         |
 [コミット] --> 変更をコミット
         |
-[完了レポート] --> レビュー結果を表示
+[判定分岐] --> ✅承認→plan / ⚠️条件付き→design再修正 / ❌差し戻し→design再実施
 ```

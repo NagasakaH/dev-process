@@ -8,6 +8,9 @@ description: 設計結果からタスク計画を作成するスキル。project
 project.yaml + design成果物を入力として、実行可能なタスク計画を作成し、各タスク用プロンプトと親エージェント用統合管理プロンプトを生成します。
 
 > **SSOT**: `project.yaml` を唯一の情報源として使用します。設計結果は `design.artifacts` パスから、完了条件は `setup.acceptance_criteria` から参照します。
+>
+> **再計画時**: `plan.review` セクションが存在し `status` が `rejected` または `conditional` の場合、
+> `issues` 内の `status: open` の指摘を優先的に対応してください。
 
 **重要**: このスキルは実装を行わず、計画とプロンプト生成のみを担当します。完了時に `project.yaml` の `plan` セクションを更新してコミットします。
 
@@ -522,24 +525,24 @@ designスキルで設計を完了してください。
 
 ## SSOT参照
 
-| project.yaml フィールド                    | 用途                                                       |
-| ------------------------------------------ | ---------------------------------------------------------- |
-| `setup.description.acceptance_criteria`    | タスク完了条件の基準、テストタスク生成、弊害検証タスク生成 |
-| `design.status`                            | 設計完了の確認（completed であること）                     |
-| `design.artifacts`                         | 設計成果物の参照先                                         |
+| project.yaml フィールド                 | 用途                                                       |
+| --------------------------------------- | ---------------------------------------------------------- |
+| `setup.description.acceptance_criteria` | タスク完了条件の基準、テストタスク生成、弊害検証タスク生成 |
+| `design.status`                         | 設計完了の確認（completed であること）                     |
+| `design.artifacts`                      | 設計成果物の参照先                                         |
 
 ### plan セクションの出力フィールド
 
-| フィールド      | 説明                                   |
-| --------------- | -------------------------------------- |
-| `status`        | `completed` に設定                     |
-| `completed_at`  | ISO 8601 形式のタイムスタンプ          |
-| `summary`       | 計画の要約（1-2文）                    |
-| `total_tasks`   | 総タスク数                             |
+| フィールド      | 説明                                     |
+| --------------- | ---------------------------------------- |
+| `status`        | `completed` に設定                       |
+| `completed_at`  | ISO 8601 形式のタイムスタンプ            |
+| `summary`       | 計画の要約（1-2文）                      |
+| `total_tasks`   | 総タスク数                               |
 | `tasks`         | タスク一覧（id, title, status: pending） |
-| `review.status` | `pending`（レビュー前）                |
-| `review.round`  | `0`（初回）                            |
-| `artifacts`     | `docs/{repo}/plan/`                    |
+| `review.status` | `pending`（レビュー前）                  |
+| `review.round`  | `0`（初回）                              |
+| `artifacts`     | `docs/{repo}/plan/`                      |
 
 ---
 

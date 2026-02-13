@@ -40,14 +40,15 @@ call-* ラッパー         # Opus-4.6 指定可能
   prompt: "タスク内容"
 ```
 
-## 6ステップワークフロー
+## 7ステップワークフロー
 
 1. **init-work-branch** - ブランチ・サブモジュール・設計ドキュメント初期化
 2. **submodule-overview** - サブモジュール概要作成
-3. **investigation** - 詳細調査（UML図含む）
-4. **design** - 詳細設計（API、データ構造、処理フロー）
-5. **plan** - タスク分割・プロンプト生成
-6. **implement** - 実装実行（並列化対応）
+3. **brainstorming** - 要件探索・project.yaml 生成（全プロセスのSSOT）
+4. **investigation** - 詳細調査（UML図含む）
+5. **design** - 詳細設計（API、データ構造、処理フロー）
+6. **plan** - タスク分割・プロンプト生成
+7. **implement** - 実装実行（並列化対応）
 
 ## 品質ルール
 
