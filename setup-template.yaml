@@ -26,7 +26,7 @@ related_repositories:
   #   branch: "develop"
 
 # 修正対象リポジトリ
-# 実際にコード変更を行うリポジトリ（worktreeとして追加される）
+# 実際にコード変更を行うリポジトリ（サブモジュールとして追加され、featureブランチが作成される）
 target_repositories:
   - name: "main-application"
     url: "https://github.com/org/main-application.git"
@@ -45,6 +45,4 @@ options:
   
   # サブモジュールのディレクトリ（デフォルト: submodules）
   submodules_dir: "submodules"
-  
-  # worktree のディレクトリ（デフォルト: workspaces）
-  worktrees_dir: "workspaces"
+
