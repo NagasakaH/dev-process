@@ -61,6 +61,7 @@ digraph skill_flow {
 ├── plan/                        # 計画
 ├── receiving-code-review/       # レビュー対応
 ├── requesting-code-review/      # レビュー依頼
+├── review/                      # 実装レビュー（チェックリストベース）
 ├── review-design/               # 設計レビュー
 ├── review-plan/                 # 計画レビュー
 ├── skill-usage-protocol/        # このスキル
@@ -77,8 +78,8 @@ digraph skill_flow {
 issue-to-setup-yaml → init-work-branch → submodule-overview →
 brainstorming → investigation → design → review-design →
 plan → review-plan → implement (+ test-driven-development) →
-verification-before-completion → requesting-code-review →
-receiving-code-review → finishing-branch
+verification-before-completion → review →
+finishing-branch
 ```
 
 ## Project Context
@@ -112,6 +113,7 @@ finishing:       # 完了アクション
 | `review-plan`                    | `plan.review`         |
 | `implement`                      | `implementation`      |
 | `verification-before-completion` | `verification`        |
+| `review`                         | `code_review`         |
 | `requesting-code-review`         | `code_review`（開始） |
 | `receiving-code-review`          | `code_review`（更新） |
 | `finishing-branch`               | `finishing`           |
