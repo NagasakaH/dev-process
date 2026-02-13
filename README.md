@@ -4,11 +4,11 @@ Claude向けの開発プロセス用スキル集とエージェント構成を�
 
 ## プロジェクト概要
 
-本リポジトリは、AIエージェントによる開発プロセスを体系化し、7ステップワークフローで高品質なソフトウェア開発を実現します。
+本リポジトリは、AIエージェントによる開発プロセスを体系化し、8ステップワークフローで高品質なソフトウェア開発を実現します。
 
 ### 主な特徴
 
-- **7ステップワークフロー**: 初期化 → ブレスト → 調査 → 設計 → 計画 → 実装の体系的プロセス
+- **8ステップワークフロー**: 初期化 → ブレスト → 調査 → 設計 → 計画 → 実装 → レビューの体系的プロセス
 - **エージェント階層構造**: call-\* ラッパー → 実行エージェント → サブエージェント
 - **品質スキル統合**: TDD、検証、デバッグ、コードレビューの組み込み
 - **並列実行対応**: 独立タスクの並列処理によるスループット向上
@@ -42,7 +42,7 @@ call-* ラッパー (Opus-4.6 指定可)
 
 ---
 
-## 7ステップワークフロー
+## 8ステップワークフロー
 
 ```mermaid
 flowchart LR
@@ -52,7 +52,8 @@ flowchart LR
     investigation --> design[5. design]
     design --> plan[6. plan]
     plan --> implement[7. implement]
-    implement --> finish[finishing-branch]
+    implement --> review[8. review]
+    review --> finish[finishing-branch]
 ```
 
 ### 1. init-work-branch（作業ブランチ初期化）
@@ -208,6 +209,26 @@ flowchart LR
 - 各タスク完了時に `project.yaml` の `implement.tasks` を更新
 - `docs/{target_repo}/implement/` に実行ログ出力
 
+### 8. review（実装レビュー）
+
+**インプット:**
+
+- `project.yaml`（SSOT — `implement.status = completed` が前提）
+- コミット範囲（BASE_SHA..HEAD_SHA）
+- `docs/{target_repo}/design/`: 設計成果物（設計準拠性チェック用）
+
+**成果物:**
+
+- `docs/{target_repo}/review/round-01.md`（以降 round-02.md, ...）: レビュー結果
+- `project.yaml` の `code_review` セクション更新（チェックリスト結果・指摘・ラウンド）
+
+**説明:**
+
+- 8カテゴリのチェックリスト（設計準拠性、静的解析、言語別ベストプラクティス、セキュリティ、テスト・CI、パフォーマンス、ドキュメント、Git作法）でレビューを実施
+- プロジェクト内の静的解析ツール（prettier / eslint / black / flake8 等）を検出・実行
+- 指摘がなくなるまで レビュー ⇄ 修正 を再帰的に繰り返し
+- `project.yaml` の `code_review.review_checklist` にチェック項目と結果を構造化記録
+
 ---
 
 ## project.yaml — プロジェクトコンテキストファイル
@@ -242,6 +263,7 @@ flowchart LR
 | review-plan        | `plan.review`                    | 計画レビュー指摘・ラウンド |
 | implement          | `implement`                      | 実行状況、コミットハッシュ |
 | verification       | `verification`                   | テスト結果、証拠           |
+| review             | `code_review`                    | チェックリスト、指摘、ラウンド |
 | code_review        | `code_review`                    | レビューラウンド、結果     |
 | finishing          | `finishing`                      | 最終アクション、PR URL     |
 
@@ -260,8 +282,9 @@ flowchart LR
     RP -->|✅ 承認| IMP[implement]
     RP -->|❌⚠️ 指摘あり| PLN
     IMP --> VER[verification]
-    VER --> CR[code_review]
-    CR --> FIN[finishing]
+    VER --> REV[review]
+    REV -->|✅ 承認| FIN[finishing]
+    REV -->|❌⚠️ 指摘あり| IMP
 
     INV -.->|更新| PY
     DES -.->|更新| PY
@@ -270,7 +293,7 @@ flowchart LR
     RP -.->|更新| PY
     IMP -.->|更新| PY
     VER -.->|更新| PY
-    CR -.->|更新| PY
+    REV -.->|更新| PY
     FIN -.->|更新| PY
 ```
 
@@ -301,10 +324,11 @@ flowchart LR
 
 ### レビュースキル
 
-| スキル            | 説明                         |
-| ----------------- | ---------------------------- |
-| **review-design** | 設計結果の妥当性をレビュー   |
-| **review-plan**   | タスク計画の妥当性をレビュー |
+| スキル            | 説明                                                     |
+| ----------------- | -------------------------------------------------------- |
+| **review**        | 実装変更のチェックリストベースレビュー（8カテゴリ・再帰ループ対応） |
+| **review-design** | 設計結果の妥当性をレビュー                               |
+| **review-plan**   | タスク計画の妥当性をレビュー                             |
 
 ---
 
@@ -323,6 +347,7 @@ claude "設計をレビューしてください"                              # 
 claude "タスク計画を作成してください"                            # → plan
 claude "計画をレビューしてください"                              # → review-plan
 claude "実装を開始してください"                                  # → implement
+claude "実装をレビューしてください"                                # → review
 ```
 
 ---
@@ -425,8 +450,11 @@ project/
 │       │   ├── task01.md
 │       │   ├── parent-agent-prompt.md
 │       │   └── ...
-│       └── implement/                  # 実行ログ
-│           └── execution-log.md
+│       ├── implement/                  # 実行ログ
+│       │   └── execution-log.md
+│       └── review/                    # レビュー結果
+│           ├── round-01.md
+│           └── round-02.md
 └── submodules/
     ├── {repo_name}/                    # サブモジュール
     └── {repo_name}.md                  # サブモジュール概要
