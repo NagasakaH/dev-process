@@ -96,32 +96,29 @@ flowchart LR
 - 技術スタック、API、依存関係を分析
 - `submodules/{name}.md` に概要ドキュメント生成
 
-### 3. brainstorming（要件探索）
+### 3. brainstorming（要件探索・project.yaml 生成）
 
 **インプット:**
 
-- `setup.yaml`: プロジェクト設定ファイル
+- `setup.yaml`: プロジェクト設定ファイル（ユーザーが作成した一次情報）
 - ユーザーとの対話: 意図・要件・背景の聞き取り
 
 **成果物:**
 
-- 要件候補リスト
-- 各要件の妥当性評価（実現可能性・リスク・依存関係）
-- `docs/plans/`: 設計ドキュメント（任意）
-- **`project.yaml` の初期生成**（`meta`, `setup`, `brainstorming` セクション）
+- **`project.yaml`**: 全プロセスの SSOT（`meta`, `setup`, `brainstorming` セクション）
+- `docs/{repo}/brainstorming/*.md`: ブレインストーミング詳細ドキュメント
 
 **説明:**
-調査開始前にユーザーと短い対話ループを行い、要件の明確化と妥当性評価を実施します。ユーザーの意図や背景を質問形式で掘り下げ、機能要件・非機能要件の候補を洗い出し、技術的制約や優先度を確認します。出力として「要件候補リスト」と「各要件の妥当性評価（実現可能性・リスク・依存関係）」を生成し、後続の investigation フェーズで何を調査すべきかを明確にします。
 
-> **Note**: `brainstorming` は `setup.yaml` を基に `project.yaml` を初期生成する唯一のプロセスです。以降の全プロセスは `project.yaml` を参照・更新します。
+`setup.yaml` を基に `project.yaml` を生成する唯一のプロセスです。ユーザーとの対話により要件の明確化・妥当性評価を行い、機能要件・非機能要件の具体化、技術的制約の確認を実施します。2〜3つのアプローチを提案しトレードオフを説明した上で設計方針を決定し、結果を `project.yaml` の `brainstorming` セクションに記録します。
+
+> **Important**: `brainstorming` 以降の全プロセス（investigation, design, plan, implement 等）は `project.yaml` を SSOT として参照・更新します。`setup.yaml` は直接参照しません。
 
 ### 4. investigation（詳細調査）
 
 **インプット:**
 
-- `project.yaml`（存在する場合）
-- `setup.yaml`: プロジェクト設定（`description.background` を背景情報として参照）
-- `docs/{ticket_id}.md`: 設計ドキュメント
+- `project.yaml`（SSOT — `setup.description.background` を背景情報として参照）
 - `submodules/{target_repo}/`: 調査対象リポジトリ
 
 **成果物:**
@@ -132,12 +129,12 @@ flowchart LR
 - `docs/{target_repo}/investigation/04_existing-patterns.md`: 既存パターン調査
 - `docs/{target_repo}/investigation/05_integration-points.md`: 統合ポイント調査
 - `docs/{target_repo}/investigation/06_risks-and-constraints.md`: リスク・制約分析
-- `docs/{ticket_id}.md`: 調査結果セクション更新
 - `project.yaml` の `investigation` セクション更新
 
 **説明:**
 
-- アーキテクチャ、データ構造、依存関係を調査
+- `project.yaml` の `setup.description.background` と `brainstorming.refined_requirements` を参照
+- アーキテクチャ、データ構造、依存関係を体系的に調査
 - UML図（Mermaid形式）を含む調査結果を生成
 - `docs/{target_repo}/investigation/` に出力
 
@@ -145,9 +142,7 @@ flowchart LR
 
 **インプット:**
 
-- `project.yaml`（存在する場合）
-- `setup.yaml`: プロジェクト設定（`description.requirements` を設計要件として参照）
-- `docs/{ticket_id}.md`: 設計ドキュメント
+- `project.yaml`（SSOT — `setup.description.requirements` を設計要件として参照）
 - `docs/{target_repo}/investigation/`: 調査結果
 
 **成果物:**
@@ -158,11 +153,11 @@ flowchart LR
 - `docs/{target_repo}/design/04_process-flow-design.md`: 処理フロー設計
 - `docs/{target_repo}/design/05_test-plan.md`: テスト計画
 - `docs/{target_repo}/design/06_side-effect-verification.md`: 弊害検証計画
-- `docs/{ticket_id}.md`: 設計セクション・完了条件更新
 - `project.yaml` の `design` セクション更新
 
 **説明:**
 
+- `project.yaml` の `investigation` + `brainstorming.decisions` を参照
 - 調査結果を基に詳細設計を実施
 - API設計、データ構造設計、処理フロー設計
 - 修正前/修正後のシーケンス図を作成
@@ -172,9 +167,7 @@ flowchart LR
 
 **インプット:**
 
-- `project.yaml`（存在する場合）
-- `setup.yaml`: プロジェクト設定（`description.acceptance_criteria` を完了条件基準として参照）
-- `docs/{ticket_id}.md`: 設計ドキュメント
+- `project.yaml`（SSOT — `setup.acceptance_criteria` を完了条件基準として参照）
 - `docs/{target_repo}/design/`: 詳細設計結果
 
 **成果物:**
@@ -182,13 +175,13 @@ flowchart LR
 - `docs/{target_repo}/plan/task-list.md`: タスク一覧と依存関係
 - `docs/{target_repo}/plan/task01.md`, `task02-01.md`, ...: 各タスク用プロンプト
 - `docs/{target_repo}/plan/parent-agent-prompt.md`: 親エージェント統合管理プロンプト
-- `docs/{ticket_id}.md`: 実装計画セクション更新
 - `project.yaml` の `plan` セクション更新
 
 **説明:**
 
+- `project.yaml` の `design.artifacts` パスから設計成果物を読み込み
 - 設計からタスクを分割、依存関係を整理
-- 各タスク用プロンプト（task0X.md）を生成
+- 各タスク用プロンプト（task0X.md）をTDD方針で生成
 - 親エージェント用統合管理プロンプトを生成
 - `docs/{target_repo}/plan/` に出力
 
@@ -196,13 +189,8 @@ flowchart LR
 
 **インプット:**
 
-- `project.yaml`（存在する場合）
-- `setup.yaml`: プロジェクト設定
-- `docs/{ticket_id}.md`: 設計ドキュメント
-- `docs/{target_repo}/plan/`: タスク計画
-- `docs/{target_repo}/plan/task-list.md`: タスク一覧
-- `docs/{target_repo}/plan/task0X.md`: 各タスクプロンプト
-- `docs/{target_repo}/plan/parent-agent-prompt.md`: 統合管理プロンプト
+- `project.yaml`（SSOT — `plan.tasks` からタスク一覧取得、`plan.review.status = approved` が前提）
+- `docs/{target_repo}/plan/`: タスク計画（task-list.md, task0X.md, parent-agent-prompt.md）
 
 **成果物:**
 
@@ -214,9 +202,10 @@ flowchart LR
 
 **説明:**
 
-- タスク計画に従ってサブエージェントに実装を依頼
-- 並列タスクはworktreeを使用して並行実行
-- cherry-pickで親ブランチに統合
+- `project.yaml` の `plan.tasks` からタスク一覧・依存関係を取得
+- サブエージェントに実装を依頼（2段階レビュー: 仕様準拠 → コード品質）
+- 並列タスクはworktreeを使用して並行実行、cherry-pickで統合
+- 各タスク完了時に `project.yaml` の `implement.tasks` を更新
 - `docs/{target_repo}/implement/` に実行ログ出力
 
 ---
@@ -248,7 +237,9 @@ flowchart LR
 | submodule-overview | `overview`                       | サブモジュール概要         |
 | investigation      | `investigation`                  | 調査結果、リスク           |
 | design             | `design`                         | 設計方針、レビュー結果     |
+| review-design      | `design.review`                  | 設計レビュー指摘・ラウンド |
 | plan               | `plan`                           | タスク一覧、依存関係       |
+| review-plan        | `plan.review`                    | 計画レビュー指摘・ラウンド |
 | implement          | `implement`                      | 実行状況、コミットハッシュ |
 | verification       | `verification`                   | テスト結果、証拠           |
 | code_review        | `code_review`                    | レビューラウンド、結果     |
@@ -262,15 +253,21 @@ flowchart LR
     BS --> PY[project.yaml 生成]
     PY --> INV[investigation]
     INV --> DES[design]
-    DES --> PLN[plan]
-    PLN --> IMP[implement]
+    DES --> RD[review-design]
+    RD -->|✅ 承認| PLN[plan]
+    RD -->|❌⚠️ 指摘あり| DES
+    PLN --> RP[review-plan]
+    RP -->|✅ 承認| IMP[implement]
+    RP -->|❌⚠️ 指摘あり| PLN
     IMP --> VER[verification]
     VER --> CR[code_review]
     CR --> FIN[finishing]
 
     INV -.->|更新| PY
     DES -.->|更新| PY
+    RD -.->|更新| PY
     PLN -.->|更新| PY
+    RP -.->|更新| PY
     IMP -.->|更新| PY
     VER -.->|更新| PY
     CR -.->|更新| PY
@@ -281,11 +278,19 @@ flowchart LR
 
 ## 追加スキル一覧
 
+### ワークフロー補助スキル
+
+| スキル                   | 説明                                                      |
+| ------------------------ | --------------------------------------------------------- |
+| **issue-to-setup-yaml**  | Issue 情報から setup.yaml を自動生成                      |
+| **commit**               | MCP連携でチケット情報取得し日本語コミットメッセージを生成 |
+| **commit-multi-repo**    | 複数リポジトリ（サブモジュール含む）の一括コミット管理    |
+| **skill-usage-protocol** | スキル発動ルール・開発フロー全体の定義                    |
+
 ### 品質・開発支援スキル
 
 | スキル                             | 説明                                                     |
 | ---------------------------------- | -------------------------------------------------------- |
-| **brainstorming**                  | 創造的作業の前にユーザー意図・要件・設計を対話的に探求   |
 | **test-driven-development**        | RED-GREEN-REFACTORサイクルでテストファーストの開発を実践 |
 | **systematic-debugging**           | 根本原因を特定してから修正する体系的デバッグ手法         |
 | **verification-before-completion** | 完了主張前に検証コマンドを実行し証拠を確認               |
@@ -303,20 +308,21 @@ flowchart LR
 
 ---
 
-## 実行コマンド例
+## 実行例
+
+各スキルは Claude Code セッション内で直接呼び出せます。`skill-usage-protocol` に従い、関連スキルが自動的に発動します。
 
 ```bash
-# 環境構築（サブモジュール追加・初期セットアップ）
-claude --agent call-environment-setup.agent.md
-
-# 実装前計画（調査・設計・タスク分割）
-claude --agent call-pre-implementation-planning.agent.md
-
-# 汎用作業
-claude --agent call-general-purpose.agent.md
-
-# brainstorming（要件探索）- 汎用エージェント経由
-claude --agent call-general-purpose.agent.md --prompt "brainstormingスキルを使って要件を探索してください"
+# 典型的な開発フロー（セッション内で順次実行）
+claude "setup.yaml を使って作業ブランチを初期化してください"    # → init-work-branch
+claude "サブモジュールの概要を作成してください"                  # → submodule-overview
+claude "ブレストしましょう"                                      # → brainstorming → project.yaml 生成
+claude "詳細調査を実行してください"                              # → investigation
+claude "設計してください"                                        # → design
+claude "設計をレビューしてください"                              # → review-design
+claude "タスク計画を作成してください"                            # → plan
+claude "計画をレビューしてください"                              # → review-plan
+claude "実装を開始してください"                                  # → implement
 ```
 
 ---

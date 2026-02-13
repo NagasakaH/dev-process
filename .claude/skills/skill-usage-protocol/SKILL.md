@@ -107,7 +107,9 @@ finishing:       # 完了アクション
 | -------------------------------- | --------------------- |
 | `investigation`                  | `investigation`       |
 | `design`                         | `design`              |
+| `review-design`                  | `design.review`       |
 | `plan`                           | `plan`                |
+| `review-plan`                    | `plan.review`         |
 | `implement`                      | `implementation`      |
 | `verification-before-completion` | `verification`        |
 | `requesting-code-review`         | `code_review`（開始） |
