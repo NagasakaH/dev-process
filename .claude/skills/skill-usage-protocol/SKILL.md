@@ -54,6 +54,7 @@ digraph skill_flow {
 ├── code-review-fix/             # コードレビュー指摘の修正対応
 ├── commit/                      # コミットメッセージ生成
 ├── commit-multi-repo/           # マルチリポジトリコミット
+├── create-setup-yaml/           # 対話的にsetup.yamlを作成
 ├── design/                      # 設計
 ├── finishing-branch/            # ブランチ完了管理
 ├── implement/                   # 実装
@@ -106,20 +107,20 @@ finishing:       # 完了アクション
 
 ### スキルとproject.yamlセクションの対応
 
-| スキル                           | 更新セクション        |
-| -------------------------------- | --------------------- |
-| `brainstorming`                  | `meta`, `setup`, `brainstorming` |
-| `submodule-overview`             | `overview`            |
-| `investigation`                  | `investigation`       |
-| `design`                         | `design`              |
-| `review-design`                  | `design.review`       |
-| `plan`                           | `plan`                |
-| `review-plan`                    | `plan.review`         |
-| `implement`                      | `implement`           |
-| `verification`                   | `verification`        |
-| `code-review`                    | `code_review`         |
-| `code-review-fix`                | `code_review`（修正記録） |
-| `finishing-branch`               | `finishing`           |
+| スキル               | 更新セクション                   |
+| -------------------- | -------------------------------- |
+| `brainstorming`      | `meta`, `setup`, `brainstorming` |
+| `submodule-overview` | `overview`                       |
+| `investigation`      | `investigation`                  |
+| `design`             | `design`                         |
+| `review-design`      | `design.review`                  |
+| `plan`               | `plan`                           |
+| `review-plan`        | `plan.review`                    |
+| `implement`          | `implement`                      |
+| `verification`       | `verification`                   |
+| `code-review`        | `code_review`                    |
+| `code-review-fix`    | `code_review`（修正記録）        |
+| `finishing-branch`   | `finishing`                      |
 
 ### ワークフロー
 
