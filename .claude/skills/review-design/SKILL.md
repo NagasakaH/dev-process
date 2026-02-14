@@ -386,7 +386,7 @@ designスキルで設計を完了してください。
 - 前提スキル: `investigation` - 開発タスク用詳細調査
 - 前提スキル: `design` - 設計（差し戻し時に再実施）
 - 後続スキル: `plan` - タスク計画（承認後に進行）
-- 関連スキル: `requesting-code-review` — コードレビュー依頼
+- 関連スキル: `code-review` — コードレビュー
 
 ## SSOT参照
 

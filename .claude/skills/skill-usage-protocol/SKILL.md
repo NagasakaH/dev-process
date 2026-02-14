@@ -50,6 +50,8 @@ digraph skill_flow {
 ```
 .claude/skills/
 ├── brainstorming/               # 要件探索・デザイン
+├── code-review/                 # コードレビュー（チェックリストベース）
+├── code-review-fix/             # コードレビュー指摘の修正対応
 ├── commit/                      # コミットメッセージ生成
 ├── commit-multi-repo/           # マルチリポジトリコミット
 ├── design/                      # 設計
@@ -59,16 +61,14 @@ digraph skill_flow {
 ├── investigation/               # 詳細調査
 ├── issue-to-setup-yaml/         # Issue → setup.yaml
 ├── plan/                        # 計画
-├── receiving-code-review/       # レビュー対応
-├── requesting-code-review/      # レビュー依頼
-├── review/                      # 実装レビュー（チェックリストベース）
 ├── review-design/               # 設計レビュー
 ├── review-plan/                 # 計画レビュー
 ├── skill-usage-protocol/        # このスキル
 ├── submodule-overview/          # サブモジュール概要
 ├── systematic-debugging/        # 体系的デバッグ
 ├── test-driven-development/     # TDD
-├── verification-before-completion/  # 完了前検証
+├── verification/                # 検証（テスト・ビルド・リント実行確認）
+├── verification-before-completion/  # 完了前検証（汎用品質ルール）
 └── writing-skills/              # スキル作成ガイド
 ```
 
@@ -78,7 +78,7 @@ digraph skill_flow {
 issue-to-setup-yaml → init-work-branch → submodule-overview →
 brainstorming → investigation → design → review-design →
 plan → review-plan → implement (+ test-driven-development) →
-verification-before-completion → review →
+verification → code-review → [code-review-fix → code-review]* →
 finishing-branch
 ```
 
@@ -93,12 +93,14 @@ finishing-branch
 ```yaml
 # project.yaml の主要セクション
 setup:           # setup.yamlの内容（初期設定）
+brainstorming:   # 要件探索結果
+overview:        # サブモジュール概要
 investigation:   # 調査フェーズの結果
-design:          # 設計フェーズの結果
-plan:            # 計画フェーズの結果
-implementation:  # 実装進捗
-verification:    # 検証結果
-code_review:     # コードレビュー進捗
+design:          # 設計フェーズの結果（design.review含む）
+plan:            # 計画フェーズの結果（plan.review含む）
+implement:       # 実装進捗
+verification:    # 検証結果（テスト・ビルド・リント）
+code_review:     # コードレビュー進捗・指摘・修正
 finishing:       # 完了アクション
 ```
 
@@ -106,16 +108,17 @@ finishing:       # 完了アクション
 
 | スキル                           | 更新セクション        |
 | -------------------------------- | --------------------- |
+| `brainstorming`                  | `meta`, `setup`, `brainstorming` |
+| `submodule-overview`             | `overview`            |
 | `investigation`                  | `investigation`       |
 | `design`                         | `design`              |
 | `review-design`                  | `design.review`       |
 | `plan`                           | `plan`                |
 | `review-plan`                    | `plan.review`         |
-| `implement`                      | `implementation`      |
-| `verification-before-completion` | `verification`        |
-| `review`                         | `code_review`         |
-| `requesting-code-review`         | `code_review`（開始） |
-| `receiving-code-review`          | `code_review`（更新） |
+| `implement`                      | `implement`           |
+| `verification`                   | `verification`        |
+| `code-review`                    | `code_review`         |
+| `code-review-fix`                | `code_review`（修正記録） |
 | `finishing-branch`               | `finishing`           |
 
 ### ワークフロー

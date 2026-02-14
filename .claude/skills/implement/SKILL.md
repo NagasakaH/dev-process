@@ -23,7 +23,7 @@ planで作成されたタスク計画に従い、サブエージェントへの�
 6. **Worktreeライフサイクル管理**（作成→使用→破棄）
 7. **サブエージェントへの実装依頼と結果統合**
 8. **各タスク完了時に project.yaml の implement セクションを更新**
-9. **全タスク完了後に verification 連携を促す**
+9. **全タスク完了後に verification スキルへの連携を促す**
 
 ## 入力ファイル
 
@@ -131,7 +131,7 @@ flowchart TD
     I -->|No| E
     I -->|Yes| J[完了処理]
     J --> K[implement.status = completed に更新]
-    K --> L[verification 連携を促す]
+    K --> L[verification スキルへの連携を促す]
     L --> M[完了レポート]
 ```
 
@@ -377,7 +377,7 @@ if [ "$COMPLETED" -eq "$TOTAL" ]; then
     git commit -m "docs: ${TICKET_ID} 全タスク実装完了"
     
     echo "=== 全タスク完了 ==="
-    echo "次のステップ: verification-before-completion スキルで検証を実行してください"
+    echo "次のステップ: verification スキルで検証を実行してください"
 fi
 ```
 
@@ -625,9 +625,9 @@ git cherry-pick --abort
 - docs/{target_repo}/implement/execution-log.md
 
 ### 次のステップ
-1. **verification-before-completion** スキルで検証を実行
+1. **verification** スキルで検証を実行
 2. project.yaml の verification セクションが更新される
-3. コードレビューの依頼
+3. **code-review** スキルでコードレビュー
 ```
 
 ---
@@ -640,7 +640,7 @@ git cherry-pick --abort
 - **エラー時**: ロールバック・手動介入オプションを提示
 - **品質**: 各タスク完了時にテスト・リント・型チェックを確認
 - **project.yaml更新**: 各タスク完了時に implement.tasks を更新してコミット
-- **verification連携**: 全タスク完了後は verification-before-completion スキルで検証を実行
+- **verification連携**: 全タスク完了後は verification スキルで検証を実行
 
 ---
 
@@ -674,6 +674,7 @@ git cherry-pick --abort
 - 前提スキル: `plan` - タスク計画作成
 - 品質スキル: `test-driven-development` - TDDサイクル
 - 品質スキル: `verification-before-completion` - 完了前検証
+- 後続スキル: `verification` - 検証（テスト・ビルド・リント確認）
 - 後続スキル: `finishing-branch` - ブランチ完了管理
 - 参照: [references/worktree-management-guide.md](references/worktree-management-guide.md) - Worktree管理ガイド
 - 参照: [references/parallel-execution-guide.md](references/parallel-execution-guide.md) - 並列実行管理ガイド
@@ -714,7 +715,7 @@ git cherry-pick --abort
         ↓
 [implement.status = completed に更新]
         ↓
-[verification 連携を促す]
+[verification スキルへの連携を促す]
         ↓
 [完了レポート出力]
 ```

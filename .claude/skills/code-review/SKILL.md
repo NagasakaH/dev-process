@@ -1,16 +1,19 @@
 ---
-name: review
-description: 実装完了後のコード変更をチェックリストベースでレビューするスキル。設計準拠性、静的解析（.editorconfig・フォーマッター・リンター）、言語別ベストプラクティス、セキュリティ、テスト・CI、パフォーマンス、ドキュメント、Git作法を検証し、docs/{target_repo}/review/配下に結果を出力、project.yamlのcode_reviewセクションを更新する。「レビュー」「コードレビュー」「実装レビュー」「review」「PRレビュー」「変更レビュー」などのフレーズで発動。implementスキル完了後、finishing-branch前に使用。
+name: code-review
+description: 実装完了後のコード変更をチェックリストベースでレビューするスキル。SHAベースの差分特定、設計準拠性、静的解析（.editorconfig・フォーマッター・リンター）、言語別ベストプラクティス、セキュリティ、テスト・CI、パフォーマンス、ドキュメント、Git作法を検証し、docs/{target_repo}/code-review/配下に結果を出力、project.yamlのcode_reviewセクションを更新する。「コードレビュー」「実装レビュー」「code-review」「PRレビュー」「変更レビュー」「レビュー依頼」「レビューして」などのフレーズで発動。verificationスキル完了後、finishing-branch前に使用。
 ---
 
-# 実装レビュースキル（review）
+# コードレビュースキル（code-review）
 
-project.yaml + 実装変更（コミット範囲/差分）を入力として、PRレビュー相当のチェックリストベースレビューを実施し、結果をドキュメント化します。
+project.yaml + 実装変更（コミット範囲/差分）を入力として、PRレビュー相当のチェックリストベースレビューを実施し、指摘と修正案を提示します。
 
 > **SSOT**: `project.yaml` を全プロセスの Single Source of Truth として使用します。
 > - 設計成果物の参照: `design` セクション
 > - 実装状況の参照: `implement` セクション
+> - 検証結果の参照: `verification` セクション
 > - レビュー結果の出力: `code_review` セクション
+>
+> **責務の範囲**: このスキルは「指摘と修正案の提示」までが責務です。指摘に対する修正は `code-review-fix` スキルが担当します。
 
 ## 概要
 
@@ -20,24 +23,26 @@ project.yaml + 実装変更（コミット範囲/差分）を入力として、P
 2. **コミット範囲**（BASE_SHA..HEAD_SHA）から変更差分を特定
 3. **チェックリスト** に基づき8カテゴリのレビューを実施
 4. **静的解析ツール** をプロジェクト内で利用可能な場合は実行
-5. **docs/{target_repo}/review/** ディレクトリにレビュー結果を出力
+5. **docs/{target_repo}/code-review/** ディレクトリにレビュー結果を出力
 6. **project.yaml の code_review セクション** を更新してコミット
 
-## 再帰的レビューループ
+> **Note**: 旧 `requesting-code-review` スキルの「SHAベースのレビュー依頼フレーム」機能はこのスキルに統合されました。
+
+## レビューループ
 
 ```mermaid
 flowchart TD
-    A[implement 完了] --> B[review 実施]
+    A[verification 完了] --> B[code-review 実施]
     B --> C{総合判定}
     C -->|✅ 承認| D[finishing-branch へ進行]
-    C -->|⚠️ 条件付き承認| E[指摘事項を修正]
-    C -->|❌ 差し戻し| F[重大な修正を実施]
-    E --> G[review 再レビュー\nround++]
+    C -->|⚠️ 条件付き承認| E[code-review-fix で修正]
+    C -->|❌ 差し戻し| F[code-review-fix で修正]
+    E --> G[code-review 再レビュー\nround++]
     F --> G
     G --> C
 ```
 
-指摘がなくなるまでレビュー ⇄ 修正を再帰的に繰り返します。
+指摘がなくなるまで code-review ⇄ code-review-fix を繰り返します。
 各ラウンドの指摘内容は `project.yaml` の `code_review` セクションで追跡されます。
 
 ## 入力
@@ -227,13 +232,13 @@ flowchart TD
     D --> E[design/読み込み]
     E --> F[静的解析ツール検出・実行]
     F --> G[チェックリストベースレビュー実施]
-    G --> H[review/配下にレビュー結果生成]
+    G --> H[code-review/配下にレビュー結果生成]
     H --> I[project.yaml の code_review セクション更新]
     I --> J[コミット]
     J --> K{総合判定}
     K -->|✅ 承認| L[完了レポート → finishing-branch へ]
-    K -->|⚠️ 条件付き| M[指摘事項を修正 → 再レビュー]
-    K -->|❌ 差し戻し| N[重大な修正を実施 → 再レビュー]
+    K -->|⚠️ 条件付き| M[code-review-fix で修正 → 再レビュー]
+    K -->|❌ 差し戻し| N[code-review-fix で修正 → 再レビュー]
 ```
 
 ## 再レビュー時の処理
@@ -247,12 +252,12 @@ flowchart TD
 
 ## 出力ファイル構成
 
-レビュー結果は `docs/{target_repository}/review/` に出力：
+レビュー結果は `docs/{target_repository}/code-review/` に出力：
 
 ```
 docs/
 └── {target_repository}/
-    └── review/
+    └── code-review/
         ├── round-01.md                    # 第1ラウンド レビュー結果
         ├── round-02.md                    # 第2ラウンド レビュー結果（再レビュー時）
         └── ...
@@ -527,8 +532,8 @@ code_review:
       info_count: 0
       resolved_issues: ["CR-001", "CR-002"]
   artifacts:
-    - "docs/{target_repo}/review/round-01.md"
-    - "docs/{target_repo}/review/round-02.md"
+    - "docs/{target_repo}/code-review/round-01.md"
+    - "docs/{target_repo}/code-review/round-02.md"
 ```
 
 ### ラウンド管理ルール
@@ -617,7 +622,7 @@ for repo in "${target_repositories[@]}"; do
 done
 ```
 
-`docs/{target_repo}/review/round-{NN}.md` にラウンドレポートを生成。
+`docs/{target_repo}/code-review/round-{NN}.md` にラウンドレポートを生成。
 
 ### 6. project.yaml 更新
 
@@ -630,7 +635,7 @@ done
 git add docs/ project.yaml
 git commit -m "docs: {ticket_id} 実装レビュー結果を追加 (round {round})
 
-- docs/{target_repo}/review/round-{NN}.md にレビュー結果を出力
+- docs/{target_repo}/code-review/round-{NN}.md にレビュー結果を出力
 - project.yaml の code_review セクションを更新
 - チェックリスト: {pass_count}/{total_count} 通過
 - 指摘: Critical {c}件 / Major {m}件 / Minor {mi}件 / Info {i}件"
@@ -666,12 +671,12 @@ git commit -m "docs: {ticket_id} 実装レビュー結果を追加 (round {round
 {ツール名: 結果}
 
 ### 生成されたファイル
-- docs/{target_repo}/review/round-{NN}.md
+- docs/{target_repo}/code-review/round-{NN}.md
 
 ### 次のステップ
 1. ✅ 承認の場合: finishing-branchスキルへ進行
-2. ⚠️ 条件付き承認の場合: 指摘事項を修正後、再レビュー
-3. ❌ 差し戻しの場合: 重大な修正を実施後、再レビュー
+2. ⚠️ 条件付き承認の場合: code-review-fixスキルで修正後、再レビュー
+3. ❌ 差し戻しの場合: code-review-fixスキルで修正後、再レビュー
 ```
 
 ## エラーハンドリング
@@ -710,15 +715,14 @@ implementスキルで実装を完了してください。
 - チェックリスト項目で該当しないものは `result: skip` として記録
 - レビューは客観的・再現可能な基準に基づいて実施し、主観的な判断は避ける
 - ツール実行結果と手動レビューの両方を組み合わせて判定する
-- **再帰ループ**: 差し戻し/条件付き承認 → 修正 → review 再レビューを繰り返す
+- **再帰ループ**: 差し戻し/条件付き承認 → code-review-fix で修正 → code-review 再レビューを繰り返す
 
 ## 関連スキル
 
-- 前提スキル: `implement` - 実装（reviewの対象を生成）
-- 前提スキル: `verification-before-completion` - 完了前検証（テスト通過の確認）
+- 前提スキル: `implement` - 実装（code-reviewの対象を生成）
+- 前提スキル: `verification` - 検証（テスト・ビルド・リント通過の確認）
+- 後続スキル: `code-review-fix` - レビュー指摘の修正対応
 - 後続スキル: `finishing-branch` - ブランチ完了（承認後に進行）
-- 関連スキル: `requesting-code-review` - SHAベースレビュー依頼（軽量版）
-- 関連スキル: `receiving-code-review` - レビューフィードバック対応
 - 関連スキル: `review-design` / `review-plan` - 設計/計画フェーズレビュー
 
 ## SSOT参照
@@ -750,11 +754,11 @@ implementスキルで実装を完了してください。
         |
 [チェックリストベースレビュー] --> 8カテゴリ × 各チェック項目
         |
-[review/round-NN.md生成] --> ラウンドレポートを生成
+[code-review/round-NN.md生成] --> ラウンドレポートを生成
         |
 [project.yaml更新] --> code_review セクションを更新
         |
 [コミット] --> 変更をコミット
         |
-[判定分岐] --> ✅承認→finishing-branch / ⚠️条件付き→修正→再レビュー / ❌差し戻し→修正→再レビュー
+[判定分岐] --> ✅承認→finishing-branch / ⚠️条件付き→code-review-fix→再レビュー / ❌差し戻し→code-review-fix→再レビュー
 ```
