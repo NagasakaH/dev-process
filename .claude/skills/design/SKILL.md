@@ -627,6 +627,7 @@ git commit -m "docs: design 完了
 \`\`\`yaml
 design:
   status: completed
+  started_at: "{開始時に記録した時刻}"
   completed_at: "{timestamp}"
   summary: "{設計方針の要約}"
   approach: "{実装アプローチ}"

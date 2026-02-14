@@ -266,8 +266,8 @@ grep -r "emit\|publish\|subscribe\|event\|listener" --include="*.ts" --include="
 ### 1.2 関連コード・ファイル
 
 | ファイル | 役割 | 備考 |
-|----------|------|------|
-| ... | ... | ... |
+| -------- | ---- | ---- |
+| ...      | ...  | ...  |
 
 ### 1.3 参考情報
 
@@ -484,6 +484,7 @@ git commit -m "docs: investigation 完了
 \`\`\`yaml
 investigation:
   status: completed
+  started_at: "{開始時に記録した時刻}"
   completed_at: "{timestamp}"
   summary: |
     {調査結果の要約}
@@ -555,22 +556,22 @@ git submodule update --init を実行してください。
 
 ## SSOT参照
 
-| project.yaml フィールド | 用途 |
-|------------------------|------|
-| `meta.ticket_id` | チケットID |
-| `meta.task_name` | タスク名 |
-| `meta.target_repo` | 主要調査対象リポジトリ |
-| `setup.description.background` | 調査の背景情報・コンテキスト |
-| `setup.target_repositories` | 調査対象リポジトリ一覧 |
-| `brainstorming.refined_requirements` | 深掘りされた要件（参照） |
+| project.yaml フィールド              | 用途                         |
+| ------------------------------------ | ---------------------------- |
+| `meta.ticket_id`                     | チケットID                   |
+| `meta.task_name`                     | タスク名                     |
+| `meta.target_repo`                   | 主要調査対象リポジトリ       |
+| `setup.description.background`       | 調査の背景情報・コンテキスト |
+| `setup.target_repositories`          | 調査対象リポジトリ一覧       |
+| `brainstorming.refined_requirements` | 深掘りされた要件（参照）     |
 
 ## 出力（project.yaml への書き込み）
 
-| investigation フィールド | 説明 |
-|-------------------------|------|
-| `status` | `pending` / `in_progress` / `completed` |
-| `completed_at` | 完了日時（ISO 8601形式） |
-| `summary` | 調査結果の要約（3行以内） |
-| `key_findings` | 重要な発見（5件以内） |
-| `risks` | 特定されたリスク（3件以内） |
-| `artifacts` | 詳細調査ドキュメントのパス |
+| investigation フィールド | 説明                                    |
+| ------------------------ | --------------------------------------- |
+| `status`                 | `pending` / `in_progress` / `completed` |
+| `completed_at`           | 完了日時（ISO 8601形式）                |
+| `summary`                | 調査結果の要約（3行以内）               |
+| `key_findings`           | 重要な発見（5件以内）                   |
+| `risks`                  | 特定されたリスク（3件以内）             |
+| `artifacts`              | 詳細調査ドキュメントのパス              |
