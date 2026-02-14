@@ -1,0 +1,75 @@
+# =============================================================================
+# project.yaml ワークフロー前提条件定義
+# =============================================================================
+# 各スキル（フェーズ）が実行可能になるための前提条件を宣言的に定義する。
+# scripts/validate-project-yaml.sh --preconditions で検証可能。
+#
+# 形式:
+#   preconditions:
+#     <セクション名>:
+#       requires:
+#         - path: <project.yaml 内のドット区切りパス>
+#           value: <期待される値>
+#           description: <前提条件の説明>
+# =============================================================================
+
+preconditions:
+  investigation:
+    requires:
+      - path: brainstorming.status
+        value: completed
+        description: "ブレインストーミングが完了していること"
+
+  design:
+    requires:
+      - path: investigation.status
+        value: completed
+        description: "調査が完了していること"
+
+  review-design:
+    requires:
+      - path: design.status
+        value: completed
+        description: "設計が完了していること"
+
+  plan:
+    requires:
+      - path: design.status
+        value: completed
+        description: "設計が完了していること"
+      - path: design.review.status
+        value: approved
+        description: "設計レビューが承認されていること"
+
+  review-plan:
+    requires:
+      - path: plan.status
+        value: completed
+        description: "計画が完了していること"
+
+  implement:
+    requires:
+      - path: plan.status
+        value: completed
+        description: "計画が完了していること"
+      - path: plan.review.status
+        value: approved
+        description: "計画レビューが承認されていること"
+
+  verification:
+    requires:
+      - path: implement.status
+        value: completed
+        description: "実装が完了していること"
+
+  code-review:
+    requires:
+      - path: verification.status
+        value: completed
+        description: "検証が完了していること"
+
+  finishing-branch:
+    requires:
+      - path: code_review.status
+        value: approved
+        description: "コードレビューが承認されていること"

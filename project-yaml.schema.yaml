@@ -1,0 +1,723 @@
+# =============================================================================
+# project.yaml JSON Schema（YAML形式）
+# =============================================================================
+# 全プロセスの SSOT として機能する project.yaml のバリデーションスキーマ。
+#
+# バリデーション実行:
+#   scripts/validate-project-yaml.sh [project.yaml へのパス]
+#
+# スキーマ仕様: JSON Schema Draft 2020-12
+# =============================================================================
+
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "https://dev-process/schemas/project-yaml"
+title: "project.yaml"
+description: "開発プロセス SSOT（Single Source of Truth）ファイルのスキーマ定義"
+type: object
+
+# =============================================================================
+# 共通定義（$defs）
+# =============================================================================
+$defs:
+  # ---------------------------------------------------------------------------
+  # タイムスタンプ（ISO 8601）
+  # ---------------------------------------------------------------------------
+  iso8601:
+    type: string
+    pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}([+-]\\d{2}:\\d{2}|Z)$"
+    description: "ISO 8601 形式のタイムスタンプ"
+
+  # ---------------------------------------------------------------------------
+  # ステータス列挙
+  # ---------------------------------------------------------------------------
+  lifecycle_status:
+    type: string
+    enum: [pending, in_progress, completed, failed, skipped]
+    description: "ライフサイクルステータス"
+
+  review_status:
+    type: string
+    enum: [pending, approved, conditional, rejected]
+    description: "レビューステータス"
+
+  check_status:
+    type: string
+    enum: [pass, fail, skip, warning]
+    description: "チェック結果ステータス"
+
+  issue_status:
+    type: string
+    enum: [open, resolved, deferred, fixed, disputed]
+    description: "指摘ステータス"
+
+  severity:
+    type: string
+    enum: [critical, major, minor, info]
+    description: "重大度レベル"
+
+  task_status:
+    type: string
+    enum: [pending, in_progress, completed]
+    description: "タスクステータス"
+
+  finishing_action:
+    type: string
+    enum: [merge, pr, keep, discard]
+    description: "ブランチ完了アクション"
+
+  # ---------------------------------------------------------------------------
+  # 共通パターン: artifacts パス
+  # ---------------------------------------------------------------------------
+  artifacts_path:
+    type: string
+    description: "成果物ディレクトリ/ファイルパス"
+
+  # ---------------------------------------------------------------------------
+  # 共通パターン: レビュー指摘
+  # ---------------------------------------------------------------------------
+  review_issue:
+    type: object
+    properties:
+      id:
+        type: string
+        description: "指摘ID（例: DR-001, PR-001）"
+      severity:
+        $ref: "#/$defs/severity"
+      category:
+        type: string
+        description: "指摘カテゴリ"
+      description:
+        type: string
+        description: "指摘内容"
+      status:
+        type: string
+        enum: [open, resolved, deferred]
+        description: "指摘対応状態"
+      resolved_in_round:
+        type: integer
+        minimum: 1
+        description: "解決されたラウンド番号"
+    required: [id, severity, description, status]
+    additionalProperties: false
+
+  # ---------------------------------------------------------------------------
+  # 共通パターン: レビューセクション
+  # ---------------------------------------------------------------------------
+  review_section:
+    type: object
+    properties:
+      round:
+        type: integer
+        minimum: 1
+        description: "ラウンド番号"
+      status:
+        $ref: "#/$defs/review_status"
+      latest_verdict:
+        type: string
+        description: "日本語判定テキスト"
+      completed_at:
+        $ref: "#/$defs/iso8601"
+      summary:
+        type: string
+        description: "レビュー結果の要約（3行以内推奨）"
+      notes:
+        type: string
+        description: "補足メモ"
+      issues:
+        type: array
+        items:
+          $ref: "#/$defs/review_issue"
+        description: "指摘事項リスト（全ラウンド累積）"
+      artifacts:
+        type: array
+        items:
+          type: string
+        description: "レビュー結果ファイルパス"
+    required: [round, status]
+    additionalProperties: false
+
+  # ---------------------------------------------------------------------------
+  # 共通パターン: リポジトリ参照
+  # ---------------------------------------------------------------------------
+  repository_ref:
+    type: object
+    properties:
+      name:
+        type: string
+        description: "リポジトリ名"
+      url:
+        type: string
+        description: "リポジトリURL"
+      branch:
+        type: string
+        description: "ブランチ名（任意）"
+      base_branch:
+        type: string
+        description: "ベースブランチ名（任意）"
+    required: [name, url]
+    additionalProperties: false
+
+# =============================================================================
+# プロパティ定義
+# =============================================================================
+properties:
+  # ---------------------------------------------------------------------------
+  # meta — メタ情報
+  # ---------------------------------------------------------------------------
+  meta:
+    type: object
+    description: "プロジェクトメタ情報（brainstormingが初期生成、各プロセスがupdated_atを更新）"
+    properties:
+      version:
+        type: string
+        description: "スキーマバージョン"
+        const: "1.0"
+      ticket_id:
+        type: string
+        description: "チケットID（例: PROJ-123）"
+      task_name:
+        type: string
+        description: "タスク名"
+      target_repo:
+        type: string
+        description: "主要ターゲットリポジトリ名"
+      branch:
+        type: string
+        description: "作業ブランチ名（例: feature/PROJ-123）"
+      created_at:
+        $ref: "#/$defs/iso8601"
+      updated_at:
+        $ref: "#/$defs/iso8601"
+    required: [version, ticket_id, task_name, target_repo, branch, created_at, updated_at]
+    additionalProperties: false
+
+  # ---------------------------------------------------------------------------
+  # setup — setup.yaml から引き継ぎ（読み取り専用）
+  # ---------------------------------------------------------------------------
+  setup:
+    type: object
+    description: "setup.yaml からの引き継ぎ情報（読み取り専用）"
+    properties:
+      description:
+        type: object
+        properties:
+          overview:
+            type: string
+            description: "プロジェクト概要"
+          purpose:
+            type: string
+            description: "目的"
+          background:
+            type: string
+            description: "背景情報（investigation が参照）"
+          requirements:
+            type: object
+            properties:
+              functional:
+                type: array
+                items: { type: string }
+                description: "機能要件リスト"
+              non_functional:
+                type: array
+                items: { type: string }
+                description: "非機能要件リスト"
+            additionalProperties: false
+          acceptance_criteria:
+            type: array
+            items: { type: string }
+            description: "受入基準リスト"
+          scope:
+            type: array
+            items: { type: string }
+            description: "スコープ"
+          out_of_scope:
+            type: array
+            items: { type: string }
+            description: "スコープ外"
+          notes:
+            type: string
+            description: "補足情報"
+        additionalProperties: false
+      related_repositories:
+        type: array
+        items:
+          $ref: "#/$defs/repository_ref"
+        description: "関連リポジトリ"
+      target_repositories:
+        type: array
+        items:
+          $ref: "#/$defs/repository_ref"
+        description: "修正対象リポジトリ"
+      options:
+        type: object
+        properties:
+          create_design_document:
+            type: boolean
+            default: true
+          design_document_dir:
+            type: string
+            default: "docs"
+          submodules_dir:
+            type: string
+            default: "submodules"
+        additionalProperties: false
+    additionalProperties: false
+
+  # ---------------------------------------------------------------------------
+  # brainstorming
+  # ---------------------------------------------------------------------------
+  brainstorming:
+    type: object
+    description: "ブレインストーミング結果（brainstorming スキルが記入）"
+    properties:
+      status:
+        $ref: "#/$defs/lifecycle_status"
+      started_at:
+        $ref: "#/$defs/iso8601"
+      completed_at:
+        $ref: "#/$defs/iso8601"
+      summary:
+        type: string
+        description: "要約（3行以内推奨）"
+      decisions:
+        type: array
+        maxItems: 5
+        items:
+          type: object
+          properties:
+            question:
+              type: string
+              description: "検討した質問"
+            decision:
+              type: string
+              description: "決定内容"
+          required: [question, decision]
+          additionalProperties: false
+        description: "主要な決定事項（5件以内）"
+      refined_requirements:
+        type: array
+        items: { type: string }
+        description: "ブレストで追加・修正された要件"
+      artifacts:
+        $ref: "#/$defs/artifacts_path"
+    required: [status]
+    additionalProperties: false
+
+  # ---------------------------------------------------------------------------
+  # overview
+  # ---------------------------------------------------------------------------
+  overview:
+    type: object
+    description: "サブモジュール概要（submodule-overview スキルが記入）"
+    properties:
+      status:
+        $ref: "#/$defs/lifecycle_status"
+      started_at:
+        $ref: "#/$defs/iso8601"
+      completed_at:
+        $ref: "#/$defs/iso8601"
+      summary:
+        type: string
+        description: "要約"
+      artifacts:
+        $ref: "#/$defs/artifacts_path"
+    required: [status]
+    additionalProperties: false
+
+  # ---------------------------------------------------------------------------
+  # investigation
+  # ---------------------------------------------------------------------------
+  investigation:
+    type: object
+    description: "調査結果（investigation スキルが記入）"
+    properties:
+      status:
+        $ref: "#/$defs/lifecycle_status"
+      started_at:
+        $ref: "#/$defs/iso8601"
+      completed_at:
+        $ref: "#/$defs/iso8601"
+      summary:
+        type: string
+        description: "要約（3行以内推奨）"
+      key_findings:
+        type: array
+        maxItems: 5
+        items: { type: string }
+        description: "重要な発見（5件以内）"
+      risks:
+        type: array
+        maxItems: 3
+        items: { type: string }
+        description: "特定されたリスク（3件以内）"
+      artifacts:
+        $ref: "#/$defs/artifacts_path"
+    required: [status]
+    additionalProperties: false
+
+  # ---------------------------------------------------------------------------
+  # design（design + review-design）
+  # ---------------------------------------------------------------------------
+  design:
+    type: object
+    description: "設計結果（design + review-design スキルが記入）"
+    properties:
+      status:
+        $ref: "#/$defs/lifecycle_status"
+      started_at:
+        $ref: "#/$defs/iso8601"
+      completed_at:
+        $ref: "#/$defs/iso8601"
+      summary:
+        type: string
+        description: "要約"
+      approach:
+        type: string
+        description: "設計方針の要約"
+      key_decisions:
+        type: array
+        maxItems: 5
+        items: { type: string }
+        description: "設計上の主要決定（5件以内）"
+      review:
+        $ref: "#/$defs/review_section"
+      artifacts:
+        $ref: "#/$defs/artifacts_path"
+    required: [status]
+    additionalProperties: false
+
+  # ---------------------------------------------------------------------------
+  # plan（plan + review-plan）
+  # ---------------------------------------------------------------------------
+  plan:
+    type: object
+    description: "タスク計画（plan + review-plan スキルが記入）"
+    properties:
+      status:
+        $ref: "#/$defs/lifecycle_status"
+      started_at:
+        $ref: "#/$defs/iso8601"
+      completed_at:
+        $ref: "#/$defs/iso8601"
+      summary:
+        type: string
+        description: "要約"
+      total_tasks:
+        type: integer
+        minimum: 1
+        description: "総タスク数"
+      tasks:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+              description: "タスクID（例: task01）"
+            title:
+              type: string
+              description: "タスクタイトル"
+            status:
+              $ref: "#/$defs/task_status"
+            target_repo:
+              type: string
+              description: "対象リポジトリ名（マルチリポジトリ対応、任意）"
+          required: [id, title, status]
+          additionalProperties: false
+        description: "タスク一覧"
+      review:
+        $ref: "#/$defs/review_section"
+      artifacts:
+        $ref: "#/$defs/artifacts_path"
+    required: [status]
+    additionalProperties: false
+
+  # ---------------------------------------------------------------------------
+  # implement
+  # ---------------------------------------------------------------------------
+  implement:
+    type: object
+    description: "実装状況（implement スキルが記入）"
+    properties:
+      status:
+        type: string
+        enum: [in_progress, completed]
+        description: "実装ステータス"
+      started_at:
+        $ref: "#/$defs/iso8601"
+      completed_at:
+        $ref: "#/$defs/iso8601"
+      completed_tasks:
+        type: integer
+        minimum: 0
+        description: "完了タスク数"
+      total_tasks:
+        type: integer
+        minimum: 1
+        description: "総タスク数"
+      tasks:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+              description: "タスクID"
+            status:
+              $ref: "#/$defs/task_status"
+            commit:
+              type: string
+              description: "コミットハッシュ短縮形（完了時のみ）"
+            target_repo:
+              type: string
+              description: "対象リポジトリ名（マルチリポジトリ対応、任意）"
+          required: [id, status]
+          additionalProperties: false
+        description: "実装タスク一覧"
+      artifacts:
+        $ref: "#/$defs/artifacts_path"
+    required: [status, started_at]
+    additionalProperties: false
+
+  # ---------------------------------------------------------------------------
+  # verification
+  # ---------------------------------------------------------------------------
+  verification:
+    type: object
+    description: "検証結果（verification スキルが記入）"
+    properties:
+      status:
+        $ref: "#/$defs/lifecycle_status"
+      started_at:
+        $ref: "#/$defs/iso8601"
+      completed_at:
+        $ref: "#/$defs/iso8601"
+      results:
+        type: object
+        properties:
+          test:
+            type: object
+            properties:
+              status: { $ref: "#/$defs/check_status" }
+              detail: { type: string }
+              coverage: { type: string }
+            required: [status, detail]
+            additionalProperties: false
+          build:
+            type: object
+            properties:
+              status: { $ref: "#/$defs/check_status" }
+              detail: { type: string }
+            required: [status, detail]
+            additionalProperties: false
+          lint:
+            type: object
+            properties:
+              status: { $ref: "#/$defs/check_status" }
+              detail: { type: string }
+            required: [status, detail]
+            additionalProperties: false
+          typecheck:
+            type: object
+            properties:
+              status: { $ref: "#/$defs/check_status" }
+              detail: { type: string }
+            required: [status, detail]
+            additionalProperties: false
+        additionalProperties: false
+        description: "各検証項目の結果"
+      summary:
+        type: string
+        description: "検証結果の要約"
+      evidence:
+        type: array
+        items: { type: string }
+        description: "検証証拠リスト"
+      artifacts:
+        type: array
+        items: { type: string }
+        description: "検証結果ファイルパス"
+    required: [status]
+    additionalProperties: false
+
+  # ---------------------------------------------------------------------------
+  # code_review
+  # ---------------------------------------------------------------------------
+  code_review:
+    type: object
+    description: "コードレビュー結果（code-review + code-review-fix スキルが記入）"
+    properties:
+      status:
+        type: string
+        enum: [pending, approved, conditional, revision_required]
+        description: "レビューステータス"
+      round:
+        type: integer
+        minimum: 1
+        description: "現在のラウンド番号"
+      started_at:
+        $ref: "#/$defs/iso8601"
+      completed_at:
+        $ref: "#/$defs/iso8601"
+      rounds:
+        type: array
+        items:
+          type: object
+          properties:
+            round:
+              type: integer
+              minimum: 1
+            result:
+              type: string
+              enum: [approved, revision_required]
+            issues:
+              type: integer
+              minimum: 0
+              description: "指摘数"
+          required: [round, result, issues]
+          additionalProperties: false
+        description: "ラウンド履歴"
+      review_checklist:
+        type: object
+        description: "8カテゴリのチェック結果"
+        patternProperties:
+          "^(design_conformance|static_analysis|language_best_practices|security|tests_ci|performance|documentation|git_hygiene)$":
+            type: object
+            properties:
+              status: { $ref: "#/$defs/check_status" }
+              notes: { type: string }
+            required: [status]
+            additionalProperties: false
+        additionalProperties: false
+      issues:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+              description: "指摘ID（例: CR-001）"
+            severity:
+              $ref: "#/$defs/severity"
+            description:
+              type: string
+            file:
+              type: string
+              description: "対象ファイル"
+            line:
+              type: integer
+              description: "対象行"
+            status:
+              type: string
+              enum: [open, fixed, disputed]
+            fix_commit:
+              type: string
+              description: "修正コミットハッシュ（fixed時）"
+            dispute_reason:
+              type: string
+              description: "反論理由（disputed時）"
+          required: [id, severity, description, status]
+          additionalProperties: false
+        description: "指摘事項"
+      artifacts:
+        type: array
+        items: { type: string }
+        description: "レビュー結果ファイルパス"
+    required: [status]
+    additionalProperties: false
+
+  # ---------------------------------------------------------------------------
+  # finishing
+  # ---------------------------------------------------------------------------
+  finishing:
+    type: object
+    description: "ブランチ完了情報（finishing-branch スキルが記入）"
+    properties:
+      status:
+        $ref: "#/$defs/lifecycle_status"
+      started_at:
+        $ref: "#/$defs/iso8601"
+      completed_at:
+        $ref: "#/$defs/iso8601"
+      action:
+        $ref: "#/$defs/finishing_action"
+      pr_url:
+        type: string
+        format: uri
+        description: "PR URL（PR作成時のみ）"
+      merge_commit:
+        type: string
+        description: "マージコミットハッシュ（マージ時のみ）"
+    required: [status, action]
+    additionalProperties: false
+
+  # ---------------------------------------------------------------------------
+  # _metrics — 自動生成メトリクス（任意セクション）
+  # ---------------------------------------------------------------------------
+  _metrics:
+    type: object
+    description: "自動生成メトリクス（scripts/generate-metrics.sh で生成）"
+    properties:
+      total_duration_hours:
+        type: number
+        description: "プロジェクト総所要時間（時間）"
+      phases:
+        type: object
+        description: "各フェーズのメトリクス"
+        patternProperties:
+          "^(brainstorming|overview|investigation|design|plan|implement|verification|code_review|finishing)$":
+            type: object
+            properties:
+              duration_min:
+                type: number
+                description: "所要時間（分）"
+              review_rounds:
+                type: integer
+                description: "レビューラウンド数"
+              tasks_completed:
+                type: integer
+              tasks_failed:
+                type: integer
+              tests_passed:
+                type: integer
+              coverage:
+                type: string
+              rounds:
+                type: integer
+              total_issues:
+                type: integer
+              fixed:
+                type: integer
+              disputed:
+                type: integer
+            additionalProperties: false
+        additionalProperties: false
+      bottleneck:
+        type: string
+        description: "ボトルネックフェーズ名"
+      estimated_remaining:
+        type: object
+        properties:
+          current_phase:
+            type: string
+          tasks_remaining:
+            type: integer
+          estimated_hours:
+            type: number
+        additionalProperties: false
+    additionalProperties: false
+
+# =============================================================================
+# 必須セクション
+# =============================================================================
+# brainstorming が初期生成時に meta + setup + brainstorming を作成する
+required: [meta, setup, brainstorming]
+
+# x- プレフィックスのカスタム/実験的セクションを許容（#7 プラグイン規約）
+# 定義済みセクション以外は x- プレフィックスのみ許可
+patternProperties:
+  "^x-":
+    type: object
+    description: "カスタム/実験的セクション（x- プレフィックス必須）"
+
+additionalProperties: false

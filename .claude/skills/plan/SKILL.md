@@ -383,11 +383,12 @@ design/配下の各ファイルを読み込み、タスク化対象を特定：
 
 ```bash
 # plan セクションを更新
+yq -i ".plan.started_at = \"$(date -Iseconds)\"" "$YAML_PATH"  # 開始時に記録（セクション初期化時）
 yq -i '.plan.status = "completed"' "$YAML_PATH"
 yq -i ".plan.completed_at = \"$(date -Iseconds)\"" "$YAML_PATH"
 yq -i '.plan.summary = "Nタスクに分割..."' "$YAML_PATH"
 yq -i '.plan.total_tasks = N' "$YAML_PATH"
-yq -i '.plan.tasks = [...]' "$YAML_PATH"
+yq -i '.plan.tasks = [...]' "$YAML_PATH"  # 各タスクに target_repo を含可（マルチリポジトリ時）
 yq -i '.plan.review.status = "pending"' "$YAML_PATH"
 yq -i '.plan.review.round = 0' "$YAML_PATH"
 yq -i ".plan.artifacts = \"docs/${TARGET_REPO}/plan/\"" "$YAML_PATH"

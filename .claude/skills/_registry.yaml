@@ -1,0 +1,92 @@
+# =============================================================================
+# スキルレジストリ — セクション ⇔ スキル の対応表
+# =============================================================================
+# project.yaml の各セクションを管理するスキルの登録情報。
+# 新しいスキル追加時はここに登録する。
+# =============================================================================
+
+sections:
+  meta:
+    description: "プロジェクトメタ情報"
+    writer: brainstorming
+    readers: [all]
+    notes: "brainstorming が初期生成。各スキルが updated_at を更新"
+
+  setup:
+    description: "setup.yaml からの引き継ぎ（読み取り専用）"
+    writer: brainstorming
+    readers: [investigation, design, review-design, plan, review-plan]
+    notes: "brainstorming が setup.yaml から変換・配置"
+
+  brainstorming:
+    description: "ブレインストーミング結果"
+    writer: brainstorming
+    readers: [investigation, design]
+
+  overview:
+    description: "サブモジュール概要"
+    writer: submodule-overview
+    readers: [investigation, design]
+
+  investigation:
+    description: "調査結果"
+    writer: investigation
+    readers: [design]
+
+  design:
+    description: "設計結果"
+    writer: design
+    readers: [review-design, plan]
+    sub_sections:
+      review:
+        writer: review-design
+        readers: [plan, implement]
+
+  plan:
+    description: "タスク計画"
+    writer: plan
+    readers: [review-plan, implement]
+    sub_sections:
+      review:
+        writer: review-plan
+        readers: [implement]
+
+  implement:
+    description: "実装状況"
+    writer: implement
+    readers: [verification]
+
+  verification:
+    description: "検証結果"
+    writer: verification
+    readers: [code-review]
+
+  code_review:
+    description: "コードレビュー結果"
+    writer: code-review
+    readers: [code-review-fix, finishing-branch]
+    notes: "code-review-fix が issues の status を更新"
+
+  finishing:
+    description: "ブランチ完了情報"
+    writer: finishing-branch
+    readers: []
+
+  _metrics:
+    description: "自動生成メトリクス"
+    writer: scripts/generate-metrics.sh
+    readers: []
+    notes: "手動またはCI経由で生成"
+
+# =============================================================================
+# プラグイン規約
+# =============================================================================
+# カスタム/実験的セクションには x- プレフィックスを使用する。
+# 例: x-performance-benchmark, x-deployment-staging
+#
+# プラグインセクションの登録:
+#   x-<name>:
+#     description: "説明"
+#     writer: <スキル名またはスクリプトパス>
+#     readers: [参照するスキル]
+# =============================================================================
