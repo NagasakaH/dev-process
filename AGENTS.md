@@ -9,6 +9,12 @@
 
 本リポジトリ固有の運用ルールを示す（詳細はREADME.mdを参照）。
 
+## 最重要ルール
+
+このプロジェクトはsetup.yamlを元にproject.yamlを生成、その後の作業状況を全てproject.yamlで管理します
+
+project.yamlの直接参照は禁止、代わりにscripts/project-yaml-helper.shを使用してください
+
 ## 10ステップワークフロー
 
 1. **init-work-branch** - ブランチ・サブモジュール・設計ドキュメント初期化
