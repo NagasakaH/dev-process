@@ -33,3 +33,15 @@ project.yamlの直接参照は禁止、代わりにscripts/project-yaml-helper.s
 - **TDD**: 失敗するテストなしにコードを書かない
 - **verification**: 検証証拠なしに完了を主張しない
 - **並列化**: 独立タスク→並列、依存タスク→順次
+
+## エージェント
+
+| エージェント                                   | 説明                                                                                    |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------- |
+| [dev-workflow](.claude/agents/dev-workflow.md) | 10ステップワークフローを自律実行。setup.yaml作成〜finishing-branchまで1プロンプトで完走 |
+
+## setup.yaml の作成
+
+setup.yaml がない場合は以下のいずれかで作成：
+- `create-setup-yaml` スキル — ユーザーと対話して0から作成
+- `issue-to-setup-yaml` スキル — GitHub Issue から自動抽出
