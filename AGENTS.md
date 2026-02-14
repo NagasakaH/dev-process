@@ -40,16 +40,18 @@ call-* ラッパー         # Opus-4.6 指定可能
   prompt: "タスク内容"
 ```
 
-## 7+1ステップワークフロー
+## 10ステップワークフロー
 
 1. **init-work-branch** - ブランチ・サブモジュール・設計ドキュメント初期化
 2. **submodule-overview** - サブモジュール概要作成
 3. **brainstorming** - 要件探索・project.yaml 生成（全プロセスのSSOT）
 4. **investigation** - 詳細調査（UML図含む）
-5. **design** - 詳細設計（API、データ構造、処理フロー）
-6. **plan** - タスク分割・プロンプト生成
+5. **design** (+review-design) - 詳細設計（API、データ構造、処理フロー）
+6. **plan** (+review-plan) - タスク分割・プロンプト生成
 7. **implement** - 実装実行（並列化対応）
-8. **review** - チェックリストベース実装レビュー（再帰ループ対応）
+8. **verification** - テスト・ビルド・リント実行確認
+9. **code-review** (+code-review-fix) - チェックリストベース実装レビュー
+10. **finishing-branch** - マージ/PR/クリーンアップ
 
 ## 品質ルール
 
@@ -61,9 +63,13 @@ call-* ラッパー         # Opus-4.6 指定可能
 
 - dev-planning-manager → pre-implementation-planning に統合
 - manager → 削除
-- code-reviewer → requesting-code-review スキルに統合
+- code-reviewer → code-review スキルに統合
+- requesting-code-review → code-review スキルに統合
+- receiving-code-review → code-review-fix スキルに置き換え
+- review → code-review にリネーム
 
 ## 変更履歴
 
+- 2026-02-14: ワークフロー・スキル整理（review→code-review統合、verification/code-review-fix新設、10ステップ化）
 - 2026-02-13: review スキル本格化（チェックリストベース実装レビュー、8ステップワークフロー化）
 - 2026-02-12: Opus-4.6 モデル指定ルール明確化、README.md全面更新

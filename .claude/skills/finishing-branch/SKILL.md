@@ -74,7 +74,7 @@ finishing:
 
 ## 関連スキル
 
-- 前提: `receiving-code-review` - レビュー対応後
+- 前提: `code-review` - コードレビュー承認後
 - 参照元: `commit` - コミット後ワークフロー
 - 参照元: `implement` - 全バッチ完了後
 - 参照: [README.md#finishing-branch-自動化手順](../../README.md#finishing-branch-自動化手順) - 自動化コマンド例

@@ -4,11 +4,11 @@ Claude向けの開発プロセス用スキル集とエージェント構成を�
 
 ## プロジェクト概要
 
-本リポジトリは、AIエージェントによる開発プロセスを体系化し、8ステップワークフローで高品質なソフトウェア開発を実現します。
+本リポジトリは、AIエージェントによる開発プロセスを体系化し、10ステップワークフローで高品質なソフトウェア開発を実現します。
 
 ### 主な特徴
 
-- **8ステップワークフロー**: 初期化 → ブレスト → 調査 → 設計 → 計画 → 実装 → レビューの体系的プロセス
+- **10ステップワークフロー**: 初期化 → ブレスト → 調査 → 設計 → 計画 → 実装 → 検証 → レビューの体系的プロセス
 - **エージェント階層構造**: call-\* ラッパー → 実行エージェント → サブエージェント
 - **品質スキル統合**: TDD、検証、デバッグ、コードレビューの組み込み
 - **並列実行対応**: 独立タスクの並列処理によるスループット向上
@@ -42,7 +42,7 @@ call-* ラッパー (Opus-4.6 指定可)
 
 ---
 
-## 8ステップワークフロー
+## 10ステップワークフロー
 
 ```mermaid
 flowchart LR
@@ -50,10 +50,18 @@ flowchart LR
     overview --> brainstorm[3. brainstorming]
     brainstorm --> investigation[4. investigation]
     investigation --> design[5. design]
-    design --> plan[6. plan]
-    plan --> implement[7. implement]
-    implement --> review[8. review]
-    review --> finish[finishing-branch]
+    design --> review_d[5a. review-design]
+    review_d --> plan[6. plan]
+    plan --> review_p[6a. review-plan]
+    review_p --> implement[7. implement]
+    implement --> verification[8. verification]
+    verification --> code_review[9. code-review]
+    code_review --> finish[10. finishing-branch]
+    
+    review_d -->|❌ 差し戻し| design
+    review_p -->|❌ 差し戻し| plan
+    code_review -->|❌⚠️ 指摘あり| code_review_fix[9a. code-review-fix]
+    code_review_fix --> code_review
 ```
 
 ### 1. init-work-branch（作業ブランチ初期化）
@@ -209,25 +217,76 @@ flowchart LR
 - 各タスク完了時に `project.yaml` の `implement.tasks` を更新
 - `docs/{target_repo}/implement/` に実行ログ出力
 
-### 8. review（実装レビュー）
+### 8. verification（検証）
 
 **インプット:**
 
 - `project.yaml`（SSOT — `implement.status = completed` が前提）
+- `submodules/{target_repo}/`: 実装済みコード
+
+**成果物:**
+
+- `docs/{target_repo}/verification/results.md`: 検証結果レポート
+- `project.yaml` の `verification` セクション更新
+
+**説明:**
+
+- テスト・ビルド・リント・型チェックを実行し、自動化可能な客観検証を実施
+- 全検証通過で code-review へ進行、失敗時は implement に戻る
+
+### 9. code-review（コードレビュー）
+
+**インプット:**
+
+- `project.yaml`（SSOT — `verification.status = completed` が前提）
 - コミット範囲（BASE_SHA..HEAD_SHA）
 - `docs/{target_repo}/design/`: 設計成果物（設計準拠性チェック用）
 
 **成果物:**
 
-- `docs/{target_repo}/review/round-01.md`（以降 round-02.md, ...）: レビュー結果
+- `docs/{target_repo}/code-review/round-01.md`（以降 round-02.md, ...）: レビュー結果
 - `project.yaml` の `code_review` セクション更新（チェックリスト結果・指摘・ラウンド）
 
 **説明:**
 
 - 8カテゴリのチェックリスト（設計準拠性、静的解析、言語別ベストプラクティス、セキュリティ、テスト・CI、パフォーマンス、ドキュメント、Git作法）でレビューを実施
 - プロジェクト内の静的解析ツール（prettier / eslint / black / flake8 等）を検出・実行
-- 指摘がなくなるまで レビュー ⇄ 修正 を再帰的に繰り返し
+- 指摘と修正案の提示が責務（修正自体は code-review-fix が担当）
 - `project.yaml` の `code_review.review_checklist` にチェック項目と結果を構造化記録
+
+### 9a. code-review-fix（レビュー指摘修正）
+
+**インプット:**
+
+- `project.yaml`（SSOT — `code_review.issues` から未解決指摘を取得）
+- `docs/{target_repo}/code-review/round-{NN}.md`: レビュー結果
+
+**成果物:**
+
+- 修正コード・コミット
+- `project.yaml` の `code_review.issues` 更新（fixed / disputed）
+
+**説明:**
+
+- 各指摘を技術的に検証し、妥当な場合は修正、不適切な場合は技術的理由で反論
+- 修正後にテスト・リント・型チェックを実行して確認
+- 完了後 code-review で再レビュー
+
+### 10. finishing-branch（ブランチ完了）
+
+**インプット:**
+
+- `project.yaml`（SSOT — `code_review.status = approved` が前提）
+
+**成果物:**
+
+- マージ / PR / ブランチ保持 / 破棄
+- `project.yaml` の `finishing` セクション更新
+
+**説明:**
+
+- テスト検証後、4つの選択肢を提示（ローカルマージ / PR作成 / ブランチ保持 / 破棄）
+- 選択されたワークフローを実行し、worktreeクリーンアップを実施
 
 ---
 
@@ -252,20 +311,20 @@ flowchart LR
 
 ### セクション構成
 
-| プロセス           | project.yaml セクション          | 記録内容                   |
-| ------------------ | -------------------------------- | -------------------------- |
-| brainstorming      | `meta`, `setup`, `brainstorming` | 要件探索結果、決定事項     |
-| submodule-overview | `overview`                       | サブモジュール概要         |
-| investigation      | `investigation`                  | 調査結果、リスク           |
-| design             | `design`                         | 設計方針、レビュー結果     |
-| review-design      | `design.review`                  | 設計レビュー指摘・ラウンド |
-| plan               | `plan`                           | タスク一覧、依存関係       |
-| review-plan        | `plan.review`                    | 計画レビュー指摘・ラウンド |
-| implement          | `implement`                      | 実行状況、コミットハッシュ |
-| verification       | `verification`                   | テスト結果、証拠           |
-| review             | `code_review`                    | チェックリスト、指摘、ラウンド |
-| code_review        | `code_review`                    | レビューラウンド、結果     |
-| finishing          | `finishing`                      | 最終アクション、PR URL     |
+| プロセス           | project.yaml セクション          | 記録内容                         |
+| ------------------ | -------------------------------- | -------------------------------- |
+| brainstorming      | `meta`, `setup`, `brainstorming` | 要件探索結果、決定事項           |
+| submodule-overview | `overview`                       | サブモジュール概要               |
+| investigation      | `investigation`                  | 調査結果、リスク                 |
+| design             | `design`                         | 設計方針                         |
+| review-design      | `design.review`                  | 設計レビュー指摘・ラウンド       |
+| plan               | `plan`                           | タスク一覧、依存関係             |
+| review-plan        | `plan.review`                    | 計画レビュー指摘・ラウンド       |
+| implement          | `implement`                      | 実行状況、コミットハッシュ       |
+| verification       | `verification`                   | テスト・ビルド・リント実行結果   |
+| code-review        | `code_review`                    | チェックリスト、指摘、ラウンド   |
+| code-review-fix    | `code_review`                    | 指摘修正記録（同セクション更新） |
+| finishing-branch   | `finishing`                      | 最終アクション、PR URL           |
 
 ### ワークフロー
 
@@ -282,9 +341,10 @@ flowchart LR
     RP -->|✅ 承認| IMP[implement]
     RP -->|❌⚠️ 指摘あり| PLN
     IMP --> VER[verification]
-    VER --> REV[review]
-    REV -->|✅ 承認| FIN[finishing]
-    REV -->|❌⚠️ 指摘あり| IMP
+    VER --> CR[code-review]
+    CR -->|✅ 承認| FIN[finishing-branch]
+    CR -->|❌⚠️ 指摘あり| CRF[code-review-fix]
+    CRF --> CR
 
     INV -.->|更新| PY
     DES -.->|更新| PY
@@ -293,7 +353,8 @@ flowchart LR
     RP -.->|更新| PY
     IMP -.->|更新| PY
     VER -.->|更新| PY
-    REV -.->|更新| PY
+    CR -.->|更新| PY
+    CRF -.->|更新| PY
     FIN -.->|更新| PY
 ```
 
@@ -309,26 +370,25 @@ flowchart LR
 | **commit**               | MCP連携でチケット情報取得し日本語コミットメッセージを生成 |
 | **commit-multi-repo**    | 複数リポジトリ（サブモジュール含む）の一括コミット管理    |
 | **skill-usage-protocol** | スキル発動ルール・開発フロー全体の定義                    |
+| **finishing-branch**     | 実装完了後のマージ/PR/クリーンアップオプション提示       |
 
-### 品質・開発支援スキル
+### 品質ルール（各ステップ内で適用）
 
 | スキル                             | 説明                                                     |
 | ---------------------------------- | -------------------------------------------------------- |
 | **test-driven-development**        | RED-GREEN-REFACTORサイクルでテストファーストの開発を実践 |
 | **systematic-debugging**           | 根本原因を特定してから修正する体系的デバッグ手法         |
-| **verification-before-completion** | 完了主張前に検証コマンドを実行し証拠を確認               |
+| **verification-before-completion** | 完了主張前に検証コマンドを実行し証拠を確認（汎用品質ルール） |
 | **writing-skills**                 | スキルファイル（SKILL.md）の作成・編集ガイド             |
-| **receiving-code-review**          | レビューフィードバック受信時の技術的検証プロセス         |
-| **requesting-code-review**         | SHAベースの差分レビュー依頼手順                          |
-| **finishing-branch**               | 実装完了後のマージ/PR/クリーンアップオプション提示       |
 
 ### レビュースキル
 
-| スキル            | 説明                                                     |
-| ----------------- | -------------------------------------------------------- |
-| **review**        | 実装変更のチェックリストベースレビュー（8カテゴリ・再帰ループ対応） |
-| **review-design** | 設計結果の妥当性をレビュー                               |
-| **review-plan**   | タスク計画の妥当性をレビュー                             |
+| スキル                | 説明                                                               |
+| --------------------- | ------------------------------------------------------------------ |
+| **review-design**     | 設計結果の妥当性をレビュー                                         |
+| **review-plan**       | タスク計画の妥当性をレビュー                                       |
+| **code-review**       | 実装変更のチェックリストベースレビュー（8カテゴリ・SHAベース差分）  |
+| **code-review-fix**   | コードレビュー指摘の技術的検証・修正対応                           |
 
 ---
 
@@ -347,7 +407,10 @@ claude "設計をレビューしてください"                              # 
 claude "タスク計画を作成してください"                            # → plan
 claude "計画をレビューしてください"                              # → review-plan
 claude "実装を開始してください"                                  # → implement
-claude "実装をレビューしてください"                                # → review
+claude "検証してください"                                        # → verification
+claude "コードレビューしてください"                              # → code-review
+claude "レビュー指摘を修正してください"                          # → code-review-fix（指摘がある場合）
+claude "ブランチを完了してください"                              # → finishing-branch
 ```
 
 ---
@@ -452,7 +515,9 @@ project/
 │       │   └── ...
 │       ├── implement/                  # 実行ログ
 │       │   └── execution-log.md
-│       └── review/                    # レビュー結果
+│       ├── verification/               # 検証結果
+│       │   └── results.md
+│       └── code-review/                # コードレビュー結果
 │           ├── round-01.md
 │           └── round-02.md
 └── submodules/
@@ -703,9 +768,9 @@ echo "✅ クリーンアップ完了"
 
 ### 概要
 
-コード変更をSHAベースで指定し、`requesting-code-review` スキルに従ってレビューを実施します。
+コード変更をSHAベースで指定し、`code-review` スキルに従ってレビューを実施します。
 
-詳細は `.claude/skills/requesting-code-review/SKILL.md` を参照。
+詳細は `.claude/skills/code-review/SKILL.md` を参照。
 
 ### SHAベースレビュー依頼テンプレート
 
@@ -825,11 +890,11 @@ $FILES
 ```
 [Critical問題検出]
       ↓
-即座に修正 → 再コミット → 再レビュー
+code-review-fix で修正 → 再コミット → code-review 再レビュー
       ↓
 [Important問題検出]
       ↓
-修正 → 再コミット → 再レビュー
+code-review-fix で修正 → 再コミット → code-review 再レビュー
       ↓
 [Minor問題のみ or 問題なし]
       ↓
