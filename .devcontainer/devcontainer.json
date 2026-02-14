@@ -11,8 +11,16 @@
 			"version": "3.12",
 			"installTools": true
 		},
+		"ghcr.io/devcontainers/features/aws-cli:1": {},
+		"ghcr.io/devcontainers/features/terraform:1": {
+			"version": "latest",
+			"installTFsec": true
+		},
 		"ghcr.io/devcontainers-extra/features/yq:1": {}
 	},
+	"mounts": [
+		"source=${localEnv:HOME}/.aws,target=/home/vscode/.aws,type=bind,consistency=cached"
+	],
 	"customizations": {
 		"vscode": {
 			"extensions": [
@@ -20,13 +28,14 @@
 				"ms-dotnettools.csdevkit",
 				"ms-dotnettools.vscode-dotnet-runtime",
 				"ms-dotnettools.vscodeintellicode-csharp",
-				"redhat.vscode-yaml"
+				"redhat.vscode-yaml",
+				"hashicorp.terraform"
 			],
 			"settings": {
 				"dotnet.server.useOmnisharp": false
 			}
 		}
 	},
-	"postCreateCommand": "pip install jsonschema pyyaml uv && echo '--- Tool versions ---' && dotnet --version && node --version && python3 --version && uv --version && yq --version && gh --version | head -1",
+	"postCreateCommand": "pip install jsonschema pyyaml uv && echo '--- Tool versions ---' && dotnet --version && node --version && python3 --version && uv --version && yq --version && aws --version && terraform --version | head -1 && gh --version | head -1",
 	"remoteUser": "vscode"
 }
