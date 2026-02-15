@@ -1,0 +1,39 @@
+{
+  "mcpServers": {
+    "aws-knowledge-mcp-server": {
+      "type": "stdio",
+      "command": "uvx",
+      "tools": [
+        "*"
+      ],
+      "args": [
+        "fastmcp",
+        "run",
+        "https://knowledge-mcp.global.api.aws"
+      ]
+    },
+    "aws-documentation-mcp-server": {
+      "type": "stdio",
+      "command": "uvx",
+      "tools": [
+        "*"
+      ],
+      "args": [
+        "awslabs.aws-documentation-mcp-server@latest"
+      ],
+      "env": {
+        "AWS_DOCUMENTATION_PARTITION": "aws"
+      }
+    },
+    "terraform-mcp-server": {
+      "type": "stdio",
+      "command": "uvx",
+      "tools": [
+        "*"
+      ],
+      "args": [
+        "awslabs.terraform-mcp-server@latest"
+      ]
+    }
+  }
+}
