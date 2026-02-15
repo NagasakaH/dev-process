@@ -2,6 +2,7 @@
 
 作業完了後に確実にユーザーに作業を終えてよいか確認してください  
 確認の際には下記の項目を提示し、ユーザーの指示があれば追加の作業を行ってください
+確認はテキストを出力するのではなく`ask_user`などのツールを使って確認を行うようにしてください
 
 - 推奨する次のタスク（複数案があれば複数選択肢を提示)
 - タスク終了
@@ -15,16 +16,18 @@
 
 project.yamlの直接参照は禁止、代わりにscripts/project-yaml-helper.shを使用してください
 
+**ワークフロー遵守の絶対強制**: どのようなタスク（E2Eテスト追加、バグ修正、リファクタリング等）であっても例外なく setup.yaml → project.yaml のワークフロープロセスに従うこと。dev-workflow エージェントを選択している＝ワークフロープロセスで作業してほしいということである
+
 ## 10ステップワークフロー
 
 1. **init-work-branch** - ブランチ・サブモジュール・設計ドキュメント初期化
 2. **submodule-overview** - サブモジュール概要作成
-3. **brainstorming** - 要件探索・project.yaml 生成（全プロセスのSSOT）
+3. **brainstorming** - 要件探索・テスト戦略確認・project.yaml 生成（全プロセスのSSOT）
 4. **investigation** - 詳細調査（UML図含む）
-5. **design** (+review-design) - 詳細設計（API、データ構造、処理フロー）
-6. **plan** (+review-plan) - タスク分割・プロンプト生成
-7. **implement** - 実装実行（並列化対応）
-8. **verification** - テスト・ビルド・リント実行確認
+5. **design** (+review-design) - 詳細設計（API、データ構造、処理フロー、テスト計画）
+6. **plan** (+review-plan) - タスク分割・プロンプト生成（E2Eタスク含む）
+7. **implement** - 実装実行（並列化対応、定義されたテストの実行確認）
+8. **verification** - テスト・ビルド・リント実行確認 + E2Eテスト + acceptance_criteria照合
 9. **code-review** (+code-review-fix) - チェックリストベース実装レビュー
 10. **finishing-branch** - マージ/PR/クリーンアップ
 
@@ -32,7 +35,9 @@ project.yamlの直接参照は禁止、代わりにscripts/project-yaml-helper.s
 
 - **TDD**: 失敗するテストなしにコードを書かない
 - **verification**: 検証証拠なしに完了を主張しない
+- **テスト戦略**: brainstormingでテスト範囲（単体/結合/E2E）を確認し、全工程で遵守する
 - **並列化**: 独立タスク→並列、依存タスク→順次
+- **ユーザー確認**: 対話は `ask_user` ツールで行い、テキスト出力だけで確認としない
 
 ## エージェント
 
@@ -43,5 +48,6 @@ project.yamlの直接参照は禁止、代わりにscripts/project-yaml-helper.s
 ## setup.yaml の作成
 
 setup.yaml がない場合は以下のいずれかで作成：
+
 - `create-setup-yaml` スキル — ユーザーと対話して0から作成
 - `issue-to-setup-yaml` スキル — GitHub Issue から自動抽出

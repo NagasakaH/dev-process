@@ -232,6 +232,9 @@ investigation:
 - 既存テストの修正が必要なもの
 - テスト方針（単体/結合/E2E）
 - テストデータ設計
+- **`brainstorming.test_strategy` を必ず参照し、定義されたテスト範囲を全て計画に含めること**
+- **E2Eテストがスコープに含まれる場合**: E2Eテストの具体的な実行手順、対象環境、判定基準を記載
+- **acceptance_criteria との対応表**: 各 acceptance_criteria をどのテスト種別（単体/結合/E2E）で検証するかを明記
 
 ### 6. 弊害検証計画（06_side-effect-verification.md）
 

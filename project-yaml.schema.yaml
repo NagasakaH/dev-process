@@ -298,6 +298,52 @@ properties:
         type: array
         items: { type: string }
         description: "ブレストで追加・修正された要件"
+      test_strategy:
+        type: object
+        description: "テスト戦略（brainstorming で確定）"
+        properties:
+          scope:
+            type: array
+            items:
+              type: string
+              enum: [unit, integration, e2e]
+            description: "テスト範囲（unit/integration/e2e）"
+          unit:
+            type: object
+            properties:
+              framework:
+                type: string
+                description: "単体テストフレームワーク（例: xUnit, pytest, jest）"
+              target:
+                type: string
+                description: "単体テストの対象範囲"
+            additionalProperties: false
+          integration:
+            type: object
+            properties:
+              framework:
+                type: string
+                description: "結合テストフレームワーク"
+              target:
+                type: string
+                description: "結合テストの対象範囲"
+            additionalProperties: false
+          e2e:
+            type: object
+            properties:
+              method:
+                type: string
+                description: "E2Eテストの実行方法（例: デプロイして動作確認）"
+              criteria:
+                type: array
+                items: { type: string }
+                description: "E2Eテストの判定基準（acceptance_criteria から抽出）"
+              environment:
+                type: string
+                description: "E2Eテストの対象環境（例: AWS ap-northeast-1）"
+            additionalProperties: false
+        required: [scope]
+        additionalProperties: false
       artifacts:
         $ref: "#/$defs/artifacts_path"
     required: [status]
@@ -503,6 +549,16 @@ properties:
               coverage: { type: string }
             required: [status, detail]
             additionalProperties: false
+          e2e:
+            type: object
+            description: "E2Eテスト結果（test_strategy に e2e が含まれる場合）"
+            properties:
+              status: { $ref: "#/$defs/check_status" }
+              detail: { type: string }
+              method: { type: string, description: "実行方法" }
+              environment: { type: string, description: "対象環境" }
+            required: [status, detail]
+            additionalProperties: false
           build:
             type: object
             properties:
@@ -526,6 +582,25 @@ properties:
             additionalProperties: false
         additionalProperties: false
         description: "各検証項目の結果"
+      acceptance_criteria_check:
+        type: array
+        description: "acceptance_criteria との照合結果"
+        items:
+          type: object
+          properties:
+            criteria:
+              type: string
+              description: "受け入れ基準"
+            verified_by:
+              type: string
+              enum: [unit_test, integration_test, e2e_test, manual, not_verified]
+              description: "検証方法"
+            result:
+              type: string
+              enum: [pass, fail, not_verified]
+              description: "検証結果"
+          required: [criteria, verified_by, result]
+          additionalProperties: false
       summary:
         type: string
         description: "検証結果の要約"
