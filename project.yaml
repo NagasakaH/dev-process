@@ -130,3 +130,21 @@ investigation:
     - "Mermaid 図の GitHub レンダリング互換性に注意"
     - "AWS 課金情報は参照時点の料金体系に依存"
   artifacts: "docs/dotnet-lambda-log-base/investigation/"
+
+# -----------------------------------------------------------------------------
+# design
+# -----------------------------------------------------------------------------
+design:
+  status: "completed"
+  started_at: "2026-02-15T20:46:00+00:00"
+  completed_at: "2026-02-15T20:48:00+00:00"
+  summary: "README更新（Mermaid図+課金情報）+ docs/logging-library/ 3階層ドキュメント作成"
+  approach: "既存README維持しつつ追加、ログライブラリは要件/基本設計/詳細設計の3階層で新規作成"
+  key_decisions:
+    - "README に Terraform 構成 Mermaid 図と AWS 課金要素を追加"
+    - "docs/logging-library/ に requirements / basic-design / detailed-design を作成"
+    - "各ドキュメントに関連するテスト項目と結果を記載"
+    - "コードテスト不要、ドキュメントレビューで品質確認"
+  review:
+    status: "pending"
+  artifacts: "docs/dotnet-lambda-log-base/design/"
