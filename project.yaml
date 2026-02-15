@@ -1,0 +1,109 @@
+# =============================================================================
+# project.yaml — プロジェクトコンテキストファイル（全プロセスの SSOT）
+# =============================================================================
+# brainstorming プロセスが setup.yaml を基に初期生成。
+# 以降の各プロセスが自セクションを追記し、コミットする。
+
+# -----------------------------------------------------------------------------
+# メタ情報
+# -----------------------------------------------------------------------------
+meta:
+  version: "1.0"
+  ticket_id: "init-dotnet-lambda-log-base"
+  task_name: "AWS Lambda (.NET) ログ管理テンプレートの構築"
+  target_repo: "dotnet-lambda-log-base"
+  branch: "feature/init-dotnet-lambda-log-base"
+  created_at: "2026-02-15T00:57:35+00:00"
+  updated_at: "2026-02-15T00:57:35+00:00"
+
+# -----------------------------------------------------------------------------
+# setup（setup.yaml から引き継ぎ — 読み取り専用）
+# -----------------------------------------------------------------------------
+setup:
+  description:
+    overview: |
+      AWS Lambda を .NET 8 で作成し、ログ管理を行うためのテンプレートプロジェクトを構築する。
+      ILogger ベースのカスタムログプロバイダーを実装し、CloudWatch Logs への構造化ログ送信を行う。
+    purpose: |
+      .NET Lambda 開発における構造化ログの標準テンプレートを作成し、
+      再利用可能なログ管理基盤を提供する。
+    background: |
+      .NET Lambda 開発において、ログ管理の標準的なテンプレートが存在せず、
+      プロジェクトごとにログ実装が異なる状態を改善する必要がある。
+      CloudWatch Logs のコスト最適化（Delivery Class + S3保存）と
+      異常系ログの即座な検知（CloudWatch Alarm）を両立するアーキテクチャが求められる。
+    requirements:
+      functional:
+        - "ILogger インターフェースを実装したカスタムログプロバイダーを作成する"
+        - "JSON 構造化ログ形式でログを出力する"
+        - "2つの CloudWatch Logs グループへの振り分けログ送信を行う"
+        - "全ログ用ロググループ: アプリごとに個別作成、Delivery Class (Infrequent Access) で S3 保存"
+        - "異常系ロググループ: 複数 Lambda 共通、数日保持、CloudWatch Alarm で通知"
+        - "Lambda 終了時にログバッファの確実な Flush を保証する"
+        - "CloudWatch Alarm による異常系通知（仮実装）"
+      non_functional:
+        - ".NET 8 Managed Runtime で動作すること"
+        - "Lambda のコールドスタートへの影響を最小限にすること"
+        - "ログ送信がアプリケーションのパフォーマンスに影響しないこと"
+        - "テンプレートとして他のプロジェクトで再利用可能であること"
+    acceptance_criteria:
+      - "ILogger でログ出力すると、CloudWatch Logs の2つのグループに適切に振り分けられる"
+      - "全ログがJSON構造化形式で出力される"
+      - "Lambda 終了時に全てのバッファ済みログが送信されている"
+      - "Terraform で全インフラリソースが作成できる"
+      - "xUnit 単体テストが通過する"
+    scope:
+      - ".NET 8 Lambda プロジェクトテンプレート"
+      - "ILogger カスタムプロバイダー実装"
+      - "CloudWatch Logs 送信ロジック（AWS SDK）"
+      - "Terraform による CloudWatch Logs グループ、Alarm、S3 バケット定義"
+      - "xUnit 単体テスト"
+    out_of_scope:
+      - "結合テスト・E2Eテスト"
+      - "Lambda のデプロイパイプライン (CI/CD)"
+      - "ログの分析・可視化ダッシュボード"
+      - "本番環境向けの Alarm 通知設定（SNS トピック等の詳細設定）"
+    notes: |
+      異常系ロググループは複数 Lambda で共通利用する設計。
+      全ログ用ロググループはアプリごとに個別作成し、S3 のパスで分離する。
+      CloudWatch Alarm の通知先は仮実装（SNS トピック作成のみ）。
+  related_repositories: []
+  target_repositories:
+    - name: "dotnet-lambda-log-base"
+      url: "git@github.com:NagasakaH/dotnet-lambda-log-base.git"
+  options:
+    create_design_document: true
+    design_document_dir: "docs"
+    submodules_dir: "submodules"
+
+# -----------------------------------------------------------------------------
+# brainstorming（対話完了後に記入）
+# -----------------------------------------------------------------------------
+brainstorming:
+  status: "completed"
+  started_at: "2026-02-15T00:50:00+00:00"
+  completed_at: "2026-02-15T00:57:35+00:00"
+  summary: |
+    .NET 8 Lambda 用のログ管理テンプレートについて要件を確定。
+    ILogger ベースのカスタムログプロバイダーを実装し、
+    CloudWatch Logs の2つのロググループ（全ログ用 + 異常系用）に振り分ける設計。
+    コスト最適化のため全ログ用は Delivery Class + S3 保存、
+    異常系は CloudWatch Alarm で通知する構成を採用。
+    インフラは Terraform で管理し、テストは xUnit 単体テスト。
+  decisions:
+    - question: "ログライブラリの選択"
+      decision: "ILogger インターフェースを実装したカスタムログプロバイダーを自作。AWS SDK (Amazon.CloudWatchLogs) で送信。"
+    - question: "ログ送信先の構成"
+      decision: "2つの CloudWatch Logs グループ: 全ログ用（Delivery Class + S3）とエラー専用（数日保持 + Alarm通知）"
+    - question: "ログフォーマット"
+      decision: "JSON 構造化ログ形式"
+    - question: "ランタイム構成"
+      decision: ".NET 8 Managed Runtime"
+    - question: "インフラ管理"
+      decision: "Terraform で CloudWatch Logs グループ、Alarm、S3 バケットを管理"
+  refined_requirements:
+    - "異常系ロググループは複数 Lambda で共通利用する"
+    - "全ログ用ロググループはアプリごとに個別作成し、S3 のパスで分離する"
+    - "CloudWatch Alarm の通知は仮実装（SNS トピック作成のみ）"
+    - "Lambda 終了時の確実な Flush 機構を実装する"
+  artifacts: "docs/dotnet-lambda-log-base/brainstorming/"
