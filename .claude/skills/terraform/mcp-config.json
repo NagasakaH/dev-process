@@ -1,0 +1,8 @@
+{
+  "name": "terraform",
+  "description": "Terraform MCP - execute terraform/terragrunt, search provider docs, Checkov scan",
+  "command": "uvx",
+  "args": [
+    "awslabs.terraform-mcp-server@latest"
+  ]
+}
