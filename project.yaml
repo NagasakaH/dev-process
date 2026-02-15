@@ -14,8 +14,7 @@ meta:
   target_repo: "dotnet-lambda-log-base"
   branch: "feature/init-dotnet-lambda-log-base"
   created_at: "2026-02-15T00:57:35+00:00"
-  updated_at: "2026-02-15T00:57:35+00:00"
-
+  updated_at: "2026-02-15T01:04:09+00:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -75,7 +74,6 @@ setup:
     create_design_document: true
     design_document_dir: "docs"
     submodules_dir: "submodules"
-
 # -----------------------------------------------------------------------------
 # brainstorming（対話完了後に記入）
 # -----------------------------------------------------------------------------
@@ -107,3 +105,17 @@ brainstorming:
     - "CloudWatch Alarm の通知は仮実装（SNS トピック作成のみ）"
     - "Lambda 終了時の確実な Flush 機構を実装する"
   artifacts: "docs/dotnet-lambda-log-base/brainstorming/"
+investigation:
+  status: completed
+  started_at: "2026-02-15T01:03:55+00:00"
+  summary: "新規リポジトリのため既存コード調査は不要。AWS CloudWatch Logs (Delivery Class/Standard) のAPI制約、PutLogEvents の制約、.NET ILogger 実装パターンを調査し、アーキテクチャ・データ構造・依存関係を設計した。"
+  key_findings:
+    - Delivery Class は保持期間2日固定、GetLogEvents/FilterLogEvents 使用不可
+    - PutLogEvents はシーケンストークン不要で並列送信可能
+    - Metric Filter は Standard Class のみ対応のため異常系は Standard に送信必須
+  risks:
+    - Lambda タイムアウト時のログロスト（バッファ Flush 前の強制終了）
+    - PutLogEvents API スロットリング
+    - Delivery Class 制約によるログ検索不可
+  artifacts: "docs/dotnet-lambda-log-base/investigation/"
+  completed_at: "2026-02-15T01:04:08+00:00"
