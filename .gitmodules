@@ -1,0 +1,3 @@
+[submodule "submodules/dotnet-lambda-log-base"]
+	path = submodules/dotnet-lambda-log-base
+	url = git@github.com:NagasakaH/dotnet-lambda-log-base.git
