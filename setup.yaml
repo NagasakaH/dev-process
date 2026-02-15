@@ -1,0 +1,28 @@
+# 開発セットアップ設定ファイル
+
+# タスク名
+task_name: "AWS Lambda (.NET) ログ管理テンプレートの構築"
+
+# チケットID
+ticket_id: "init-dotnet-lambda-log-base"
+
+# タスクの説明
+description: |
+  AWS Lambda を .NET で作成し、ログ管理を行うためのテンプレートプロジェクトを構築する。
+  - 背景: .NET Lambda 開発における構造化ログの標準テンプレートが必要
+  - 目的: 再利用可能なログ管理基盤テンプレートを作成する
+  - 期待される成果: .NET Lambda プロジェクトで即座に使えるログ管理テンプレート
+
+# 関連リポジトリ一覧（submodule用）
+related_repositories: []
+
+# 修正対象リポジトリ
+target_repositories:
+  - name: "dotnet-lambda-log-base"
+    url: "git@github.com:NagasakaH/dotnet-lambda-log-base.git"
+
+# オプション設定
+options:
+  create_design_document: true
+  design_document_dir: "docs"
+  submodules_dir: "submodules"
