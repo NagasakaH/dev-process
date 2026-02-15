@@ -1,0 +1,112 @@
+# =============================================================================
+# project.yaml — プロジェクトコンテキストファイル（全プロセスの SSOT）
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# メタ情報
+# -----------------------------------------------------------------------------
+meta:
+  version: "1.0"
+  ticket_id: "dotnet-log-docs-1"
+  task_name: "dotnet-lambda-log-base ドキュメント追加"
+  target_repo: "dotnet-lambda-log-base"
+  branch: "feature/dotnet-log-docs-1"
+  created_at: "2026-02-15T20:40:00+00:00"
+  updated_at: "2026-02-15T20:40:00+00:00"
+
+# -----------------------------------------------------------------------------
+# setup（setup.yaml から引き継ぎ — 読み取り専用）
+# -----------------------------------------------------------------------------
+setup:
+  description:
+    overview: |
+      dotnet-lambda-log-base リポジトリにドキュメントを追加する。
+      feature/init-dotnet-lambda-log-base で作成した環境と
+      feature/dotnet-lambda-log-base-e2e-test で追加した E2E テスト・修正を
+      考慮したドキュメントを作成する。
+    purpose: |
+      プロジェクトの README を充実させ、Terraform で構築するインフラ構成の
+      可視化（Mermaid 図）と AWS 課金要素の情報整理を行う。
+      また、ログライブラリ（DotnetLambdaLogBase.Logging）の専用ドキュメントを
+      要件・基本設計・詳細設計の3階層で作成し、開発者が理解しやすい状態にする。
+    background: |
+      dotnet-lambda-log-base は .NET 8 AWS Lambda 向けの ILogger ベース
+      CloudWatch Logs カスタムプロバイダーテンプレート。
+      feature/init-dotnet-lambda-log-base ブランチで基盤実装が完了し、
+      feature/dotnet-lambda-log-base-e2e-test ブランチで E2E テスト環境・
+      NuGet パッケージバージョン修正・S3 配信設定（s3_delivery.tf）が追加された。
+    requirements:
+      functional:
+        - "README.md に Terraform で作成するインフラ構成を Mermaid 図で記述する"
+        - "README.md に AWS 課金が発生する要素の情報をまとめる"
+        - "docs/ 配下にログライブラリの要件ドキュメントを作成する"
+        - "docs/ 配下にログライブラリの基本設計ドキュメントを作成する"
+        - "docs/ 配下にログライブラリの詳細設計ドキュメントを作成する"
+        - "各ドキュメントに実際のテスト項目とテスト結果を記載する"
+        - "feature/dotnet-lambda-log-base-e2e-test の変更内容を反映する"
+      non_functional:
+        - "ドキュメントは日本語で記述する"
+        - "Mermaid 図は GitHub で正しくレンダリングされる形式にする"
+        - "既存の README の有用な情報は保持する"
+    acceptance_criteria:
+      - "README.md に Terraform 構成の Mermaid 図が含まれている"
+      - "README.md に AWS 課金要素の説明が含まれている"
+      - "docs/logging-library/requirements.md が作成されている"
+      - "docs/logging-library/basic-design.md が作成されている"
+      - "docs/logging-library/detailed-design.md が作成されている"
+      - "E2E テスト関連の情報がドキュメントに反映されている"
+      - "ログライブラリドキュメントにテスト項目と結果が記載されている"
+    scope:
+      - "dotnet-lambda-log-base リポジトリ内の README.md 更新"
+      - "dotnet-lambda-log-base リポジトリ内の docs/ にログライブラリドキュメント作成"
+    out_of_scope:
+      - "コードの変更・修正"
+      - "テストの追加・修正"
+      - "Terraform コードの変更"
+      - "dev-process リポジトリのドキュメント変更"
+    notes: |
+      ドキュメント作成のみのタスクのためテストは不要。
+  related_repositories:
+    - name: "dev-process"
+      url: "git@github.com:NagasakaH/dev-process.git"
+  target_repositories:
+    - name: "dotnet-lambda-log-base"
+      url: "git@github.com:NagasakaH/dotnet-lambda-log-base.git"
+  options:
+    create_design_document: true
+    design_document_dir: "docs"
+    submodules_dir: "submodules"
+
+# -----------------------------------------------------------------------------
+# brainstorming
+# -----------------------------------------------------------------------------
+brainstorming:
+  status: "completed"
+  started_at: "2026-02-15T20:35:00+00:00"
+  completed_at: "2026-02-15T20:42:00+00:00"
+  summary: |
+    ドキュメント作成タスクの方針を確定。README にTerraform構成Mermaid図・AWS課金要素を追加し、
+    ログライブラリの要件/基本設計/詳細設計ドキュメントを docs/logging-library/ 配下に作成する。
+    各ドキュメントに単体テスト28件・E2Eテスト13件の項目と結果を記載する。
+  decisions:
+    - question: "ドキュメントの作成先"
+      decision: "サブモジュール内（dotnet-lambda-log-base リポジトリ）に直接作成"
+    - question: "ログライブラリドキュメントの構成"
+      decision: "requirements.md / basic-design.md / detailed-design.md の3階層"
+    - question: "テスト結果の記載"
+      decision: "各ドキュメントの関連セクションに単体テスト・E2Eテストの項目と結果を記載"
+    - question: "テスト戦略"
+      decision: "ドキュメント作成のみのため、コードテストは不要。ドキュメントレビューのみ実施"
+  refined_requirements:
+    - "テスト項目と結果を各ドキュメントに記載する"
+  test_strategy:
+    scope:
+      - "document-review"
+    document_review:
+      method: "コードレビュースキルによるドキュメントレビュー"
+      criteria:
+        - "Mermaid図がGitHubで正しくレンダリングされること"
+        - "課金要素情報が正確であること"
+        - "テスト項目・結果が実際のコードと一致すること"
+        - "ログライブラリの3階層ドキュメントの整合性"
+  artifacts: "docs/dotnet-lambda-log-base/brainstorming/"
