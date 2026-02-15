@@ -254,6 +254,7 @@ flowchart LR
 **説明:**
 
 - 8カテゴリのチェックリスト（設計準拠性、静的解析、言語別ベストプラクティス、セキュリティ、テスト・CI、パフォーマンス、ドキュメント、Git作法）でレビューを実施
+- **ゼロトレランス方針**: Minorを含む全指摘の修正が必須。「後で対応」は許容しない
 - プロジェクト内の静的解析ツール（prettier / eslint / black / flake8 等）を検出・実行
 - 指摘と修正案の提示が責務（修正自体は code-review-fix が担当）
 - `project.yaml` の `code_review.review_checklist` にチェック項目と結果を構造化記録
@@ -1034,16 +1035,22 @@ $FILES
 
 ### レビュー結果の対応
 
+> **ゼロトレランス方針**: Minorを含む全ての指摘は修正必須です。「後で対応」「次フェーズで調整」は許容しません。
+
 ```
 [Critical問題検出]
       ↓
 code-review-fix で修正 → 再コミット → code-review 再レビュー
       ↓
-[Important問題検出]
+[Major問題検出]
       ↓
 code-review-fix で修正 → 再コミット → code-review 再レビュー
       ↓
-[Minor問題のみ or 問題なし]
+[Minor問題検出]
+      ↓
+code-review-fix で修正 → 再コミット → code-review 再レビュー
+      ↓
+[全指摘解決済み]
       ↓
 finishing-branch へ進む
 ```

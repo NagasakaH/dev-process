@@ -12,6 +12,13 @@ project.yaml + design/ を入力として、設計結果の妥当性を体系的
 > - 調査結果の参照: `investigation` セクション
 > - レビュー結果の出力: `design.review` セクション
 
+> [!CAUTION]
+> **レビュー品質方針（ゼロトレランス）**
+> - レビュアーは **不具合を出さないことに命が懸かっている** つもりで、些細な問題も見逃さず指摘すること
+> - **Minor を含む全ての指摘は修正必須** — 「後で対応」「実装フェーズで対応」は許容しない
+> - 軽微に見える設計上の問題も、実装フェーズでの品質劣化の入口となるため必ず指摘する
+> - 可能な限り品質向上に努め、「問題ない」と判断する前に本当に問題がないか再度確認する
+
 ## 概要
 
 このスキルは以下を実現します：
@@ -171,20 +178,20 @@ docs/
 
 ### 重大度レベル
 
-| レベル     | 説明                           | 対応                             |
-| ---------- | ------------------------------ | -------------------------------- |
-| 🔴 Critical | 設計を根本的に見直す必要がある | 差し戻し：designの再実施が必要   |
-| 🟠 Major    | 重要な修正が必要               | 条件付き承認：修正後に再レビュー |
-| 🟡 Minor    | 改善が望ましい                 | 承認：実装フェーズで対応可能     |
-| 🔵 Info     | 情報・提案                     | 承認：参考情報として記録         |
+| レベル     | 説明                           | 対応                                                   |
+| ---------- | ------------------------------ | ------------------------------------------------------ |
+| 🔴 Critical | 設計を根本的に見直す必要がある | 差し戻し：designの再実施が必要                         |
+| 🟠 Major    | 重要な修正が必要               | 条件付き承認：修正後に再レビュー                       |
+| 🟡 Minor    | 改善が必要                     | 条件付き承認：次のフェーズに進む前に修正が必要         |
+| 🔵 Info     | 情報・提案                     | 承認：ただし改善提案として記録し、可能な限り対応を推奨 |
 
 ### 総合判定
 
-| 判定           | 条件                          | 次のステップ                 |
-| -------------- | ----------------------------- | ---------------------------- |
-| ✅ 承認         | Critical/Majorの指摘なし      | planスキルへ進行             |
-| ⚠️ 条件付き承認 | Majorの指摘あり、Criticalなし | 指摘事項を修正後、再レビュー |
-| ❌ 差し戻し     | Criticalの指摘あり            | designスキルの再実施         |
+| 判定           | 条件                              | 次のステップ                 |
+| -------------- | --------------------------------- | ---------------------------- |
+| ✅ 承認         | Critical/Major/Minorの指摘なし    | planスキルへ進行             |
+| ⚠️ 条件付き承認 | Minor以上の指摘あり、Criticalなし | 指摘事項を修正後、再レビュー |
+| ❌ 差し戻し     | Criticalの指摘あり                | designスキルの再実施         |
 
 ## project.yaml 更新内容
 
@@ -198,7 +205,7 @@ design:
     status: approved                # approved / conditional / rejected
     latest_verdict: "承認"          # 日本語判定テキスト
     completed_at: "2025-01-15T10:30:00+09:00"
-    summary: "Critical/Major指摘なし。Minor 2件は実装フェーズで対応可能。"
+    summary: "全指摘解決済み。Critical/Major/Minor指摘なし。"
     issues:
       - id: DR-001
         severity: major             # critical / major / minor / info
@@ -297,7 +304,7 @@ yq -i ".design.review.round = $((CURRENT_ROUND + 1))" project.yaml
 yq -i '.design.review.status = "approved"' project.yaml  # approved / conditional / rejected
 yq -i '.design.review.latest_verdict = "承認"' project.yaml
 yq -i ".design.review.completed_at = \"$(date -Iseconds)\"" project.yaml
-yq -i '.design.review.summary = "Critical/Major指摘なし。"' project.yaml
+yq -i '.design.review.summary = "全指摘解決済み。Critical/Major/Minor指摘なし。"' project.yaml
 
 # 指摘事項の追加（存在する場合）
 yq -i '.design.review.issues += [{"id": "DR-001", "severity": "minor", "status": "open", "description": "指摘内容"}]' project.yaml
