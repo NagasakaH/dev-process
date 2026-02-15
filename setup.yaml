@@ -1,0 +1,90 @@
+# =============================================================================
+# 開発セットアップ設定ファイル（SSOT: Single Source of Truth）
+# =============================================================================
+# 生成日時: 2026-02-15T20:35:00Z
+# スキル: create-setup-yaml（対話的生成）
+# =============================================================================
+
+task_name: "dotnet-lambda-log-base ドキュメント追加"
+ticket_id: "dotnet-log-docs-1"
+
+# =============================================================================
+# 説明（階層化フォーマット）
+# =============================================================================
+description:
+  overview: |
+    dotnet-lambda-log-base リポジトリにドキュメントを追加する。
+    feature/init-dotnet-lambda-log-base で作成した環境と
+    feature/dotnet-lambda-log-base-e2e-test で追加した E2E テスト・修正を
+    考慮したドキュメントを作成する。
+
+  purpose: |
+    プロジェクトの README を充実させ、Terraform で構築するインフラ構成の
+    可視化（Mermaid 図）と AWS 課金要素の情報整理を行う。
+    また、ログライブラリ（DotnetLambdaLogBase.Logging）の専用ドキュメントを
+    要件・基本設計・詳細設計の3階層で作成し、開発者が理解しやすい状態にする。
+
+  background: |
+    dotnet-lambda-log-base は .NET 8 AWS Lambda 向けの ILogger ベース
+    CloudWatch Logs カスタムプロバイダーテンプレート。
+    feature/init-dotnet-lambda-log-base ブランチで基盤実装が完了し、
+    feature/dotnet-lambda-log-base-e2e-test ブランチで E2E テスト環境・
+    NuGet パッケージバージョン修正・S3 配信設定（s3_delivery.tf）が追加された。
+    現在 README は基本的な内容のみで、Terraform 構成図や課金情報、
+    ログライブラリの体系的なドキュメントが不足している。
+
+  requirements:
+    functional:
+      - "README.md に Terraform で作成するインフラ構成を Mermaid 図で記述する"
+      - "README.md に AWS 課金が発生する要素の情報をまとめる"
+      - "docs/ 配下にログライブラリの要件ドキュメントを作成する"
+      - "docs/ 配下にログライブラリの基本設計ドキュメントを作成する"
+      - "docs/ 配下にログライブラリの詳細設計ドキュメントを作成する"
+      - "各ドキュメントに実際のテスト項目とテスト結果を記載する（単体テスト28件、E2Eテスト13件）"
+      - "feature/dotnet-lambda-log-base-e2e-test の変更内容（E2Eテスト、s3_delivery.tf、パッケージバージョン修正）を反映する"
+    non_functional:
+      - "ドキュメントは日本語で記述する"
+      - "Mermaid 図は GitHub で正しくレンダリングされる形式にする"
+      - "既存の README の有用な情報は保持する"
+
+  acceptance_criteria:
+    - "README.md に Terraform 構成の Mermaid 図が含まれている"
+    - "README.md に AWS 課金要素（CloudWatch Logs, S3, SNS, CloudWatch Alarm 等）の説明が含まれている"
+    - "docs/logging-library/requirements.md が作成されている"
+    - "docs/logging-library/basic-design.md が作成されている"
+    - "docs/logging-library/detailed-design.md が作成されている"
+    - "E2E テスト関連の情報がドキュメントに反映されている"
+    - "ログライブラリドキュメントに実際のテスト項目（単体テスト・E2Eテスト）と結果が記載されている"
+
+  scope:
+    - "dotnet-lambda-log-base リポジトリ内の README.md 更新"
+    - "dotnet-lambda-log-base リポジトリ内の docs/ ディレクトリにログライブラリドキュメント作成"
+
+  out_of_scope:
+    - "コードの変更・修正"
+    - "テストの追加・修正"
+    - "Terraform コードの変更"
+    - "dev-process リポジトリのドキュメント変更"
+
+  notes: |
+    ドキュメント作成のみのタスクのためテストは不要。
+    2つのブランチ（init-dotnet-lambda-log-base, dotnet-lambda-log-base-e2e-test）の
+    内容を両方考慮してドキュメントを作成すること。
+
+# =============================================================================
+# リポジトリ設定
+# =============================================================================
+related_repositories:
+  - name: "dev-process"
+    url: "git@github.com:NagasakaH/dev-process.git"
+
+target_repositories:
+  - name: "dotnet-lambda-log-base"
+    url: "git@github.com:NagasakaH/dotnet-lambda-log-base.git"
+    base_branch: "main"
+
+# オプション設定
+options:
+  create_design_document: true
+  design_document_dir: "docs"
+  submodules_dir: "submodules"
