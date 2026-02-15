@@ -45,26 +45,21 @@ code-review スキルの指摘事項を受けて、技術的に検証した上�
 
 ### 1. project.yaml（必須・SSOT）
 
-```yaml
-code_review:
-  status: conditional           # conditional | rejected
-  round: 1
-  issues:
-    - id: CR-001
-      severity: major
-      category: "設計準拠性"
-      description: "APIレスポンス形式が設計と異なる"
-      file: "src/api/handler.ts"
-      line: 42
-      suggestion: "設計に従い { data, error } 形式に修正"
-      status: open                # ← 未解決
-    - id: CR-002
-      severity: minor
-      description: "console.log が残留"
-      file: "src/utils.ts"
-      line: 15
-      suggestion: "削除または適切なロガーに置換"
-      status: open
+```bash
+# 前提条件の確認
+REVIEW_STATUS=$(yq '.code_review.status' project.yaml)
+if [ "$REVIEW_STATUS" != "conditional" ] && [ "$REVIEW_STATUS" != "rejected" ]; then
+    echo "Error: code_review.status が conditional / rejected ではありません（現在: $REVIEW_STATUS）"
+    exit 1
+fi
+
+# メタ情報の取得
+TICKET_ID=$(yq '.meta.ticket_id' project.yaml)
+TARGET_REPO=$(yq '.meta.target_repo' project.yaml)
+CURRENT_ROUND=$(yq '.code_review.round' project.yaml)
+
+# 未解決の指摘事項を取得
+yq '.code_review.issues[] | select(.status == "open")' project.yaml
 ```
 
 ### 2. レビュー結果ドキュメント
@@ -93,34 +88,33 @@ flowchart TD
 
 ## project.yaml 更新内容
 
-修正完了後、`code_review` セクションの `issues` を更新：
+修正完了後、`code_review` セクションの `issues` を yq で更新：
 
-```yaml
-code_review:
-  issues:
-    - id: CR-001
-      severity: major
-      status: fixed              # open → fixed（修正済み）
-      fixed_description: "APIレスポンスを { data, error } 形式に修正"
-    - id: CR-002
-      severity: minor
-      status: fixed
-      fixed_description: "console.log を削除"
-    - id: CR-003
-      severity: minor
-      status: disputed           # open → disputed（反論）
-      dispute_reason: "この関数は内部APIのみで使用されるため、追加のバリデーションはYAGNI違反"
+```bash
+# 修正済み指摘のステータス更新
+yq -i '(.code_review.issues[] | select(.id == "CR-001")).status = "fixed"' project.yaml
+yq -i '(.code_review.issues[] | select(.id == "CR-001")).fixed_description = "APIレスポンスを { data, error } 形式に修正"' project.yaml
+
+yq -i '(.code_review.issues[] | select(.id == "CR-002")).status = "fixed"' project.yaml
+yq -i '(.code_review.issues[] | select(.id == "CR-002")).fixed_description = "console.log を削除"' project.yaml
+
+# 反論の場合
+yq -i '(.code_review.issues[] | select(.id == "CR-003")).status = "disputed"' project.yaml
+yq -i '(.code_review.issues[] | select(.id == "CR-003")).dispute_reason = "YAGNI違反のため対応不要"' project.yaml
+
+# meta.updated_at を更新
+yq -i ".meta.updated_at = \"$(date -Iseconds)\"" project.yaml
 ```
 
 ### issues の status 遷移
 
-| status | 説明 |
-|--------|------|
-| `open` | 未対応（code-review が設定） |
-| `fixed` | 修正済み（code-review-fix が設定） |
+| status     | 説明                                       |
+| ---------- | ------------------------------------------ |
+| `open`     | 未対応（code-review が設定）               |
+| `fixed`    | 修正済み（code-review-fix が設定）         |
 | `disputed` | 技術的理由で反論（code-review-fix が設定） |
 | `resolved` | 再レビューで解決確認（code-review が設定） |
-| `wontfix` | 再レビューで反論承認（code-review が設定） |
+| `wontfix`  | 再レビューで反論承認（code-review が設定） |
 
 ## コミット
 
@@ -143,11 +137,11 @@ git commit -m "fix: {ticket_id} コードレビュー指摘を修正 (round {rou
 - **反論**: {disputed_count}件
 
 ### 修正内容
-| ID | 重大度 | 対応 | 説明 |
-|----|--------|------|------|
-| CR-001 | Major | 修正 | APIレスポンス形式を設計に合わせて修正 |
-| CR-002 | Minor | 修正 | console.log を削除 |
-| CR-003 | Minor | 反論 | YAGNI違反のため対応不要 |
+| ID     | 重大度 | 対応 | 説明                                  |
+| ------ | ------ | ---- | ------------------------------------- |
+| CR-001 | Major  | 修正 | APIレスポンス形式を設計に合わせて修正 |
+| CR-002 | Minor  | 修正 | console.log を削除                    |
+| CR-003 | Minor  | 反論 | YAGNI違反のため対応不要               |
 
 ### 検証結果
 - テスト: ✅ 全通過
@@ -174,8 +168,8 @@ code-review スキルで再レビューを実施してください。
 
 ## SSOT参照
 
-| project.yaml フィールド | 用途 |
-| ----------------------- | ---- |
-| `code_review.issues` | 未解決指摘事項の取得 |
-| `code_review.round` | 現在のレビューラウンド |
+| project.yaml フィールド              | 用途                    |
+| ------------------------------------ | ----------------------- |
+| `code_review.issues`                 | 未解決指摘事項の取得    |
+| `code_review.round`                  | 現在のレビューラウンド  |
 | `code_review.issues[].status` (出力) | fixed / disputed に更新 |

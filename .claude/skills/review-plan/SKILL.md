@@ -219,10 +219,20 @@ plan:
 test -f "project.yaml" || { echo "Error: project.yaml not found"; exit 1; }
 ```
 
-`project.yaml` から以下を取得:
-- `setup.ticket_id`、`setup.description.acceptance_criteria`（妥当性判断基準）
-- `plan.review.round`（存在する場合、再レビュー）
-- `plan.review.issues`（再レビュー時、前回指摘の確認）
+`project.yaml` から情報を yq で取得:
+
+```bash
+# メタ情報
+TICKET_ID=$(yq '.meta.ticket_id' project.yaml)
+TARGET_REPO=$(yq '.meta.target_repo' project.yaml)
+
+# 受入基準（妥当性判断基準）
+yq '.setup.description.acceptance_criteria' project.yaml
+
+# 再レビューの場合: 前回のラウンドと指摘を取得
+CURRENT_ROUND=$(yq '.plan.review.round // 0' project.yaml)
+yq '.plan.review.issues[] | select(.status == "open")' project.yaml
+```
 
 ### 2. plan/確認・レビュー実施・出力
 
@@ -230,7 +240,27 @@ test -f "project.yaml" || { echo "Error: project.yaml not found"; exit 1; }
 
 ### 3. project.yaml 更新
 
-`plan.review` セクションを更新（round, status, issues, artifacts）。`meta.updated_at` も更新。
+```bash
+# plan.review セクションの更新（yq 使用）
+yq -i ".plan.review.round = $((CURRENT_ROUND + 1))" project.yaml
+yq -i '.plan.review.status = "approved"' project.yaml  # approved / conditional / rejected
+yq -i '.plan.review.latest_verdict = "承認"' project.yaml
+yq -i ".plan.review.completed_at = \"$(date -Iseconds)\"" project.yaml
+yq -i '.plan.review.summary = "Critical/Major指摘なし。"' project.yaml
+
+# 指摘事項の追加（存在する場合）
+yq -i '.plan.review.issues += [{"id": "PR-001", "severity": "minor", "status": "open", "description": "指摘内容"}]' project.yaml
+
+# 指摘の解決更新（再レビュー時）
+yq -i '(.plan.review.issues[] | select(.id == "PR-001")).status = "resolved"' project.yaml
+yq -i "(.plan.review.issues[] | select(.id == \"PR-001\")).resolved_in_round = $((CURRENT_ROUND + 1))" project.yaml
+
+# 成果物パス
+yq -i ".plan.review.artifacts = [\"docs/${TARGET_REPO}/review-plan/06_review-summary.md\"]" project.yaml
+
+# meta.updated_at を更新
+yq -i ".meta.updated_at = \"$(date -Iseconds)\"" project.yaml
+```
 
 ### 4. コミット
 
