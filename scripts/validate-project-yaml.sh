@@ -2,7 +2,7 @@
 # =============================================================================
 # validate-project-yaml.sh
 # =============================================================================
-# project.yaml を project-yaml.schema.yaml でバリデーションするスクリプト。
+# project.yaml を project.schema.yaml でバリデーションするスクリプト。
 #
 # 使用方法:
 #   ./scripts/validate-project-yaml.sh [options] [project.yaml へのパス]
@@ -27,7 +27,7 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-SCHEMA_FILE="${REPO_ROOT}/project-yaml.schema.yaml"
+SCHEMA_FILE="${REPO_ROOT}/project.schema.yaml"
 PRECONDITIONS_FILE="${REPO_ROOT}/preconditions.yaml"
 DEFAULT_TARGET="${REPO_ROOT}/project.yaml"
 

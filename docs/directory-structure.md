@@ -97,7 +97,7 @@ graph TD
     F_PY[project.yaml<br/>SSOT]:::data
     F_SY[setup.yaml]:::config
     F_PREC[preconditions.yaml]:::config
-    F_SCHEMA[project-yaml.schema.yaml]:::config
+    F_SCHEMA[project.schema.yaml]:::config
     F_REG[_registry.yaml]:::config
     F_AGENTS[AGENTS.md]:::config
 

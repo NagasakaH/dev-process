@@ -13,7 +13,7 @@ description: 対話的にsetup.yamlを作成するスキル。ユーザーと段
 
 - ユーザーと**段階的に対話**しながら情報を収集
 - 階層化された description フォーマット（SSOT対応）で出力
-- `setup-yaml.schema.yaml` に準拠した YAML を生成
+- `setup.schema.yaml` に準拠した YAML を生成
 - 生成後にユーザーの確認・修正を経てコミット
 
 ## 入出力
@@ -231,7 +231,7 @@ setup.yaml を生成しました。内容を確認してください。
 python3 -c "
 import yaml
 from jsonschema import validate
-with open('setup-yaml.schema.yaml') as s:
+with open('setup.schema.yaml') as s:
     schema = yaml.safe_load(s)
 with open('setup.yaml') as f:
     data = yaml.safe_load(f)

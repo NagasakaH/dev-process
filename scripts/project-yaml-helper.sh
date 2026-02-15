@@ -23,7 +23,7 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-SCHEMA_FILE="${REPO_ROOT}/project-yaml.schema.yaml"
+SCHEMA_FILE="${REPO_ROOT}/project.schema.yaml"
 PRECONDITIONS_FILE="${REPO_ROOT}/preconditions.yaml"
 
 # ---------------------------------------------------------------------------
