@@ -148,3 +148,32 @@ design:
   review:
     status: "pending"
   artifacts: "docs/dotnet-lambda-log-base/design/"
+
+# -----------------------------------------------------------------------------
+# plan
+# -----------------------------------------------------------------------------
+plan:
+  status: "completed"
+  started_at: "2026-02-15T20:49:00+00:00"
+  completed_at: "2026-02-15T20:50:00+00:00"
+  summary: "4タスク構成: README更新(T1) + 3階層ドキュメント(T2-T4)"
+  tasks:
+    - id: "T1"
+      name: "README.md 更新（Mermaid図 + 課金情報）"
+      status: "pending"
+      depends_on: []
+    - id: "T2"
+      name: "requirements.md 作成"
+      status: "pending"
+      depends_on: []
+    - id: "T3"
+      name: "basic-design.md 作成"
+      status: "pending"
+      depends_on: ["T2"]
+    - id: "T4"
+      name: "detailed-design.md 作成"
+      status: "pending"
+      depends_on: ["T3"]
+  review:
+    status: "pending"
+  artifacts: "docs/dotnet-lambda-log-base/plan/"
