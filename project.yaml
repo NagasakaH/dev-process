@@ -14,7 +14,7 @@ meta:
   target_repo: "dotnet-lambda-log-base"
   branch: "feature/init-dotnet-lambda-log-base"
   created_at: "2026-02-15T00:57:35+00:00"
-  updated_at: "2026-02-15T01:22:10+00:00"
+  updated_at: "2026-02-15T01:29:39+00:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -191,3 +191,40 @@ verification:
   status: completed
   completed_at: "2026-02-15T01:22:10+00:00"
   summary: ビルド成功(0警告0エラー)、28テスト全通過、terraform validate成功
+code_review:
+  status: rejected
+  started_at: "2026-02-15T01:29:39+00:00"
+  round: 1
+  rounds:
+    - round: 1
+      result: rejected
+      critical_count: 1
+      major_count: 0
+      minor_count: 1
+      info_count: 0
+      new_issues:
+        - CR-001
+        - CR-002
+  review_checklist: {}
+  issues:
+    - id: CR-001
+      severity: critical
+      category: リソース管理
+      description: ServiceProvider DisposeAsync が Lambda コンテナ再利用を破壊
+      file: src/DotnetLambdaLogBase/Function.cs
+      line: 61
+      status: open
+    - id: CR-002
+      severity: minor
+      category: エラーハンドリング
+      description: 個別ログイベント256KBサイズ制限チェックなし
+      file: src/DotnetLambdaLogBase.Logging/CloudWatchLogSender.cs
+      line: 87
+      status: open
+  artifacts:
+    - docs/dotnet-lambda-log-base/code-review/round-01.md
+  base_sha: e26efcc
+  head_sha: 16f4769
+  completed_at: "2026-02-15T01:29:39+00:00"
+  latest_verdict: 差し戻し
+  summary: 'CR-001: ServiceProvider DisposeAsync が Lambda コンテナ再利用を破壊(Critical), CR-002: 256KB イベントサイズ制限チェックなし(Minor)'
