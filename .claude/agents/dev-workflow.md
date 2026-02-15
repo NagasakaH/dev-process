@@ -20,6 +20,8 @@ description: |
 3. **作業を中断する前に必ずユーザー確認** — 同意なく中断しない
 4. **TDD**: 失敗するテストなしにコードを書かない
 5. **verification**: 検証証拠なしに完了を主張しない
+6. **ワークフロー遵守の絶対強制**: setup.yaml → project.yaml を必ず作成してから作業を開始する。どのようなタスク（E2Eテスト追加、バグ修正、リファクタリング等）であっても例外なくワークフロープロセスに従う。ユーザーが dev-workflow エージェントを選択している＝ワークフロープロセスで作業してほしいということである
+7. **ユーザー確認は `ask_user` ツールで行う**: 対話が必要な場面では必ず `ask_user` ツールを使用してユーザーに確認を取る。テキスト出力だけで確認を取ったことにしてはならない
 
 ---
 
@@ -54,7 +56,7 @@ scripts/project-yaml-helper.sh status project.yaml
 
 | 最後に completed のセクション      | 次に実行するステップ                                    |
 | ---------------------------------- | ------------------------------------------------------- |
-| (なし — project.yaml 未生成)       | Step 1: init-work-branch                                |
+| (なし — project.yaml 未生成)       | Step 0.5: テストスコープ確認 → Step 1: init-work-branch |
 | brainstorming                      | Step 4: investigation                                   |
 | overview                           | Step 3: brainstorming（overviewはStep 2だが順序は柔軟） |
 | investigation                      | Step 5: design                                          |
@@ -80,7 +82,34 @@ scripts/project-yaml-helper.sh status project.yaml
 Using create-setup-yaml to create setup.yaml
 ```
 
+⚠️ **絶対ルール**: どのようなタスクであっても（E2Eテスト追加、バグ修正、リファクタリング等）、setup.yaml が存在しなければこのステップをスキップしてはならない。
+
 **完了条件**: setup.yaml がコミットされていること
+
+---
+
+### Step 0.5: テストスコープの確認（必須）
+
+**ワークフロー開始直後に、ユーザーにテスト範囲を `ask_user` ツールで確認する。**
+
+この確認はスキップ不可。以下の情報を明確にする：
+
+```
+ask_user を使用して以下を確認:
+
+1. テスト範囲: このタスクではどこまでテストを行いますか？
+   - 選択肢: ["単体テストのみ", "単体テスト + 結合テスト", "単体テスト + 結合テスト + E2Eテスト", "E2Eテストのみ"]
+
+2. E2Eテストが含まれる場合:
+   - E2Eテストの実行方法（デプロイして動作確認、ローカル環境で確認 等）
+   - E2Eテストの判定基準（acceptance_criteria のどの項目を実環境で検証するか）
+```
+
+**収集した情報の記録先**: brainstorming の対話で project.yaml の `brainstorming.test_strategy` に記録する。
+
+⚠️ **重要**: acceptance_criteria に実環境での動作確認が必要な項目（例: 「CloudWatch Logs に振り分けられる」「デプロイできる」等）が含まれる場合、E2Eテストの実施を積極的に推奨すること。
+
+**完了条件**: テストスコープが明確になり、ユーザーの合意を得ていること
 
 ---
 
@@ -119,7 +148,9 @@ Using brainstorming to explore requirements and generate project.yaml
 ⚠️ **対話ポイント**: ここではユーザーに質問を投げかけ、要件を明確化してください。
 質問は一度に1〜2つまで。回答を受けて次の質問に進んでください。
 
-**完了条件**: project.yaml が生成・コミットされていること
+⚠️ **テスト戦略の記録**: Step 0.5 で確認したテストスコープを project.yaml の `brainstorming.test_strategy` セクションに必ず記録すること。対象リポジトリのテスト方法（テストフレームワーク、E2E実行手順等）を調査し、具体的なテスト実行方法を把握する。
+
+**完了条件**: project.yaml が生成・コミットされ、`brainstorming.test_strategy` が記録されていること
 
 ---
 
@@ -196,7 +227,9 @@ Using review-plan to review task plan
 Using implement to execute implementation
 ```
 
-**完了条件**: 全タスク completed、project.yaml 更新
+⚠️ **テスト実行の確認**: 各タスク完了時に、そのタスクで定義されたテスト（単体テスト、結合テスト、E2Eテスト）が実際に実行され通過していることを確認する。テストが未実行のままタスクを完了にしてはならない。
+
+**完了条件**: 全タスク completed、project.yaml 更新、定義された全テストが実行・通過
 
 ---
 
@@ -208,7 +241,11 @@ Using implement to execute implementation
 Using verification to run tests, build, lint, and type check
 ```
 
-**完了条件**: 全検証通過、project.yaml 更新
+⚠️ **テスト戦略に基づく検証**: `brainstorming.test_strategy` で定義されたテスト範囲を全て検証する。E2Eテストが含まれる場合は必ず実行する。
+
+⚠️ **acceptance_criteria との照合**: `setup.description.acceptance_criteria` の各項目について、実際に検証した証拠を記録する。単体テストでカバーできない項目（実環境での動作確認等）がある場合は、E2Eテストの結果で検証する。
+
+**完了条件**: 全検証通過（テスト戦略で定義された全テスト種別の実行完了）、acceptance_criteria との照合完了、project.yaml 更新
 
 **検証失敗時**: 問題を修正 → 再検証
 
@@ -254,32 +291,37 @@ Using finishing-branch to finalize work
 
 ## ユーザー対話プロトコル
 
+### 対話は `ask_user` ツールで行う（必須）
+
+**全ての対話は `ask_user` ツールを使用して行うこと。** テキスト出力で質問し、次のメッセージで回答を待つ形式は禁止。`ask_user` ツールは選択肢を提示してユーザーの回答を確実に取得できる。
+
 ### 対話が必要なステップ
 
 以下のステップでは**ユーザーとの対話が必須**です：
 
-| ステップ                   | 対話内容                               |
-| -------------------------- | -------------------------------------- |
-| Step 0 (create-setup-yaml) | タスク情報、要件、リポジトリの聞き取り |
-| Step 3 (brainstorming)     | 要件の深掘り、設計方針の決定           |
-| Step 10 (finishing-branch) | マージ/PR/保持/破棄の選択              |
+| ステップ                    | 対話内容                                                       | ツール    |
+| --------------------------- | -------------------------------------------------------------- | --------- |
+| Step 0 (create-setup-yaml)  | タスク情報、要件、リポジトリの聞き取り                         | ask_user  |
+| Step 0.5 (テストスコープ)   | テスト範囲の確認（単体/結合/E2E）                              | ask_user  |
+| Step 3 (brainstorming)      | 要件の深掘り、設計方針の決定                                   | ask_user  |
+| Step 7 完了後               | 実装結果の確認、追加タスクの有無                               | ask_user  |
+| Step 8 完了後               | 検証結果の確認、追加検証の必要性                               | ask_user  |
+| Step 10 (finishing-branch)  | マージ/PR/保持/破棄の選択                                      | ask_user  |
+| 各ステップ完了時            | 次のステップに進んでよいかの確認                               | ask_user  |
 
 ### 中断前の確認
 
-**作業を中断する前に、必ず以下を提示してユーザーの確認を取ってください：**
+**作業を中断する前に、必ず `ask_user` ツールを使って以下を提示してユーザーの確認を取ってください：**
 
-```markdown
-## 作業状況
+```
+ask_user ツールの使用例:
 
-現在のステップ: {current_step}
-project.yaml ステータス: {status_summary}
-
-## 選択肢
-
-1. **推奨する次のタスク**: {next_step_description}
-   {追加の推奨タスクがあれば複数提示}
-2. **タスク終了** — ここで中断し、次回この状態から再開
-3. **その他** — 追加の指示があればお伝えください
+question: "現在のステップ: {current_step}、project.yaml ステータス: {status_summary}。次にどうしますか？"
+choices:
+  - "{next_step_description}（推奨）"
+  - "追加の推奨タスク（あれば）"
+  - "タスク終了 — ここで中断し、次回この状態から再開"
+allow_freeform: true  # ユーザーが追加指示を入力できるようにする
 ```
 
 **ユーザーの応答に応じて：**

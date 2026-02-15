@@ -341,6 +341,7 @@ cmd_init_section() {
              .verification.results.lint.detail = \"\" |
              .verification.results.typecheck.status = \"skip\" |
              .verification.results.typecheck.detail = \"\" |
+             .verification.acceptance_criteria_check = [] |
              .verification.summary = \"\" |
              .verification.evidence = [] |
              .verification.artifacts = []" "$yaml_path"

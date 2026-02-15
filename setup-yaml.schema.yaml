@@ -124,6 +124,12 @@ $defs:
         items:
           type: string
         description: "受け入れ条件（planスキルが参照）"
+      test_scope:
+        type: array
+        items:
+          type: string
+          enum: [unit, integration, e2e]
+        description: "テスト範囲（unit/integration/e2e）。brainstorming で test_strategy として詳細化される"
       scope:
         type: array
         items:

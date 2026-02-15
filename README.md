@@ -105,7 +105,7 @@ flowchart LR
 - 技術スタック、API、依存関係を分析
 - `submodules/{name}.md` に概要ドキュメント生成
 
-### 3. brainstorming（要件探索・project.yaml 生成）
+### 3. brainstorming（要件探索・テスト戦略確認・project.yaml 生成）
 
 **インプット:**
 
@@ -120,6 +120,8 @@ flowchart LR
 **説明:**
 
 `setup.yaml` を基に `project.yaml` を生成する唯一のプロセスです。ユーザーとの対話により要件の明確化・妥当性評価を行い、機能要件・非機能要件の具体化、技術的制約の確認を実施します。2〜3つのアプローチを提案しトレードオフを説明した上で設計方針を決定し、結果を `project.yaml` の `brainstorming` セクションに記録します。
+
+**テスト戦略の確認（必須）:** テスト範囲（単体テスト/結合テスト/E2Eテスト）を `ask_user` ツールでユーザーに確認し、`test_strategy` として `project.yaml` に記録します。この戦略は以降の design（テスト計画）、plan（E2Eタスク生成）、implement（テスト実行）、verification（acceptance_criteria照合）の全工程で参照されます。
 
 > **Important**: `brainstorming` 以降の全プロセス（investigation, design, plan, implement 等）は `project.yaml` を SSOT として参照・更新します。`setup.yaml` は直接参照しません。
 
@@ -232,6 +234,8 @@ flowchart LR
 **説明:**
 
 - テスト・ビルド・リント・型チェックを実行し、自動化可能な客観検証を実施
+- `project.yaml` の `brainstorming.test_strategy` に基づき、定義されたテスト（単体/結合/E2E）をすべて実行
+- `setup.acceptance_criteria` の各項目に対して検証方法（単体テスト/E2Eテスト等）と結果を照合し `acceptance_criteria_check` として記録
 - 全検証通過で code-review へ進行、失敗時は implement に戻る
 
 ### 9. code-review（コードレビュー）
@@ -313,7 +317,7 @@ flowchart LR
 
 | プロセス           | project.yaml セクション          | 記録内容                         |
 | ------------------ | -------------------------------- | -------------------------------- |
-| brainstorming      | `meta`, `setup`, `brainstorming` | 要件探索結果、決定事項           |
+| brainstorming      | `meta`, `setup`, `brainstorming` | 要件探索結果、決定事項、テスト戦略 |
 | submodule-overview | `overview`                       | サブモジュール概要               |
 | investigation      | `investigation`                  | 調査結果、リスク                 |
 | design             | `design`                         | 設計方針                         |
@@ -321,7 +325,7 @@ flowchart LR
 | plan               | `plan`                           | タスク一覧、依存関係             |
 | review-plan        | `plan.review`                    | 計画レビュー指摘・ラウンド       |
 | implement          | `implement`                      | 実行状況、コミットハッシュ       |
-| verification       | `verification`                   | テスト・ビルド・リント実行結果   |
+| verification       | `verification`                   | テスト・ビルド・リント実行結果、E2E結果、acceptance_criteria照合 |
 | code-review        | `code_review`                    | チェックリスト、指摘、ラウンド   |
 | code-review-fix    | `code_review`                    | 指摘修正記録（同セクション更新） |
 | finishing-branch   | `finishing`                      | 最終アクション、PR URL           |
@@ -427,6 +431,8 @@ claude "ブランチを完了してください"                              # 
 
 - **新しい検証証拠なしに完了を主張しない**
 - テスト通過、ビルド成功、リンタークリアを実際のコマンド出力で確認
+- `brainstorming.test_strategy` で定義されたテスト（単体/結合/E2E）をすべて実行
+- `acceptance_criteria` の各項目と検証結果を照合し、未検証項目がないことを確認
 - 「〜はず」「おそらく」は禁止
 
 ### 並列化判断
