@@ -396,13 +396,23 @@ else
 fi
 ```
 
-**project.yaml からの情報抽出:**
-- `meta.ticket_id` - チケットID
-- `meta.task_name` - タスク名
-- `meta.target_repo` - 主要調査対象リポジトリ
-- `setup.target_repositories` - 調査対象リポジトリ一覧
-- `setup.description.background` - 調査の背景情報
-- `brainstorming.refined_requirements` - 深掘りされた要件（存在する場合）
+**project.yaml からの情報抽出（yq 使用）:**
+
+```bash
+# メタ情報の取得
+TICKET_ID=$(yq '.meta.ticket_id' project.yaml)
+TASK_NAME=$(yq '.meta.task_name' project.yaml)
+TARGET_REPO=$(yq '.meta.target_repo' project.yaml)
+
+# 調査対象リポジトリ一覧
+yq '.setup.target_repositories[].name' project.yaml
+
+# 背景情報の取得
+yq '.setup.description.background' project.yaml
+
+# brainstorming の深掘り要件（存在する場合）
+yq '.brainstorming.refined_requirements // []' project.yaml
+```
 
 ### 2. design-document確認（任意）
 
@@ -436,22 +446,29 @@ done
 
 ### 4. project.yaml の investigation セクション更新
 
-調査結果の要約を project.yaml に追記：
+調査結果の要約を project.yaml に yq で更新：
 
-```yaml
-# project.yaml に追記
-investigation:
-  status: completed
-  completed_at: "2025-02-11T12:00:00+09:00"
-  summary: |
-    {アーキテクチャ・データ構造・依存関係の要約（3行以内）}
-  key_findings:
-    - "{重要な発見1}"
-    - "{重要な発見2}"
-    - "{重要な発見3}"
-  risks:
-    - "{特定されたリスク}"
-  artifacts: "docs/{target_repo}/investigation/"
+```bash
+# investigation セクションの初期化（ヘルパー使用）
+./scripts/project-yaml-helper.sh init-section investigation
+
+# 各フィールドを yq で更新
+yq -i '.investigation.status = "completed"' project.yaml
+yq -i ".investigation.completed_at = \"$(date -Iseconds)\"" project.yaml
+yq -i '.investigation.summary = "アーキテクチャ・データ構造・依存関係の要約"' project.yaml
+yq -i '.investigation.key_findings = ["重要な発見1", "重要な発見2"]' project.yaml
+yq -i '.investigation.risks = ["特定されたリスク"]' project.yaml
+yq -i ".investigation.artifacts = \"docs/${TARGET_REPO}/investigation/\"" project.yaml
+
+# meta.updated_at を更新
+yq -i ".meta.updated_at = \"$(date -Iseconds)\"" project.yaml
+```
+
+またはヘルパーの update コマンドで簡易更新：
+
+```bash
+./scripts/project-yaml-helper.sh update investigation --status completed \
+  --summary "調査結果の要約" --artifacts "docs/${TARGET_REPO}/investigation/"
 ```
 
 ### 5. design-document更新（存在する場合）

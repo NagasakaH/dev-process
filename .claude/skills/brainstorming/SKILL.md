@@ -128,24 +128,26 @@ brainstorming:
 
 ### 4. brainstorming セクションの完成
 
-対話完了後、brainstorming セクションを更新:
+対話完了後、brainstorming セクションを yq で更新:
 
-```yaml
-brainstorming:
-  status: completed
-  started_at: "{前回記録した開始時刻}"
-  completed_at: "{ISO 8601形式の完了時刻}"
-  summary: |
-    {対話の要約: 何を検討し、何を決定したか}
-  decisions:                 # 主要な決定事項（5件以内）
-    - question: "{質問1}"
-      decision: "{決定1}"
-    - question: "{質問2}"
-      decision: "{決定2}"
-  refined_requirements:      # brainstorming で追加・修正された要件
-    - "{追加要件1}"
-    - "{追加要件2}"
-  artifacts: "docs/{repo}/brainstorming/"
+```bash
+# brainstorming セクションの更新（yq 使用）
+yq -i '.brainstorming.status = "completed"' project.yaml
+yq -i ".brainstorming.completed_at = \"$(date -Iseconds)\"" project.yaml
+yq -i '.brainstorming.summary = "対話の要約: 何を検討し、何を決定したか"' project.yaml
+yq -i '.brainstorming.decisions = [{"question": "質啡1", "decision": "決定1"}]' project.yaml
+yq -i '.brainstorming.refined_requirements = ["追加要件1", "追加要件2"]' project.yaml
+yq -i ".brainstorming.artifacts = \"docs/${TARGET_REPO}/brainstorming/\"" project.yaml
+
+# meta.updated_at を更新
+yq -i ".meta.updated_at = \"$(date -Iseconds)\"" project.yaml
+```
+
+またはヘルパーの update コマンドで簡易更新：
+
+```bash
+./scripts/project-yaml-helper.sh update brainstorming --status completed \
+  --summary "対話の要約" --artifacts "docs/${TARGET_REPO}/brainstorming/"
 ```
 
 #### brainstorming セクションのフィールド詳細

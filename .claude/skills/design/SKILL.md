@@ -499,22 +499,38 @@ else
 fi
 ```
 
-**project.yaml からの情報抽出:**
-- `meta.ticket_id` - チケットID
-- `meta.task_name` - タスク名
-- `meta.target_repo` - 主要設計対象リポジトリ
-- `setup.description.requirements` - 機能/非機能要件
-- `brainstorming.decisions` - 技術的決定事項（存在する場合）
-- `investigation` セクション - 調査結果
+**project.yaml からの情報抽出（yq 使用）:**
+
+```bash
+# メタ情報の取得
+TICKET_ID=$(yq '.meta.ticket_id' project.yaml)
+TASK_NAME=$(yq '.meta.task_name' project.yaml)
+TARGET_REPO=$(yq '.meta.target_repo' project.yaml)
+
+# 機能/非機能要件の取得
+yq '.setup.description.requirements.functional' project.yaml
+yq '.setup.description.requirements.non_functional' project.yaml
+
+# brainstorming の決定事項（存在する場合）
+yq '.brainstorming.decisions // []' project.yaml
+
+# investigation セクションの参照
+yq '.investigation.summary' project.yaml
+yq '.investigation.key_findings' project.yaml
+yq '.investigation.risks' project.yaml
+yq '.investigation.artifacts' project.yaml
+```
 
 ### 2. investigation 確認
 
 ```bash
 # project.yaml の場合: investigation セクションの status を確認
-# setup.yaml の場合: investigation/ ディレクトリを確認
-
 if [ -f "project.yaml" ]; then
-    # investigation.status == "completed" を確認
+    INV_STATUS=$(yq '.investigation.status' project.yaml)
+    if [ "$INV_STATUS" != "completed" ]; then
+        echo "Error: investigation.status が completed ではありません（現在: $INV_STATUS）"
+        exit 1
+    fi
     echo "project.yaml の investigation セクションを参照"
 else
     for repo in "${target_repositories[@]}"; do
@@ -580,21 +596,30 @@ done
 
 ### 7. project.yaml の design セクション更新
 
-設計結果の要約を project.yaml に追記：
+設計結果の要約を project.yaml に yq で更新：
 
-```yaml
-# project.yaml に追記
-design:
-  status: completed
-  completed_at: "2025-02-11T13:00:00+09:00"
-  summary: "JWT + Redis 構成の認証基盤を設計"
-  approach: "ミドルウェア層にJWT検証を追加、Redisでセッション管理"
-  key_decisions:
-    - "{設計上の主要決定1}"
-    - "{設計上の主要決定2}"
-  review:
-    status: pending    # pending | approved | revision_required
-  artifacts: "docs/{target_repo}/design/"
+```bash
+# design セクションの初期化（ヘルパー使用）
+./scripts/project-yaml-helper.sh init-section design
+
+# 各フィールドを yq で更新
+yq -i '.design.status = "completed"' project.yaml
+yq -i ".design.completed_at = \"$(date -Iseconds)\"" project.yaml
+yq -i '.design.summary = "JWT + Redis 構成の認証基盤を設計"' project.yaml
+yq -i '.design.approach = "ミドルウェア層にJWT検証を追加、Redisでセッション管理"' project.yaml
+yq -i '.design.key_decisions = ["設計上の主要決定1", "設計上の主要決定2"]' project.yaml
+yq -i '.design.review.status = "pending"' project.yaml
+yq -i ".design.artifacts = \"docs/${TARGET_REPO}/design/\"" project.yaml
+
+# meta.updated_at を更新
+yq -i ".meta.updated_at = \"$(date -Iseconds)\"" project.yaml
+```
+
+またはヘルパーの update コマンドで簡易更新：
+
+```bash
+./scripts/project-yaml-helper.sh update design --status completed \
+  --summary "設計方針の要約" --artifacts "docs/${TARGET_REPO}/design/"
 ```
 
 ### 8. design-document更新（存在する場合）

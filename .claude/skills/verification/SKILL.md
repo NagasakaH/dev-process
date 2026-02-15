@@ -26,13 +26,17 @@ implement 完了後、code-review 前に実施する自動化可能な客観検�
 
 ### 1. project.yaml（必須・SSOT）
 
-```yaml
-implement:
-  status: completed           # ← 前提条件: 実装完了
-  completed_at: "2025-01-15T14:00:00+09:00"
+```bash
+# 前提条件の確認（yq 使用）
+IMPL_STATUS=$(yq '.implement.status' project.yaml)
+if [ "$IMPL_STATUS" != "completed" ]; then
+    echo "Error: implement.status が completed ではありません（現在: $IMPL_STATUS）"
+    exit 1
+fi
 
-verification:                  # ← このスキルが更新
-  status: pending
+# メタ情報の取得
+TICKET_ID=$(yq '.meta.ticket_id' project.yaml)
+TARGET_REPO=$(yq '.meta.target_repo' project.yaml)
 ```
 
 ### 2. submodules/{target_repo}/（実装済みコード）
@@ -93,30 +97,41 @@ test -f mypy.ini && python -m mypy .
 
 ## project.yaml 更新内容
 
-`project.yaml` の `verification` セクションを更新：
+`project.yaml` の `verification` セクションを yq で更新：
 
-```yaml
-verification:
-  status: completed              # pending | in_progress | completed | failed
-  started_at: "2025-01-15T10:00:00+09:00"
-  completed_at: "2025-01-15T10:30:00+09:00"
-  results:
-    test:
-      status: pass               # pass | fail | skip
-      detail: "42 passed, 0 failed"
-      coverage: "85%"
-    build:
-      status: pass
-      detail: "Build succeeded"
-    lint:
-      status: pass
-      detail: "No errors"
-    typecheck:
-      status: pass
-      detail: "No type errors"
-  summary: "全検証通過。テスト42件パス、カバレッジ85%。"
-  artifacts:
-    - "docs/{target_repo}/verification/results.md"
+```bash
+# verification セクションの初期化（ヘルパー使用）
+./scripts/project-yaml-helper.sh init-section verification
+
+# ステータスとタイムスタンプ
+yq -i '.verification.status = "completed"' project.yaml  # または "failed"
+yq -i ".verification.started_at = \"$(date -Iseconds)\"" project.yaml
+yq -i ".verification.completed_at = \"$(date -Iseconds)\"" project.yaml
+
+# 各検証結果を記録
+yq -i '.verification.results.test.status = "pass"' project.yaml
+yq -i '.verification.results.test.detail = "42 passed, 0 failed"' project.yaml
+yq -i '.verification.results.test.coverage = "85%"' project.yaml
+yq -i '.verification.results.build.status = "pass"' project.yaml
+yq -i '.verification.results.build.detail = "Build succeeded"' project.yaml
+yq -i '.verification.results.lint.status = "pass"' project.yaml
+yq -i '.verification.results.lint.detail = "No errors"' project.yaml
+yq -i '.verification.results.typecheck.status = "pass"' project.yaml
+yq -i '.verification.results.typecheck.detail = "No type errors"' project.yaml
+
+# サマリーと成4物
+yq -i '.verification.summary = "全検証通過。テスト42件パス、カバレッジ85%。"' project.yaml
+yq -i ".verification.artifacts = [\"docs/${TARGET_REPO}/verification/results.md\"]" project.yaml
+
+# meta.updated_at を更新
+yq -i ".meta.updated_at = \"$(date -Iseconds)\"" project.yaml
+```
+
+またはヘルパーの update コマンドで簡易更新：
+
+```bash
+./scripts/project-yaml-helper.sh update verification --status completed \
+  --summary "全検証通過"
 ```
 
 ## 出力ファイル構成
@@ -198,8 +213,8 @@ implementスキルで実装を完了してください。
 
 ## SSOT参照
 
-| project.yaml フィールド | 用途 |
-| ----------------------- | ---- |
-| `implement.status` | 実装完了の確認（completed であること） |
-| `verification` (出力) | 検証結果の記録 |
-| `verification.results` | 各検証項目の結果 |
+| project.yaml フィールド | 用途                                   |
+| ----------------------- | -------------------------------------- |
+| `implement.status`      | 実装完了の確認（completed であること） |
+| `verification` (出力)   | 検証結果の記録                         |
+| `verification.results`  | 各検証項目の結果                       |

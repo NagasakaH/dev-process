@@ -230,12 +230,21 @@ design:
 test -f "project.yaml" || { echo "Error: project.yaml not found"; exit 1; }
 ```
 
-`project.yaml` から以下を取得:
-- `setup.ticket_id`
-- `setup.description.requirements`（妥当性判断基準）
-- `setup.target_repositories`
-- `design.review.round`（存在する場合、再レビュー）
-- `design.review.issues`（再レビュー時、前回指摘の確認）
+`project.yaml` から情報を yq で取得:
+
+```bash
+# メタ情報
+TICKET_ID=$(yq '.meta.ticket_id' project.yaml)
+TARGET_REPO=$(yq '.meta.target_repo' project.yaml)
+
+# 要件（妥当性判断基準）
+yq '.setup.description.requirements.functional' project.yaml
+yq '.setup.description.requirements.non_functional' project.yaml
+
+# 再レビューの場合: 前回のラウンドと指摘を取得
+CURRENT_ROUND=$(yq '.design.review.round // 0' project.yaml)
+yq '.design.review.issues[] | select(.status == "open")' project.yaml
+```
 
 ### 2. design/確認
 
@@ -282,16 +291,27 @@ done
 
 ### 6. project.yaml 更新
 
-`project.yaml` の `design.review` セクションを更新:
-- `round`: ラウンド番号（初回=1、再レビュー時にインクリメント）
-- `status`: `approved` / `conditional` / `rejected`
-- `latest_verdict`: 日本語の判定テキスト
-- `completed_at`: レビュー完了タイムスタンプ
-- `summary`: レビュー結果の要約（3行以内）
-- `issues`: 指摘事項リスト（累積）
-- `artifacts`: レビュー結果ファイルパス
+```bash
+# design.review セクションの更新（yq 使用）
+yq -i ".design.review.round = $((CURRENT_ROUND + 1))" project.yaml
+yq -i '.design.review.status = "approved"' project.yaml  # approved / conditional / rejected
+yq -i '.design.review.latest_verdict = "承認"' project.yaml
+yq -i ".design.review.completed_at = \"$(date -Iseconds)\"" project.yaml
+yq -i '.design.review.summary = "Critical/Major指摘なし。"' project.yaml
 
-`meta.updated_at` も更新。
+# 指摘事項の追加（存在する場合）
+yq -i '.design.review.issues += [{"id": "DR-001", "severity": "minor", "status": "open", "description": "指摘内容"}]' project.yaml
+
+# 指摘の解決更新（再レビュー時）
+yq -i '(.design.review.issues[] | select(.id == "DR-001")).status = "resolved"' project.yaml
+yq -i "(.design.review.issues[] | select(.id == \"DR-001\")).resolved_in_round = $((CURRENT_ROUND + 1))" project.yaml
+
+# 成果物パス
+yq -i ".design.review.artifacts = [\"docs/${TARGET_REPO}/review-design/06_review-summary.md\"]" project.yaml
+
+# meta.updated_at を更新
+yq -i ".meta.updated_at = \"$(date -Iseconds)\"" project.yaml
+```
 
 ### 7. コミット
 

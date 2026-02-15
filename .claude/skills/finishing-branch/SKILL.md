@@ -52,16 +52,26 @@ description: 実装完了、全テスト通過後、作業を統合する方法�
 
 ## project.yaml への記録
 
-選択した最終アクション実行後、`project.yaml` の `finishing` セクションを更新してください：
+選択した最終アクション実行後、`project.yaml` の `finishing` セクションを yq で更新してください：
 
-```yaml
-finishing:
-  status: completed
-  started_at: "2025-01-15T13:30:00+09:00"
-  completed_at: "2025-01-15T14:00:00+09:00"
-  action: merge  # merge | pr | keep | discard
-  pr_url: "https://github.com/org/repo/pull/42"  # PR作成時のみ
-  merge_commit: "abc1234"  # マージ時のみ
+```bash
+# finishing セクションの初期化（ヘルパー使用）
+./scripts/project-yaml-helper.sh init-section finishing
+
+# 各フィールドを yq で更新
+yq -i '.finishing.status = "completed"' project.yaml
+yq -i ".finishing.started_at = \"$(date -Iseconds)\"" project.yaml
+yq -i ".finishing.completed_at = \"$(date -Iseconds)\"" project.yaml
+yq -i '.finishing.action = "merge"' project.yaml  # merge | pr | keep | discard
+
+# PR作成時のみ
+yq -i '.finishing.pr_url = "https://github.com/org/repo/pull/42"' project.yaml
+
+# マージ時のみ
+yq -i '.finishing.merge_commit = "abc1234"' project.yaml
+
+# meta.updated_at を更新
+yq -i ".meta.updated_at = \"$(date -Iseconds)\"" project.yaml
 ```
 
 ### actionの値
