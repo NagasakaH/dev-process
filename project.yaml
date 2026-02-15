@@ -208,3 +208,25 @@ implement:
       files_changed:
         - "docs/logging-library/detailed-design.md"
   artifacts: "submodules/dotnet-lambda-log-base/"
+
+# -----------------------------------------------------------------------------
+# verification
+# -----------------------------------------------------------------------------
+verification:
+  status: "completed"
+  started_at: "2026-02-15T21:01:00+00:00"
+  completed_at: "2026-02-15T21:02:00+00:00"
+  summary: "全検証項目をPASS"
+  results:
+    - check: "ファイル存在確認（4ファイル）"
+      status: "PASS"
+    - check: "Mermaid構文あり（README:1, basic:5, detailed:2）"
+      status: "PASS"
+    - check: "AWS課金情報セクション（6箇所言及）"
+      status: "PASS"
+    - check: "E2Eテスト項目数: 13件記載"
+      status: "PASS"
+    - check: "単体テスト項目数: 28件記載"
+      status: "PASS"
+    - check: "docs/logging-library/リンク: 4箇所"
+      status: "PASS"
