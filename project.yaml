@@ -14,7 +14,7 @@ meta:
   target_repo: "dotnet-lambda-log-base"
   branch: "feature/init-dotnet-lambda-log-base"
   created_at: "2026-02-15T00:57:35+00:00"
-  updated_at: "2026-02-15T01:04:09+00:00"
+  updated_at: "2026-02-15T01:06:23+00:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -119,3 +119,19 @@ investigation:
     - Delivery Class 制約によるログ検索不可
   artifacts: "docs/dotnet-lambda-log-base/investigation/"
   completed_at: "2026-02-15T01:04:08+00:00"
+design:
+  status: completed
+  started_at: "2026-02-15T01:06:23+00:00"
+  summary: "ILogger ベースのカスタム CloudWatch Logs プロバイダーを設計。2グループ振り分け + バッファリング + バッチ送信構成。"
+  approach: "CloudWatchLoggerProvider (ILoggerProvider) + LogBuffer (ConcurrentQueue) + CloudWatchLogSender (AWS SDK) の3層構成。Lambda 終了時の FlushAsync で確実にログ送信。"
+  key_decisions:
+    - ILoggerProvider 標準インターフェース準拠で DI 対応
+    - ConcurrentQueue によるスレッドセーフバッファリング
+    - Lambda 終了時の明示的 FlushAsync による確実なログ送信
+    - 送信失敗時はコンソールにフォールバック（アプリを停止しない）
+    - Terraform でフラット構成のインフラ定義
+  review:
+    round: 0
+    status: pending
+  artifacts: "docs/dotnet-lambda-log-base/design/"
+  completed_at: "2026-02-15T01:06:23+00:00"
