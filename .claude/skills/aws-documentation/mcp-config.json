@@ -1,0 +1,11 @@
+{
+  "name": "aws-documentation",
+  "description": "AWS Documentation MCP - read/search/recommend AWS docs",
+  "command": "uvx",
+  "args": [
+    "awslabs.aws-documentation-mcp-server@latest"
+  ],
+  "env": {
+    "AWS_DOCUMENTATION_PARTITION": "aws"
+  }
+}

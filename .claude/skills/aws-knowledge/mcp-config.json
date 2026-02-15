@@ -1,0 +1,10 @@
+{
+  "name": "aws-knowledge",
+  "description": "AWS Knowledge MCP - documentation search, regional availability, reading docs",
+  "command": "uvx",
+  "args": [
+    "fastmcp",
+    "run",
+    "https://knowledge-mcp.global.api.aws"
+  ]
+}
