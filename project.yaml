@@ -110,3 +110,23 @@ brainstorming:
         - "テスト項目・結果が実際のコードと一致すること"
         - "ログライブラリの3階層ドキュメントの整合性"
   artifacts: "docs/dotnet-lambda-log-base/brainstorming/"
+
+# -----------------------------------------------------------------------------
+# investigation
+# -----------------------------------------------------------------------------
+investigation:
+  status: "completed"
+  started_at: "2026-02-15T20:43:00+00:00"
+  completed_at: "2026-02-15T20:45:00+00:00"
+  summary: |
+    dotnet-lambda-log-base のアーキテクチャ、データ構造、依存関係、
+    統合ポイント、Terraform リソース構成と課金要素を調査完了。
+  key_findings:
+    - "Terraform リソースのうち課金対象: CloudWatch Logs (2グループ), S3 Bucket, CloudWatch Alarm, SNS Topic"
+    - "DELIVERY class ロググループは 2日固定保持、S3配信専用"
+    - "E2E テストで NuGet パッケージバージョン互換性問題を修正済み"
+    - "ログライブラリは 11 ソースファイル、28 単体テスト、13 E2E テストで構成"
+  risks:
+    - "Mermaid 図の GitHub レンダリング互換性に注意"
+    - "AWS 課金情報は参照時点の料金体系に依存"
+  artifacts: "docs/dotnet-lambda-log-base/investigation/"
