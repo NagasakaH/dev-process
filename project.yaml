@@ -230,3 +230,21 @@ verification:
       status: "PASS"
     - check: "docs/logging-library/リンク: 4箇所"
       status: "PASS"
+
+# -----------------------------------------------------------------------------
+# code_review
+# -----------------------------------------------------------------------------
+code_review:
+  status: "completed"
+  started_at: "2026-02-15T21:03:00+00:00"
+  completed_at: "2026-02-15T21:05:00+00:00"
+  summary: "2件の軽微なMermaid構文問題を検出・修正済み"
+  issues:
+    - severity: "medium"
+      file: "README.md"
+      description: "Mermaidノード内のパイプ文字をスラッシュに修正"
+      status: "fixed"
+    - severity: "medium"
+      file: "docs/logging-library/detailed-design.md"
+      description: "ネストジェネリクスのMermaid構文を修正"
+      status: "fixed"
