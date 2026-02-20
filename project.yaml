@@ -9,8 +9,7 @@ meta:
   target_repo: "elsa"
   branch: "feature/ELSA-001"
   created_at: "2026-02-20T05:20:00+00:00"
-  updated_at: "2026-02-20T05:20:00+00:00"
-
+  updated_at: "2026-02-20T05:42:59+00:00"
 setup:
   description:
     overview: |
@@ -80,7 +79,6 @@ setup:
     create_design_document: true
     design_document_dir: "docs"
     submodules_dir: "submodules"
-
 brainstorming:
   status: "completed"
   started_at: "2026-02-20T05:15:00+00:00"
@@ -127,3 +125,23 @@ brainstorming:
       run_command: "dotnet test --filter 'Category=E2E'"
       environment: "Docker Compose (PostgreSQL + RabbitMQ + ElsaServer)"
   artifacts: "docs/elsa/brainstorming/"
+investigation:
+  status: completed
+  completed_at: "2026-02-20T05:42:59+00:00"
+  summary: tmpブランチの全コンポーネントを詳細調査。Activities.Loader, WorkflowCatalog, MassTransit Consumer, テストプロジェクト構成を分析
+  artifacts: docs/elsa/investigation/
+design:
+  status: completed
+  completed_at: "2026-02-20T05:42:59+00:00"
+  summary: tmpベースの設計をElsa標準MassTransit使用に簡素化。PostgreSQL移行、テスト3層構成
+  artifacts: docs/elsa/design/
+plan:
+  status: completed
+  completed_at: "2026-02-20T05:42:59+00:00"
+  summary: 4フェーズ実装計画（コアライブラリ→ElsaServer拡張→テスト→ソリューション更新）
+  artifacts: docs/elsa/plan/
+implement:
+  status: completed
+  completed_at: "2026-02-20T05:42:59+00:00"
+  summary: 全コンポーネント実装完了。ビルド成功、13テスト全通過
+  artifacts: submodules/elsa/
