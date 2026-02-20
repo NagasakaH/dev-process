@@ -1,0 +1,102 @@
+# =============================================================================
+# 開発セットアップ設定ファイル（SSOT: Single Source of Truth）
+# =============================================================================
+# 生成日時: 2026-02-20T05:10:00+00:00
+# スキル: create-setup-yaml（対話的生成）
+# =============================================================================
+
+task_name: "Elsa Workflow システム機能拡張（Activity DLL読み込み・JSON管理・MassTransit連携・E2Eテスト整備）"
+ticket_id: "ELSA-001"
+
+# =============================================================================
+# 説明（階層化フォーマット）
+# =============================================================================
+description:
+  overview: |
+    NagasakaH/elsa リポジトリのプロトタイプ実装（tmpブランチ）を参考に、
+    masterブランチから新規featureブランチを作成し、以下の機能を正式に実装・テスト基盤を整備する：
+    - Activity DLL の動的読み込み機構
+    - サンプル Activity DLL プロジェクト
+    - Elsa Studio の JSON 読み込みを使ったワークフロー管理（Elsa Studio GUI で編集可能）
+    - MassTransit を使った任意のワークフローの実行・停止
+    - 包括的なテスト基盤（単体・結合・E2E）
+
+  purpose: |
+    現在 tmp ブランチにプロトタイプ状態で存在する実装を、正式なブランチで整理・統合し、
+    プロダクション品質のコードとテスト基盤を構築する。
+    特にテスト周りを充実させ、DLL ロードからワークフロー実行まで一貫した品質保証を実現する。
+
+  background: |
+    - tmp ブランチに Activity DLL ロード（Activities.Loader）、MassTransit 連携、
+      JSON ワークフローカタログ管理等のお試し実装が存在する
+    - master ブランチは基本的な構成のみ（カスタム Activity 直書き、SQLite、テストなし）
+    - compose.yml に PostgreSQL + RabbitMQ の Docker 構成が定義済み
+    - Elsa 3.4.x ベース、.NET 8 ターゲット
+
+  requirements:
+    functional:
+      - "Activity DLL 動的読み込み機構（外部フォルダからDLLをスキャンしアクティビティを自動登録）"
+      - "サンプル Activity DLL プロジェクト（テンプレートとして利用可能）"
+      - "ワークフロー JSON の起動時読み込み・カタログ管理（WorkflowCatalog）"
+      - "Elsa Studio GUI でのワークフロー JSON 編集・保存対応"
+      - "要求（テンプレート等）からワークフロー JSON を生成する仕組み"
+      - "MassTransit を使ったワークフローの実行（StartWorkflowCommand）"
+      - "MassTransit を使ったワークフローの停止"
+      - "ワークフローステータスのイベント発行（WorkflowStatusEvent）"
+    non_functional:
+      - "テストカバレッジの充実（単体・結合・E2E の3層）"
+      - "外部DLLのロード安全性（不正DLLのエラーハンドリング）"
+      - "ワークフロー JSON のバリデーション（スキーマ準拠チェック）"
+      - "Docker Compose ベースの開発環境で完結する構成"
+
+  acceptance_criteria:
+    - "Activity DLL を外部フォルダから動的にロードでき、単体テストで検証済み"
+    - "ロードしたアクティビティが Elsa Studio のアクティビティ一覧に表示される（結合テスト検証済み）"
+    - "ワークフロー JSON をカタログから読み込み、Elsa に登録できる"
+    - "Elsa Studio GUI でワークフロー JSON の編集・保存ができる"
+    - "要求からワークフロー JSON を生成する仕組みが動作する"
+    - "MassTransit 経由でワークフローの実行・停止ができる"
+    - "MassTransit Consumer の単体・結合テストが通過する"
+    - "ワークフロー JSON バリデーション（不正JSONのエラーハンドリング含む）テスト通過"
+    - "ワークフローライフサイクル（作成→公開→実行→完了→停止）のAPI E2Eテスト通過"
+    - "Playwright CLI でのE2Eテスト（Studio上でのワークフロー編集・操作確認）通過"
+
+  test_scope:
+    - unit
+    - integration
+    - e2e
+
+  scope:
+    - "Activity DLL 動的読み込み機構の実装とテスト"
+    - "サンプル Activity DLL テンプレートの作成"
+    - "ワークフロー JSON カタログ管理の実装とテスト"
+    - "Elsa Studio 連携（GUI編集対応）"
+    - "ワークフロー JSON 生成機構"
+    - "MassTransit 連携（ワークフロー実行・停止）の実装とテスト"
+    - "Playwright CLI による E2E テスト整備"
+    - "PostgreSQL + RabbitMQ を使った結合テスト環境"
+
+  out_of_scope:
+    - "本番環境へのデプロイ"
+    - "ユーザー認証・権限管理の本格実装（暫定ハードコーディングのまま）"
+    - "RPC Service の新規追加"
+
+  notes: |
+    - tmp ブランチの実装を参考にしつつ、新規ブランチで整理して実装する
+    - Elsa 3.4.x / .NET 8 ベースで実装
+    - テスト実行環境は Docker Compose（PostgreSQL + RabbitMQ）を前提とする
+    - Playwright CLI は E2E テストに使用し、Elsa Studio の GUI 操作をテスト可能にする
+
+# =============================================================================
+# リポジトリ設定
+# =============================================================================
+target_repositories:
+  - name: "elsa"
+    url: "git@github.com:NagasakaH/elsa.git"
+    base_branch: "master"
+
+# オプション設定
+options:
+  create_design_document: true
+  design_document_dir: "docs"
+  submodules_dir: "submodules"
