@@ -16,7 +16,7 @@ set -euo pipefail
 IMAGE_NAME="${DEV_CONTAINER_IMAGE:-nagasakah/dev-process:latest}"
 WORKSPACE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PROJECT_NAME="$(basename "$WORKSPACE_DIR")"
-CONTAINER_NAME="${PROJECT_NAME}"
+CONTAINER_NAME="${CONTAINER_NAME:-${PROJECT_NAME}}"
 LABEL="managed-by=dev-container-sh"
 
 # ---------------------------------------------------------------
@@ -158,6 +158,7 @@ case "${1:-help}" in
     echo ""
     echo "Environment variables:"
     echo "  DEV_CONTAINER_IMAGE  Override image (default: ${IMAGE_NAME})"
+    echo "  CONTAINER_NAME       Override container name (default: ${PROJECT_NAME})"
     exit 1
     ;;
 esac
