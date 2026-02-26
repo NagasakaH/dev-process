@@ -1,42 +1,54 @@
 {
-	"name": "Dev Process Development",
-	"image": "mcr.microsoft.com/devcontainers/dotnet:8.0",
-	"features": {
-		"ghcr.io/devcontainers/features/git:1": {},
-		"ghcr.io/devcontainers/features/github-cli:1": {},
-		"ghcr.io/devcontainers/features/node:1": {
-			"version": "lts"
-		},
-		"ghcr.io/devcontainers/features/python:1": {
-			"version": "3.12",
-			"installTools": true
-		},
-		"ghcr.io/devcontainers/features/aws-cli:1": {},
-		"ghcr.io/devcontainers/features/terraform:1": {
-			"version": "latest",
-			"installTFsec": true
-		},
-		"ghcr.io/larsnieuwenhuizen/features/jqyq:0": {},
-		"ghcr.io/jsburckhardt/devcontainer-features/uv:1": {}
-	},
-	"mounts": [
-		"source=${localEnv:HOME}/.aws,target=/home/vscode/.aws,type=bind,consistency=cached"
-	],
-	"customizations": {
-		"vscode": {
-			"extensions": [
-				"ms-dotnettools.csharp",
-				"ms-dotnettools.csdevkit",
-				"ms-dotnettools.vscode-dotnet-runtime",
-				"ms-dotnettools.vscodeintellicode-csharp",
-				"redhat.vscode-yaml",
-				"hashicorp.terraform"
-			],
-			"settings": {
-				"dotnet.server.useOmnisharp": false
-			}
-		}
-	},
-	"postCreateCommand": "pip install jsonschema pyyaml && echo '--- Tool versions ---' && dotnet --version && node --version && python3 --version && uv --version && yq --version && aws --version && terraform --version | head -1 && gh --version | head -1",
-	"remoteUser": "vscode"
+  "name": "Dev Process Development",
+  "image": "mcr.microsoft.com/devcontainers/dotnet:8.0",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts"
+    },
+    "ghcr.io/schlich/devcontainer-features/playwright:0": {},
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12",
+      "installTools": true,
+      "toolsToInstall": "ruff"
+    },
+    "ghcr.io/devcontainers/features/aws-cli:1": {},
+    "ghcr.io/devcontainers/features/terraform:1": {
+      "version": "latest",
+      "installTFsec": true
+    },
+    "ghcr.io/larsnieuwenhuizen/features/jqyq:0": {},
+    "ghcr.io/jsburckhardt/devcontainer-features/uv:1": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/jungaretti/features/ripgrep:1": {},
+    "ghcr.io/devcontainers-community/features/deno": {},
+    "ghcr.io/devcontainers-extra/features/tmux-apt-get:1": {},
+    "ghcr.io/devcontainers-community/npm-features/prettier:1": {},
+    "ghcr.io/devcontainers-extra/features/shfmt:1": {},
+    "ghcr.io/stu-bell/devcontainer-features/neovim:0": {},
+    "ghcr.io/devcontainers/features/copilot-cli:1": {},
+    "ghcr.io/stu-bell/devcontainer-features/claude-code:0": {},
+    "./mssql-mcp": {}
+  },
+  "mounts": [
+    "source=${localEnv:HOME}/.aws,target=/home/vscode/.aws,type=bind,consistency=cached"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csharp",
+        "ms-dotnettools.csdevkit",
+        "ms-dotnettools.vscode-dotnet-runtime",
+        "ms-dotnettools.vscodeintellicode-csharp",
+        "redhat.vscode-yaml",
+        "hashicorp.terraform"
+      ],
+      "settings": {
+        "dotnet.server.useOmnisharp": false
+      }
+    }
+  },
+  "postCreateCommand": "pip install jsonschema pyyaml && echo '--- Tool versions ---' && dotnet --version && node --version && python3 --version && uv --version && yq --version && aws --version && terraform --version | head -1 && gh --version | head -1",
+  "remoteUser": "vscode"
 }
