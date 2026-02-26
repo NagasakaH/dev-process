@@ -18,9 +18,29 @@ WORKSPACE_DIR=${WORKSPACE_DIR%/}
 
 SESSION_NAME="${PROJECT_NAME:-dev}"
 
-# If running as root, switch to vscode for the tmux session
+# If running as root, adjust vscode UID/GID to match workspace owner
 RUN_USER="vscode"
 if [ "$(id -u)" = "0" ] && id "$RUN_USER" &>/dev/null; then
+  # Detect UID/GID of the workspace directory
+  HOST_UID=$(stat -c '%u' "$WORKSPACE_DIR" 2>/dev/null || echo "")
+  HOST_GID=$(stat -c '%g' "$WORKSPACE_DIR" 2>/dev/null || echo "")
+  CURRENT_UID=$(id -u "$RUN_USER")
+  CURRENT_GID=$(id -g "$RUN_USER")
+
+  if [ -n "$HOST_UID" ] && [ "$HOST_UID" != "0" ] && [ "$HOST_UID" != "$CURRENT_UID" ]; then
+    echo "Adjusting vscode UID: $CURRENT_UID -> $HOST_UID"
+    usermod -u "$HOST_UID" "$RUN_USER" 2>/dev/null
+  fi
+  if [ -n "$HOST_GID" ] && [ "$HOST_GID" != "0" ] && [ "$HOST_GID" != "$CURRENT_GID" ]; then
+    echo "Adjusting vscode GID: $CURRENT_GID -> $HOST_GID"
+    groupmod -g "$HOST_GID" "$RUN_USER" 2>/dev/null
+  fi
+
+  # Fix home directory ownership if UID/GID changed
+  if [ "$HOST_UID" != "$CURRENT_UID" ] || [ "$HOST_GID" != "$CURRENT_GID" ]; then
+    chown -R "$RUN_USER":"$RUN_USER" /home/"$RUN_USER" 2>/dev/null
+  fi
+
   exec su -l "$RUN_USER" -c "PROJECT_NAME='${PROJECT_NAME}' LC_ALL=C.UTF-8 LANG=C.UTF-8 $0 $*"
 fi
 
