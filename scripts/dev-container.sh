@@ -8,16 +8,23 @@
 #   scripts/dev-container.sh shell   Attach to existing container
 #   scripts/dev-container.sh list    List all dev containers
 #
-# Container name is derived from project directory name (dev-<project>).
-# Multiple projects can run simultaneously.
+# Container name is derived from project name + workspace path hash.
+# Multiple clones of the same repo can run simultaneously.
 #
 set -euo pipefail
 
 IMAGE_NAME="${DEV_CONTAINER_IMAGE:-nagasakah/dev-process:latest}"
 WORKSPACE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PROJECT_NAME="$(basename "$WORKSPACE_DIR")"
-CONTAINER_NAME="${CONTAINER_NAME:-${PROJECT_NAME}}"
-LABEL="managed-by=dev-container-sh"
+PATH_HASH="$(echo -n "${WORKSPACE_DIR}" | md5sum 2>/dev/null | head -c 6 || echo -n "${WORKSPACE_DIR}" | md5 -q 2>/dev/null | head -c 6)"
+CONTAINER_NAME="${PROJECT_NAME}-${PATH_HASH}"
+LABEL_MANAGED="managed-by=dev-container-sh"
+LABEL_WORKSPACE="workspace-path=${WORKSPACE_DIR}"
+
+# Find container for current workspace by label
+find_container() {
+  docker ps -a --filter "label=${LABEL_MANAGED}" --filter "label=${LABEL_WORKSPACE}" --format '{{.Names}}' | head -1
+}
 
 # ---------------------------------------------------------------
 # Dynamic mount builder — only mounts paths that exist on host
@@ -55,17 +62,20 @@ build_mounts() {
 # Commands
 # ---------------------------------------------------------------
 cmd_up() {
-  if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-    echo "Container '${CONTAINER_NAME}' is already running."
+  local existing
+  existing=$(find_container)
+
+  if [ -n "$existing" ] && docker ps --format '{{.Names}}' | grep -q "^${existing}$"; then
+    echo "Container '${existing}' is already running for this workspace."
     echo "Use: $0 shell   to attach"
     echo "Use: $0 down    to stop"
     exit 0
   fi
 
-  # Clean up stopped container with same name
-  if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-    echo "Removing stopped container '${CONTAINER_NAME}'..."
-    docker rm "${CONTAINER_NAME}" >/dev/null
+  # Clean up stopped container for this workspace
+  if [ -n "$existing" ]; then
+    echo "Removing stopped container '${existing}'..."
+    docker rm "${existing}" >/dev/null
   fi
 
   echo "Starting container '${CONTAINER_NAME}'..."
@@ -83,7 +93,8 @@ cmd_up() {
     --hostname "${PROJECT_NAME}" \
     --privileged \
     --platform linux/amd64 \
-    --label "${LABEL}" \
+    --label "${LABEL_MANAGED}" \
+    --label "${LABEL_WORKSPACE}" \
     --label "project=${PROJECT_NAME}" \
     -e "PROJECT_NAME=${PROJECT_NAME}" \
     ${mount_flags} \
@@ -91,48 +102,72 @@ cmd_up() {
 }
 
 cmd_down() {
-  if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-    echo "Stopping container '${CONTAINER_NAME}'..."
-    docker stop "${CONTAINER_NAME}" >/dev/null
+  local target
+  target=$(find_container)
+
+  if [ -z "$target" ]; then
+    echo "No container found for workspace: ${WORKSPACE_DIR}"
+    exit 0
   fi
 
-  if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-    echo "Removing container '${CONTAINER_NAME}'..."
-    docker rm "${CONTAINER_NAME}" >/dev/null
+  if docker ps --format '{{.Names}}' | grep -q "^${target}$"; then
+    echo "Stopping container '${target}'..."
+    docker stop "${target}" >/dev/null
   fi
 
+  echo "Removing container '${target}'..."
+  docker rm "${target}" >/dev/null
   echo "Done."
 }
 
 cmd_status() {
-  if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-    echo "Container '${CONTAINER_NAME}' is running."
-    docker ps --filter "name=^${CONTAINER_NAME}$" --format "table {{.ID}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
-  elif docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-    echo "Container '${CONTAINER_NAME}' exists but is stopped."
-    docker ps -a --filter "name=^${CONTAINER_NAME}$" --format "table {{.ID}}\t{{.Image}}\t{{.Status}}"
+  local target
+  target=$(find_container)
+
+  if [ -z "$target" ]; then
+    echo "No container found for workspace: ${WORKSPACE_DIR}"
+    exit 0
+  fi
+
+  if docker ps --format '{{.Names}}' | grep -q "^${target}$"; then
+    echo "Container '${target}' is running."
+    docker ps --filter "name=^${target}$" --format "table {{.ID}}\t{{.Image}}\t{{.Status}}"
   else
-    echo "Container '${CONTAINER_NAME}' does not exist."
+    echo "Container '${target}' exists but is stopped."
+    docker ps -a --filter "name=^${target}$" --format "table {{.ID}}\t{{.Image}}\t{{.Status}}"
   fi
 }
 
 cmd_shell() {
-  if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-    echo "Container '${CONTAINER_NAME}' is not running. Use: $0 up"
+  local target
+  target=$(find_container)
+
+  if [ -z "$target" ]; then
+    echo "No container found for workspace: ${WORKSPACE_DIR}"
+    echo "Use: $0 up"
     exit 1
   fi
-  docker exec -it "${CONTAINER_NAME}" tmux attach-session -t "${PROJECT_NAME}" 2>/dev/null \
-    || docker exec -it "${CONTAINER_NAME}" bash
+
+  if ! docker ps --format '{{.Names}}' | grep -q "^${target}$"; then
+    echo "Container '${target}' is not running. Use: $0 up"
+    exit 1
+  fi
+
+  docker exec -it "${target}" tmux attach-session -t "${PROJECT_NAME}" 2>/dev/null \
+    || docker exec -it "${target}" bash
 }
 
 cmd_list() {
   echo "Dev containers (managed by dev-container.sh):"
-  local containers
-  containers=$(docker ps -a --filter "label=${LABEL}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" 2>/dev/null)
-  if [ -z "$containers" ] || [ "$(echo "$containers" | wc -l)" -le 1 ]; then
+  local has_containers=false
+  while IFS=$'\t' read -r name image status project workspace; do
+    if [ "$name" = "NAMES" ]; then continue; fi
+    has_containers=true
+    echo "  ${name}  ${status}  project=${project}  workspace=${workspace}"
+  done < <(docker ps -a --filter "label=${LABEL_MANAGED}" \
+    --format "{{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Label \"project\"}}\t{{.Label \"workspace-path\"}}" 2>/dev/null)
+  if [ "$has_containers" = false ]; then
     echo "  (none)"
-  else
-    echo "$containers"
   fi
 }
 
@@ -154,11 +189,11 @@ case "${1:-help}" in
     echo "  shell   Attach to running container"
     echo "  list    List all dev containers"
     echo ""
-    echo "Container: ${CONTAINER_NAME} (from project dir: ${PROJECT_NAME})"
+    echo "Container: ${CONTAINER_NAME}"
+    echo "Workspace: ${WORKSPACE_DIR}"
     echo ""
     echo "Environment variables:"
     echo "  DEV_CONTAINER_IMAGE  Override image (default: ${IMAGE_NAME})"
-    echo "  CONTAINER_NAME       Override container name (default: ${PROJECT_NAME})"
     exit 1
     ;;
 esac
