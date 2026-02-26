@@ -1,18 +1,23 @@
 #!/bin/bash
-# dev-container.sh — Launch/stop the dev-process container with dynamic mounts
+# dev-container.sh — Launch/stop dev containers with dynamic mounts
 #
 # Usage:
 #   scripts/dev-container.sh up      Start the container (attach to tmux)
 #   scripts/dev-container.sh down    Stop and remove the container
 #   scripts/dev-container.sh status  Show container status
 #   scripts/dev-container.sh shell   Attach to existing container
+#   scripts/dev-container.sh list    List all dev containers
+#
+# Container name is derived from project directory name (dev-<project>).
+# Multiple projects can run simultaneously.
 #
 set -euo pipefail
 
-CONTAINER_NAME="dev-process"
 IMAGE_NAME="${DEV_CONTAINER_IMAGE:-nagasakah/dev-process:latest}"
 WORKSPACE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PROJECT_NAME="$(basename "$WORKSPACE_DIR")"
+CONTAINER_NAME="${PROJECT_NAME}"
+LABEL="managed-by=dev-container-sh"
 
 # ---------------------------------------------------------------
 # Dynamic mount builder — only mounts paths that exist on host
@@ -75,9 +80,11 @@ cmd_up() {
   # shellcheck disable=SC2086
   docker run -it \
     --name "${CONTAINER_NAME}" \
-    --hostname "${CONTAINER_NAME}" \
+    --hostname "${PROJECT_NAME}" \
     --privileged \
     --platform linux/amd64 \
+    --label "${LABEL}" \
+    --label "project=${PROJECT_NAME}" \
     -e "PROJECT_NAME=${PROJECT_NAME}" \
     ${mount_flags} \
     "${IMAGE_NAME}"
@@ -118,6 +125,17 @@ cmd_shell() {
     || docker exec -it "${CONTAINER_NAME}" bash
 }
 
+cmd_list() {
+  echo "Dev containers (managed by dev-container.sh):"
+  local containers
+  containers=$(docker ps -a --filter "label=${LABEL}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" 2>/dev/null)
+  if [ -z "$containers" ] || [ "$(echo "$containers" | wc -l)" -le 1 ]; then
+    echo "  (none)"
+  else
+    echo "$containers"
+  fi
+}
+
 # ---------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------
@@ -126,13 +144,17 @@ case "${1:-help}" in
   down)   cmd_down ;;
   status) cmd_status ;;
   shell)  cmd_shell ;;
+  list)   cmd_list ;;
   *)
-    echo "Usage: $0 {up|down|status|shell}"
+    echo "Usage: $0 {up|down|status|shell|list}"
     echo ""
     echo "  up      Start the dev container (attach to tmux)"
     echo "  down    Stop and remove the container"
     echo "  status  Show container status"
     echo "  shell   Attach to running container"
+    echo "  list    List all dev containers"
+    echo ""
+    echo "Container: ${CONTAINER_NAME} (from project dir: ${PROJECT_NAME})"
     echo ""
     echo "Environment variables:"
     echo "  DEV_CONTAINER_IMAGE  Override image (default: ${IMAGE_NAME})"
