@@ -28,7 +28,7 @@ echo "=== Step 3: Dockerfile ビルド (latest タグ) ==="
 docker build \
   -t "${IMAGE_NAME}:latest" \
   -f "$REPO_ROOT/.devcontainer/Dockerfile" \
-  "$REPO_ROOT"
+  "$REPO_ROOT/.devcontainer"
 
 echo ""
 echo "=== Step 4: latest イメージを push ==="
@@ -37,4 +37,4 @@ docker push "${IMAGE_NAME}:latest"
 echo ""
 echo "=== 完了 ==="
 echo "  ${IMAGE_NAME}:base   - devcontainer features のみ"
-echo "  ${IMAGE_NAME}:latest - base + pip ツール"
+echo "  ${IMAGE_NAME}:latest - base + pip ツール + tmux/cplt/dotfiles"
