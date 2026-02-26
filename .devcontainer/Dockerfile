@@ -1,16 +1,9 @@
 FROM --platform=linux/amd64 nagasakah/dev-process:base
 
 # Install pip tools
-RUN pip install jsonschema pyyaml \
-    && echo '--- Tool versions ---' \
-    && dotnet --version \
-    && node --version \
-    && python3 --version \
-    && uv --version \
-    && yq --version \
-    && aws --version \
-    && terraform --version | head -1 \
-    && gh --version | head -1
+RUN pip install jsonschema pyyaml
+# RHEL でdindが動かない問題を修正
+RUN update-alternatives --set iptables /usr/sbin/iptables-nft && update-alternatives --set ip6tables /usr/sbin/ip6tables-nft
 
 # -------------------------------------------------------------------
 # Embedded dotfiles & scripts
@@ -28,5 +21,5 @@ COPY scripts/start-tmux.sh /usr/local/bin/start-tmux
 
 RUN chmod +x /usr/local/bin/cplt /usr/local/bin/start-tmux \
     && chown -R vscode:vscode /home/vscode/.tmux.conf /home/vscode/.config/tmux
-
-ENTRYPOINT ["start-tmux"]
+ENTRYPOINT ["/usr/local/share/docker-init.sh"]
+CMD ["start-tmux"]

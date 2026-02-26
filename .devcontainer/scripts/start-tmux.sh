@@ -5,21 +5,6 @@
 export LC_ALL=C.UTF-8
 export LANG=C.UTF-8
 
-# Start Docker daemon if docker-in-docker init script exists (requires --privileged)
-DOCKER_INIT="/usr/local/share/docker-init.sh"
-if [ -f "$DOCKER_INIT" ]; then
-  echo "Starting Docker daemon..."
-  "$DOCKER_INIT" dockerd &>/dev/null &
-  # Wait briefly for dockerd to be ready
-  for i in $(seq 1 10); do
-    if docker info &>/dev/null 2>&1; then
-      echo "Docker daemon ready."
-      break
-    fi
-    sleep 1
-  done
-fi
-
 # Get workspace directory (first directory in /workspaces/)
 WORKSPACE_DIR=$(ls -d /workspaces/*/ 2>/dev/null | head -n 1)
 
