@@ -77,6 +77,7 @@ cmd_up() {
     --name "${CONTAINER_NAME}" \
     --hostname "${CONTAINER_NAME}" \
     --privileged \
+    --platform linux/amd64 \
     -e "PROJECT_NAME=${PROJECT_NAME}" \
     ${mount_flags} \
     "${IMAGE_NAME}"

@@ -1,4 +1,4 @@
-FROM nagasakah/dev-process:base
+FROM --platform=linux/amd64 nagasakah/dev-process:base
 
 # Install pip tools
 RUN pip install jsonschema pyyaml \
