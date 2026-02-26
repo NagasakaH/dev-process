@@ -11,9 +11,14 @@
 # Container name is derived from project name + workspace path hash.
 # Multiple clones of the same repo can run simultaneously.
 #
+# Docker mode:
+#   DOCKER_MODE=dind  (default) Docker-in-Docker: --privileged, isolated daemon
+#   DOCKER_MODE=dood  Docker-out-of-Docker: mount host socket, shared daemon
+#
 set -euo pipefail
 
 IMAGE_NAME="${DEV_CONTAINER_IMAGE:-nagasakah/dev-process:latest}"
+DOCKER_MODE="${DOCKER_MODE:-dind}"
 WORKSPACE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PROJECT_NAME="$(basename "$WORKSPACE_DIR")"
 PATH_HASH="$(echo -n "${WORKSPACE_DIR}" | md5sum 2>/dev/null | head -c 6 || echo -n "${WORKSPACE_DIR}" | md5 -q 2>/dev/null | head -c 6)"
@@ -81,22 +86,55 @@ cmd_up() {
   echo "Starting container '${CONTAINER_NAME}'..."
   echo "  image: ${IMAGE_NAME}"
   echo "  workspace: ${WORKSPACE_DIR}"
+  echo "  docker mode: ${DOCKER_MODE}"
   echo "Mounts:"
 
   # Build mount flags
   local mount_flags
   mount_flags=$(build_mounts)
 
+  # Docker mode specific flags
+  local docker_flags=()
+  case "${DOCKER_MODE}" in
+    dind)
+      docker_flags+=(--privileged)
+      ;;
+    dood)
+      local docker_sock="${DOCKER_HOST_SOCK:-/var/run/docker.sock}"
+      if [ ! -S "$docker_sock" ]; then
+        echo "Error: Docker socket not found at ${docker_sock}"
+        echo "Set DOCKER_HOST_SOCK to the correct path."
+        exit 1
+      fi
+      # Get socket GID so vscode user can access it
+      local sock_gid
+      sock_gid=$(stat -f '%g' "$docker_sock" 2>/dev/null || stat -c '%g' "$docker_sock" 2>/dev/null)
+      docker_flags+=(
+        -v "${docker_sock}:/var/run/docker.sock"
+        --entrypoint start-tmux
+      )
+      if [ -n "$sock_gid" ]; then
+        docker_flags+=(--group-add "$sock_gid")
+      fi
+      echo "  docker socket: ${docker_sock} (gid=${sock_gid})"
+      ;;
+    *)
+      echo "Error: DOCKER_MODE must be 'dind' or 'dood' (got: ${DOCKER_MODE})"
+      exit 1
+      ;;
+  esac
+
   # shellcheck disable=SC2086
   docker run -it \
     --name "${CONTAINER_NAME}" \
     --hostname "${PROJECT_NAME}" \
-    --privileged \
     --platform linux/amd64 \
     --label "${LABEL_MANAGED}" \
     --label "${LABEL_WORKSPACE}" \
     --label "project=${PROJECT_NAME}" \
+    --label "docker-mode=${DOCKER_MODE}" \
     -e "PROJECT_NAME=${PROJECT_NAME}" \
+    "${docker_flags[@]}" \
     ${mount_flags} \
     "${IMAGE_NAME}"
 }
@@ -160,12 +198,11 @@ cmd_shell() {
 cmd_list() {
   echo "Dev containers (managed by dev-container.sh):"
   local has_containers=false
-  while IFS=$'\t' read -r name image status project workspace; do
-    if [ "$name" = "NAMES" ]; then continue; fi
+  while IFS=$'\t' read -r name status project workspace mode; do
     has_containers=true
-    echo "  ${name}  ${status}  project=${project}  workspace=${workspace}"
+    echo "  ${name}  ${status}  mode=${mode}  project=${project}  workspace=${workspace}"
   done < <(docker ps -a --filter "label=${LABEL_MANAGED}" \
-    --format "{{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Label \"project\"}}\t{{.Label \"workspace-path\"}}" 2>/dev/null)
+    --format "{{.Names}}\t{{.Status}}\t{{.Label \"project\"}}\t{{.Label \"workspace-path\"}}\t{{.Label \"docker-mode\"}}" 2>/dev/null)
   if [ "$has_containers" = false ]; then
     echo "  (none)"
   fi
@@ -194,6 +231,8 @@ case "${1:-help}" in
     echo ""
     echo "Environment variables:"
     echo "  DEV_CONTAINER_IMAGE  Override image (default: ${IMAGE_NAME})"
+    echo "  DOCKER_MODE          dind (default) or dood"
+    echo "  DOCKER_HOST_SOCK     Docker socket path for dood (default: /var/run/docker.sock)"
     exit 1
     ;;
 esac
