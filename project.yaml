@@ -14,7 +14,7 @@ meta:
   target_repo: "web-design"
   branch: "feature/WEB-DESIGN-001"
   created_at: "2026-02-27T11:22:53+00:00"
-  updated_at: "2026-02-27T12:36:16+00:00"
+  updated_at: "2026-02-27T12:42:30+00:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -252,7 +252,7 @@ plan:
 implement:
   status: in_progress
   started_at: "2026-02-27T12:34:34+00:00"
-  completed_tasks: 1
+  completed_tasks: 5
   total_tasks: 6
   tasks:
     - id: task01
@@ -261,16 +261,20 @@ implement:
       commit: 52a50f5
     - id: task02-01
       title: dev-container.sh作成
-      status: pending
+      status: completed
+      commit: fdc238c
     - id: task02-02
       title: build-and-push-devcontainer.sh作成
-      status: pending
+      status: completed
+      commit: 849628f
     - id: task02-03
       title: Reactプロジェクト初期化・ソースコード・MSW設定
-      status: pending
+      status: completed
+      commit: 04c508f
     - id: task03
       title: Playwright E2Eテスト作成
-      status: pending
+      status: completed
+      commit: 883819b
     - id: task04
       title: README.md作成
       status: pending
