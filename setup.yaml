@@ -1,0 +1,97 @@
+# =============================================================================
+# 開発セットアップ設定ファイル（SSOT: Single Source of Truth）
+# =============================================================================
+# 生成日時: 2026-02-27T10:55:34Z
+# スキル: create-setup-yaml（対話的生成）
+# =============================================================================
+
+task_name: "ウェブデザイン要件定義プロジェクト環境構築"
+ticket_id: "WEB-DESIGN-001"
+
+# =============================================================================
+# 説明（階層化フォーマット）
+# =============================================================================
+description:
+  overview: |
+    dev-processを参考に、ウェブデザインの要件定義を行うためのプロジェクト環境を構築する。
+    画面デザインや画面の振る舞いを定義・プレビューできる開発環境を確立し、
+    Reactベースの画面モックを作成してcode-server上でプレビューするワークフローを整備する。
+
+  purpose: |
+    ウェブアプリケーションの要件定義フェーズにおいて、画面デザインと画面の振る舞いを
+    コードベースで定義・検証できる環境を提供する。バックエンドはモックで代替し、
+    フロントエンドの画面のみに集中して要件を可視化・共有する。
+
+  background: |
+    dev-processリポジトリが提供するdevcontainer構成（DooD/DinD切り替え、開発ツール統合）
+    を参考にしつつ、ウェブデザインに特化した環境を構築する。
+    tmux起動の代わりにcode-serverを起動し、ブラウザベースのVS Code環境で
+    React開発とプレビューを行う。
+
+  requirements:
+    functional:
+      - "devcontainerのfeatureとしてcode-serverを追加し、コンテナ起動時にcode-serverを自動起動する（tmuxの代替）"
+      - "copilot CLI、git、playwright、prettierをdevcontainerに含める"
+      - "dev-processと同様のDooD/DinD起動切り替え機構を実装する"
+      - "Reactプロジェクトを初期化し、画面コンポーネントを作成できる環境を整える"
+      - "code-server上でReactアプリをプレビュー（ホットリロード対応）する方法を確立する"
+      - "画面のみを作成し、バックエンドはモックで代替する構成にする"
+      - "code-serverにReact開発に必要なVS Code拡張機能をプリインストールする"
+      - "code-serverにGitHub Copilot拡張機能をプリインストールする"
+    non_functional:
+      - "code-serverがブラウザからアクセス可能であること"
+      - "Reactアプリのホットリロードがcode-server環境で動作すること"
+      - "Playwrightによる画面スクリーンショット・テストが実行可能であること"
+
+  acceptance_criteria:
+    - "devcontainerでcode-serverが起動し、ブラウザからアクセスできる"
+    - "Reactプロジェクトが初期化され、code-server上でプレビューできる"
+    - "DooD/DinD切り替え機構が動作する"
+    - "copilot CLI, git, playwright, prettierが使用可能"
+    - "code-serverにReact開発用拡張機能がインストールされている"
+    - "code-serverにGitHub Copilot拡張機能がインストールされている"
+    - "画面デザインのモック作成・プレビューのワークフローが確立されている"
+
+  test_scope:
+    - unit
+    - e2e
+
+  scope:
+    - "devcontainer環境構築（code-server起動、DooD/DinD切り替え）"
+    - "Reactプロジェクト初期設定"
+    - "code-server用VS Code拡張機能の設定（React開発用 + Copilot）"
+    - "画面デザイン・モックのプレビュー環境確立"
+    - "Playwrightによるスクリーンショット/テスト環境"
+
+  out_of_scope:
+    - "バックエンドAPI実装（モックで代替）"
+    - "データベース設計・構築"
+    - "本番デプロイ環境"
+    - "CI/CDパイプライン"
+
+  notes: |
+    dev-processリポジトリの以下の構成を参考にする:
+    - .devcontainer/ の構成（devcontainer.json, Dockerfile, docker-compose）
+    - scripts/dev-container.sh のDooD/DinD切り替え機構
+    - tmuxの代わりにcode-serverを起動する構成に変更
+    Reactのビルドツールは Vite を推奨。
+    将来的にはdev-processと同様のCopilot向けスキル（.claude/skills/）設定を
+    web-designリポジトリにも組み込んでいく予定。初回スコープでは環境構築に集中する。
+
+# =============================================================================
+# リポジトリ設定
+# =============================================================================
+related_repositories:
+  - name: "dev-process"
+    url: "https://github.com/NagasakaH/dev-process.git"
+
+target_repositories:
+  - name: "web-design"
+    url: "git@github.com:NagasakaH/web-design.git"
+    base_branch: "main"
+
+# オプション設定
+options:
+  create_design_document: true
+  design_document_dir: "docs"
+  submodules_dir: "submodules"
