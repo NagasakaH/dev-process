@@ -14,7 +14,7 @@ meta:
   target_repo: "web-design"
   branch: "feature/WEB-DESIGN-001"
   created_at: "2026-02-27T11:22:53+00:00"
-  updated_at: "2026-02-27T13:05:25+00:00"
+  updated_at: "2026-02-27T13:11:24+00:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -401,3 +401,10 @@ code_review:
   artifacts: docs/web-design/code-review/round-01.md
   summary: 'Round 1修正完了: Major 4件 + Minor 5件 全て修正済み。再レビュー待ち'
   completed_at: "2026-02-27T13:05:25+00:00"
+finishing:
+  status: completed
+  started_at: "2026-02-27T13:11:24+00:00"
+  action: keep
+  method: pull_request
+  pr_url: https://github.com/NagasakaH/web-design/pull/1
+  completed_at: "2026-02-27T13:11:24+00:00"
