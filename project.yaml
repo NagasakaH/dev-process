@@ -14,7 +14,7 @@ meta:
   target_repo: "web-design"
   branch: "feature/WEB-DESIGN-001"
   created_at: "2026-02-27T11:22:53+00:00"
-  updated_at: "2026-02-27T12:44:06+00:00"
+  updated_at: "2026-02-27T12:49:47+00:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -281,3 +281,59 @@ implement:
       commit: 89dea9e
   artifacts: "docs/web-design/implement/"
   completed_at: "2026-02-27T12:44:06+00:00"
+verification:
+  status: completed_with_caveats
+  started_at: "2026-02-27T12:49:31+00:00"
+  results:
+    test:
+      status: skip
+      detail: ""
+    build:
+      status: pass
+      detail: "tsc -b && vite build 成功。30モジュール変換"
+    lint:
+      status: pass
+      detail: "ESLint エラーなし"
+    typecheck:
+      status: pass
+      detail: "tsc --noEmit エラーなし（E2Eファイル含む）"
+    format:
+      status: pass
+      detail: Prettier 9ファイル修正後、全ファイルパス
+    e2e:
+      status: not_executed
+      detail: devcontainer環境が必要。テストファイル構文チェック・一覧確認はパス（10テスト）
+  acceptance_criteria_check:
+    - criteria: devcontainerでcode-serverが起動しブラウザからアクセスできる
+      verified_by: e2e_test
+      result: not_verified
+      note: devcontainer起動後に検証
+    - criteria: Reactプロジェクトが初期化されプレビューできる
+      verified_by: build + e2e_test
+      result: partial
+      note: ビルド成功確認済、プレビューはdevcontainer起動後
+    - criteria: DooD/DinD切り替え機構が動作する
+      verified_by: e2e_test
+      result: not_verified
+      note: devcontainer起動後に検証
+    - criteria: copilot CLI, git, playwright, prettierが使用可能
+      verified_by: local + e2e_test
+      result: partial
+      note: prettier,playwright確認済。copilot CLI/gitはdevcontainer起動後
+    - criteria: code-serverにGitHub Copilot拡張機能がインストールされている
+      verified_by: e2e_test
+      result: not_verified
+      note: devcontainer起動後に検証
+    - criteria: code-serverにReact開発用拡張機能がインストールされている
+      verified_by: e2e_test
+      result: not_verified
+      note: devcontainer起動後に検証
+    - criteria: 画面デザインのモック作成・プレビューのワークフローが確立されている
+      verified_by: build + e2e_test
+      result: partial
+      note: ビルド成功・MSW設定確認済。HMR/プレビューはdevcontainer起動後
+  summary: "ビルド・リント・型チェック・フォーマット全通過。E2Eテストはdevcontainer環境が必要なため未実行（テストファイル構文・一覧確認済）。acceptance_criteriaの完全検証にはdevcontainer起動後のE2Eテスト実行が必要。"
+  evidence: []
+  artifacts:
+    - docs/web-design/verification/results.md
+  completed_at: "2026-02-27T12:49:31+00:00"
