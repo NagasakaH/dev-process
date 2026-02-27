@@ -14,8 +14,7 @@ meta:
   target_repo: "web-design"
   branch: "feature/WEB-DESIGN-001"
   created_at: "2026-02-27T11:22:53+00:00"
-  updated_at: "2026-02-27T11:22:53+00:00"
-
+  updated_at: "2026-02-27T11:34:18+00:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -86,7 +85,6 @@ setup:
     create_design_document: true
     design_document_dir: "docs"
     submodules_dir: "submodules"
-
 # -----------------------------------------------------------------------------
 # brainstorming（対話完了後に記入）
 # -----------------------------------------------------------------------------
@@ -125,3 +123,19 @@ brainstorming:
         - "DooD/DinD切り替えが動作するか"
       environment: "devcontainer (ローカル Docker)"
   artifacts: "docs/web-design/brainstorming/"
+investigation:
+  status: completed
+  started_at: "2026-02-27T11:33:55+00:00"
+  summary: "dev-processのdevcontainer構成（2段階ビルド、DooD/DinD切替、tmux起動）を詳細調査し、web-designへのcode-server起動環境移植方針を確立。GitHub Copilot拡張のOpen VSX制約が最大リスク。"
+  key_findings:
+    - dev-processは2段階ビルド（devcontainer build→Dockerfile）パターンを採用。web-designも同様に構成する
+    - start-tmux.shのUID/GID調整・Docker socket パーミッション修正ロジックはcode-server版でもそのまま必要
+    - DooD時はENTRYPOINTを上書きしてdocker-init.shをスキップするパターンが重要（--entrypoint start-code-server）
+    - code-serverのdevcontainer featureは公式に存在しない。Dockerfile内でcurl install.shによるインストールが必要
+    - GitHub Copilot拡張機能はOpen VSX Registryに公開されておらず、VSIX手動インストールまたはmarketplace.json上書きが必要
+  risks:
+    - code-serverでGitHub Copilot拡張機能が動作しない可能性（Open VSX制約）→ VSIX手動インストールまたはCopilot CLI代替
+    - Vite HMRがbind mount環境で不安定になる可能性 → usePolling設定で対応
+    - dev-container.shにポートマッピング（-p 8080:8080 -p 5173:5173）の追加が必要
+  artifacts: "docs/web-design/investigation/"
+  completed_at: "2026-02-27T11:34:18+00:00"

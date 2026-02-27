@@ -123,17 +123,36 @@ web-designリポジトリにも組み込んでいく予定。初回スコープ�
 
 ### 1.1 現状分析
 
-<!-- 調査結果は investigation/ を参照 -->
+dev-processのdevcontainer構成（2段階ビルド、DooD/DinD切替、tmux起動）を詳細調査し、
+web-designへのcode-server起動環境移植方針を確立した。
+
+主な発見:
+- dev-processは2段階ビルド（`devcontainer build` → `Dockerfile`）パターンを採用
+- start-tmux.shのUID/GID調整・Docker socketパーミッション修正ロジックはcode-server版でもそのまま必要
+- DooD時は `--entrypoint start-code-server` でdocker-init.shをスキップ
+- code-serverのdevcontainer featureは公式に存在せず、Dockerfile内でインストールが必要
+- GitHub Copilot拡張機能はOpen VSX制約が最大リスク
+
+詳細は [investigation/](./web-design/investigation/) を参照。
 
 ### 1.2 関連コード・ファイル
 
 | ファイル | 役割 | 備考 |
 |----------|------|------|
-| | | |
+| `submodules/dev-process/.devcontainer/devcontainer.json` | devcontainer features定義 | 23個のfeature、web-designでは9個に絞り込み |
+| `submodules/dev-process/.devcontainer/Dockerfile` | プリビルドイメージのカスタムレイヤー | tmux → code-server に変更 |
+| `submodules/dev-process/.devcontainer/scripts/start-tmux.sh` | コンテナ起動スクリプト | start-code-server.sh のベース |
+| `submodules/dev-process/scripts/dev-container.sh` | DooD/DinD切替・コンテナ管理 | ほぼそのまま移植（イメージ名・entrypoint変更） |
+| `submodules/dev-process/scripts/build-and-push-devcontainer.sh` | 2段階ビルド+push | イメージ名変更して移植 |
 
 ### 1.3 参考情報
 
-<!-- 詳細: investigation/ -->
+- [アーキテクチャ調査](./web-design/investigation/01_architecture.md)
+- [データ構造調査](./web-design/investigation/02_data-structure.md)
+- [依存関係調査](./web-design/investigation/03_dependencies.md)
+- [既存パターン調査](./web-design/investigation/04_existing-patterns.md)
+- [統合ポイント調査](./web-design/investigation/05_integration-points.md)
+- [リスク・制約分析](./web-design/investigation/06_risks-and-constraints.md)
 
 ---
 
