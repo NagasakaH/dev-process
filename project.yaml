@@ -14,7 +14,7 @@ meta:
   target_repo: "web-design"
   branch: "feature/WEB-DESIGN-001"
   created_at: "2026-02-27T11:22:53+00:00"
-  updated_at: "2026-02-27T12:49:47+00:00"
+  updated_at: "2026-02-27T13:00:23+00:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -337,3 +337,66 @@ verification:
   artifacts:
     - docs/web-design/verification/results.md
   completed_at: "2026-02-27T12:49:31+00:00"
+code_review:
+  status: conditional
+  started_at: "2026-02-27T12:59:40+00:00"
+  round: 1
+  rounds: []
+  review_checklist: {}
+  issues:
+    - id: MCR-001
+      severity: major
+      category: security
+      description: docker.sock chmod 666 → chmod 660 + dockerグループ追加
+      status: fixed
+      fixed_description: chmod 660に変更、dockerグループ作成・vscodeユーザー追加
+    - id: MCR-002
+      severity: major
+      category: security
+      description: execInContainer コマンドインジェクション
+      status: fixed
+      fixed_description: execFileSync使用 + containerNameバリデーション追加
+    - id: MCR-003
+      severity: major
+      category: test-quality
+      description: DinD/DooDテスト同一
+      status: fixed
+      fixed_description: 各モード固有検証 + DOCKER_MODEスキップ制御追加
+    - id: MCR-004
+      severity: major
+      category: git-practice
+      description: tsbuildinfo コミット
+      status: fixed
+      fixed_description: .gitignore追加 + git rm --cached
+    - id: MCR-005
+      severity: minor
+      category: error-handling
+      description: MSW init エラーハンドリング欠落
+      status: fixed
+      fixed_description: .catch()追加しフォールバック描画
+    - id: MCR-006
+      severity: minor
+      category: config
+      description: .editorconfig 欠落
+      status: fixed
+      fixed_description: .editorconfig新規作成
+    - id: MCR-007
+      severity: minor
+      category: config
+      description: .prettierignore 欠落
+      status: fixed
+      fixed_description: .prettierignore新規作成
+    - id: MCR-008
+      severity: minor
+      category: test-quality
+      description: msw.spec.ts waitForTimeout
+      status: fixed
+      fixed_description: waitForFunction(SW controller check)に変更
+    - id: MCR-009
+      severity: minor
+      category: code-quality
+      description: root element non-null assertion
+      status: fixed
+      fixed_description: 明示的nullチェック + エラーメッセージ
+  artifacts: docs/web-design/code-review/round-01.md
+  summary: 'Round 1修正完了: Major 4件 + Minor 5件 全て修正済み。再レビュー待ち'
