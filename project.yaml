@@ -242,8 +242,8 @@ plan:
       title: README.md作成
       status: pending
   review:
-    round: 1
-    status: conditional_pass
+    round: 2
+    status: approved
     summary: Major 5件 + Minor 5件を修正済。TDDフロー整備、受入基準修正、MSW SW生成追加、playwright.config.ts配置統一、verification検証チェックリスト追加
     artifacts:
       - docs/web-design/review-plan/round-01.md
