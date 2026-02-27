@@ -1,0 +1,6 @@
+[submodule "submodules/dev-process"]
+	path = submodules/dev-process
+	url = https://github.com/NagasakaH/dev-process.git
+[submodule "submodules/web-design"]
+	path = submodules/web-design
+	url = git@github.com:NagasakaH/web-design.git
