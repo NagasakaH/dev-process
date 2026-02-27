@@ -162,7 +162,10 @@ web-designへのcode-server起動環境移植方針を確立した。
 
 ### 2.1 設計方針
 
-<!-- 詳細: design/01_implementation-approach.md -->
+dev-processリポジトリの2段階ビルドパターンを踏襲し、Node.js LTS + code-server構成に置換する。
+tmux起動スクリプトをcode-server起動スクリプトに変更し、DooD/DinD切り替え機構はdev-container.shから移植する。
+
+詳細は [design/01_implementation-approach.md](./web-design/design/01_implementation-approach.md) を参照。
 
 ### 2.2 変更箇所
 
@@ -170,27 +173,48 @@ web-designへのcode-server起動環境移植方針を確立した。
 
 | ファイル | 目的 |
 |----------|------|
-| | |
+| `.devcontainer/devcontainer.json` | devcontainer features・settings定義 (9 features) |
+| `.devcontainer/Dockerfile` | code-server・拡張機能追加レイヤー |
+| `.devcontainer/scripts/start-code-server.sh` | コンテナ起動スクリプト (tmux代替) |
+| `scripts/dev-container.sh` | DooD/DinD切り替え・コンテナ管理 (dev-processから移植) |
+| `scripts/build-and-push-devcontainer.sh` | プリビルドイメージ作成 |
+| `src/App.tsx` | メインReactコンポーネント |
+| `src/main.tsx` | Viteエントリポイント |
+| `src/index.css` | Tailwind CSSグローバルスタイル |
+| `src/mocks/browser.ts` | MSWブラウザワーカー設定 |
+| `src/mocks/handlers.ts` | APIモックハンドラー |
+| `e2e/code-server.spec.ts` | code-serverアクセスE2Eテスト |
+| `e2e/react-preview.spec.ts` | ReactプレビューE2Eテスト |
+| `e2e/extensions.spec.ts` | 拡張機能確認E2Eテスト |
+| `e2e/docker-mode.spec.ts` | DooD/DinD動作確認E2Eテスト |
+| `vite.config.ts` | Vite設定 (usePolling対応) |
+| `package.json` | npm依存定義 |
+| `tsconfig.json` | TypeScript設定 |
 
 #### 修正ファイル
 
 | ファイル | 変更内容 |
 |----------|----------|
-| | |
+| (なし) | 新規プロジェクトのため修正ファイルなし |
 
 #### 削除ファイル
 
 | ファイル | 理由 |
 |----------|------|
-| | |
+| (なし) | 新規プロジェクトのため削除ファイルなし |
 
 ### 2.3 インターフェース設計
 
-<!-- 詳細: design/02_interface-api-design.md -->
+スクリプトCLIインターフェース: `dev-container.sh up/down/status/shell/logs`、環境変数 `DOCKER_MODE` によるDooD/DinD切替。
+ポート: 8080 (code-server)、5173 (Vite dev server)。
+
+詳細は [design/02_interface-api-design.md](./web-design/design/02_interface-api-design.md) を参照。
 
 ### 2.4 データ構造
 
-<!-- 詳細: design/03_data-structure-design.md -->
+Reactプロジェクト構造 (Vite + TypeScript + Tailwind CSS + MSW)、devcontainer構成ファイル、E2Eテストファイル。
+
+詳細は [design/03_data-structure-design.md](./web-design/design/03_data-structure-design.md) を参照。
 
 ---
 
@@ -224,13 +248,25 @@ web-designへのcode-server起動環境移植方針を確立した。
 
 ### 4.1 テスト対象
 
+brainstormingで決定したテスト戦略に基づき、E2Eテストのみを実施する。
+Playwrightでdevcontainerビルド→起動後の動作確認を行う。
+
 ### 4.2 テストケース
 
 | No | テスト内容 | 期待結果 | 結果 |
 |----|------------|----------|------|
-| 1 | | | ⬜ |
+| E2E-1 | code-serverアクセス確認 | ブラウザからVS Code UIが表示される | ⬜ |
+| E2E-2 | Reactアプリプレビュー確認 | http://localhost:5173 でReactアプリ表示 | ⬜ |
+| E2E-3 | 拡張機能インストール確認 | ESLint, Prettier, Tailwind等がインストール済み | ⬜ |
+| E2E-4 | 開発ツール動作確認 | node, git, playwright, prettier等が利用可能 | ⬜ |
+| E2E-5 | DinDモード動作確認 | コンテナ内でdocker psが成功 | ⬜ |
+| E2E-6 | DooDモード動作確認 | ホストDockerが利用可能 | ⬜ |
+
+詳細は [design/05_test-plan.md](./web-design/design/05_test-plan.md) を参照。
 
 ### 4.3 テスト環境
+
+Docker Engine 20.10+、Node.js LTS、Playwright 1.50+
 
 ---
 
@@ -240,13 +276,22 @@ web-designへのcode-server起動環境移植方針を確立した。
 
 ### 5.1 影響範囲
 
+新規プロジェクトのため既存機能への影響なし。dev-processから移植するスクリプトの動作確認が主要な検証対象。
+
 ### 5.2 リスク分析
 
 | リスク | 影響度 | 発生可能性 | 対策 |
 |--------|--------|------------|------|
-| | | | |
+| Copilot拡張機能 (Open VSX制約) | 高 | 高 | VSIXインストール試行 + Copilot CLIフォールバック |
+| Vite HMR不安定 (bind mount) | 中 | 中 | `usePolling: true` 設定 |
+| DooD UID/GID不一致 | 中 | 低 | start-code-server.shでUID/GID調整ロジック移植 |
+| code-server拡張機能互換性 | 中 | 中 | 事前にOpen VSX対応を確認 |
+
+詳細は [design/06_side-effect-verification.md](./web-design/design/06_side-effect-verification.md) を参照。
 
 ### 5.3 ロールバック計画
+
+gitでファイル切り戻し (5分)、Docker Hubから以前のタグをpull (10分)、code-server不具合時はtmux構成にフォールバック (30分)
 
 ---
 
@@ -260,10 +305,35 @@ web-designへのcode-server起動環境移植方針を確立した。
 
 ### 6.2 承認
 
-- [ ] 設計レビュー完了
-- [ ] 実装レビュー完了
-- [ ] テスト完了
-- [ ] 弊害検証完了
+#### 完了条件
+
+##### 実装レビュー完了
+- [ ] コード品質確認
+  - [ ] シェルスクリプトのコーディング規約準拠 (shfmt)
+  - [ ] TypeScript/React のコーディング規約準拠 (ESLint + Prettier)
+  - [ ] Dockerfile ベストプラクティス準拠
+- [ ] 設計方針の遵守確認
+  - [ ] 設計書との整合性確認
+  - [ ] dev-processパターンの正確な移植確認
+- [ ] セキュリティレビュー完了
+  - [ ] code-server認証設定確認
+  - [ ] --privileged使用の妥当性確認
+  - [ ] VSIX取得元の確認
+
+##### テスト完了
+- [ ] テスト計画に記載のテスト実行完了
+  - [ ] E2E-1: code-serverアクセス確認
+  - [ ] E2E-2: Reactプレビュー確認
+  - [ ] E2E-3: 拡張機能インストール確認
+  - [ ] E2E-4: 開発ツール動作確認
+  - [ ] E2E-5: DinDモード動作確認
+  - [ ] E2E-6: DooDモード動作確認
+
+##### 弊害検証完了
+- [ ] Copilot拡張機能のOpen VSX制約確認
+- [ ] Vite HMRの動作確認 (usePolling)
+- [ ] DooD時のUID/GID調整確認
+- [ ] パフォーマンス検証 (ビルド時間、起動時間)
 
 ---
 
@@ -272,3 +342,4 @@ web-designへのcode-server起動環境移植方針を確立した。
 | 日付 | バージョン | 変更内容 | 変更者 |
 |------|------------|----------|--------|
 | 2026-02-27 | 1.0 | 初版作成 | Hiroaki |
+| 2026-02-27 | 1.1 | 設計セクション更新（design スキル実行） | Copilot |
