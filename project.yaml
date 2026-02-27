@@ -14,7 +14,7 @@ meta:
   target_repo: "web-design"
   branch: "feature/WEB-DESIGN-001"
   created_at: "2026-02-27T11:22:53+00:00"
-  updated_at: "2026-02-27T12:10:13+00:00"
+  updated_at: "2026-02-27T12:24:34+00:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -218,9 +218,9 @@ design:
   artifacts: "docs/web-design/design/"
   completed_at: "2026-02-27T12:01:33+00:00"
 plan:
-  status: completed
+  status: reviewed
   started_at: "2026-02-27T12:09:38+00:00"
-  summary: "6タスクに分割（4Phase構成）。Phase2で3並列実行。devcontainer基盤→スクリプト/React並列→E2Eテスト→README"
+  summary: "review-plan round 1完了: Major 5件 + Minor 5件を修正"
   total_tasks: 6
   tasks:
     - id: task01
@@ -242,7 +242,10 @@ plan:
       title: README.md作成
       status: pending
   review:
-    round: 0
-    status: pending
-  artifacts: "docs/web-design/plan/"
+    round: 1
+    status: conditional_pass
+    summary: Major 5件 + Minor 5件を修正済。TDDフロー整備、受入基準修正、MSW SW生成追加、playwright.config.ts配置統一、verification検証チェックリスト追加
+    artifacts:
+      - docs/web-design/review-plan/round-01.md
+  artifacts: "docs/web-design/review-plan/round-01.md"
   completed_at: "2026-02-27T12:10:02+00:00"

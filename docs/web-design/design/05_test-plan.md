@@ -48,6 +48,8 @@ brainstorming で決定されたテスト戦略に基づき、**E2Eテストの�
 
 ### 2.1 playwright.config.ts 設計
 
+> **MRP-005対応**: `playwright.config.ts` はプロジェクトルートに配置し、`testDir: './e2e'` でテストディレクトリを指定する。`package.json` の `test:e2e` スクリプトは `playwright test` のまま。
+
 ```typescript
 import { defineConfig } from '@playwright/test';
 
@@ -82,7 +84,7 @@ export default defineConfig({
 | E2E-7 | Copilot CLIフォールバック確認（MRD-004） | 1. devcontainer起動<br/>2. `github-copilot-cli --version` を実行 | Copilot CLIのバージョンが表示される | 高 |
 | E2E-8 | HMR反映確認（MRD-004） | 1. Vite dev server起動<br/>2. `src/App.tsx` のテキストを編集<br/>3. ブラウザの更新を確認 | 編集したテキストがブラウザ上のReactアプリに自動反映される（ページリロードなし） | 高 |
 | E2E-9 | MSWモック応答確認（MRD-004） | 1. Vite dev server起動<br/>2. ブラウザから `/api/health` にリクエスト | MSWが `{ "status": "ok" }` を返却する | 高 |
-| E2E-10 | MSWモック統合確認（MRD-004） | 1. Vite dev server起動<br/>2. Reactアプリにアクセス<br/>3. MSWモックAPIを使用するコンポーネントの動作確認 | コンポーネントがMSWモックデータを表示する | 中 |
+| E2E-10 | MSW Service Worker登録確認（MRP-009対応） | 1. Vite dev server起動<br/>2. Reactアプリにアクセス<br/>3. Service Worker登録状態を確認 | `navigator.serviceWorker.getRegistrations()`で`mockServiceWorker.js`が登録されている | 中 |
 
 ### 2.3 コンテナ名動的取得ヘルパー（MRD-003対応）
 
@@ -313,13 +315,17 @@ test.describe('MSWモック応答確認', () => {
     expect(response).toEqual({ status: 'ok' });
   });
 
-  test('E2E-10: ReactコンポーネントがMSWモックデータを表示する', async ({
+  test('E2E-10: MSW Service Workerが正常に登録されている（MRP-009対応）', async ({
     page,
   }) => {
     await page.goto('http://localhost:5173');
-    // MSW初期化後、モックデータを使用するコンポーネントが正常に表示されることを確認
-    // （将来、APIデータ表示コンポーネント追加時に具体化）
-    await expect(page.locator('body')).not.toBeEmpty();
+    // MSW初期化後、Service Worker登録状態を確認
+    await page.waitForTimeout(2000);
+    const swRegistered = await page.evaluate(async () => {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      return registrations.some(r => r.active?.scriptURL.includes('mockServiceWorker.js'));
+    });
+    expect(swRegistered).toBe(true);
   });
 });
 ```

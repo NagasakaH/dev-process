@@ -40,7 +40,6 @@ web-design/
 ├── public/
 │   └── mockServiceWorker.js        # MSW Service Worker（npx msw initで生成）
 ├── e2e/
-│   ├── playwright.config.ts        # Playwright設定
 │   ├── helpers/
 │   │   └── container.ts            # コンテナ名取得ヘルパー（MRD-003対応）
 │   ├── code-server.spec.ts         # code-serverアクセステスト
@@ -55,6 +54,7 @@ web-design/
 ├── tsconfig.app.json               # アプリ用TypeScript設定
 ├── tsconfig.node.json              # Node.js用TypeScript設定
 ├── vite.config.ts                  # Vite設定
+├── playwright.config.ts            # Playwright設定（プロジェクトルート、testDir: './e2e'）
 ├── eslint.config.js                # ESLint設定（flat config）
 ├── .prettierrc                     # Prettier設定
 ├── .gitignore                      # Git除外設定

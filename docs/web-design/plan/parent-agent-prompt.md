@@ -9,8 +9,8 @@
 | チケットID | WEB-DESIGN-001 |
 | タスク名 | ウェブデザイン要件定義プロジェクト環境構築 |
 | 総タスク数 | 6 |
-| 並列グループ数 | 3（Phase 2で3並列） |
-| 推定総時間 | 約80分（クリティカルパス: 約55分） |
+| 並列グループ数 | 2（Phase 2で4並列） |
+| 推定総時間 | 約90分（クリティカルパス: 約50分） |
 | 対象リポジトリ | submodules/web-design |
 
 ---
@@ -22,9 +22,9 @@
 | task01 | devcontainer構成ファイル作成 | なし | 不可 | 15min | ⬜ 未着手 |
 | task02-01 | dev-container.sh作成 | task01 | 可 | 15min | ⬜ 未着手 |
 | task02-02 | build-and-push-devcontainer.sh作成 | task01 | 可 | 10min | ⬜ 未着手 |
-| task02-03 | React初期化・ソース・MSW | task01 | 可 | 15min | ⬜ 未着手 |
-| task03 | Playwright E2Eテスト作成 | task02-01, task02-02, task02-03 | 不可 | 15min | ⬜ 未着手 |
-| task04 | README.md作成 | task03 | 不可 | 10min | ⬜ 未着手 |
+| task02-03 | React初期化・ソース・MSW | task01 | 可 | 25min | ⬜ 未着手 |
+| task03 | Playwright E2Eテスト作成 | task01 | 可 | 25min | ⬜ 未着手 |
+| task04 | README.md作成 | task02-01, task02-02, task02-03, task03 | 不可 | 10min | ⬜ 未着手 |
 
 ---
 
@@ -36,26 +36,24 @@ graph TD
         task01[task01: devcontainer構成ファイル作成]
     end
 
-    subgraph "Phase 2: スクリプト・React（並列）"
+    subgraph "Phase 2: スクリプト・React・E2Eテスト（並列）"
         task02-01[task02-01: dev-container.sh]
         task02-02[task02-02: build-and-push-devcontainer.sh]
         task02-03[task02-03: React初期化・ソース・MSW]
+        task03[task03: Playwright E2Eテスト RED]
     end
 
-    subgraph "Phase 3: E2Eテスト"
-        task03[task03: Playwright E2Eテスト]
-    end
-
-    subgraph "Phase 4: ドキュメント"
+    subgraph "Phase 3: ドキュメント"
         task04[task04: README.md]
     end
 
     task01 --> task02-01
     task01 --> task02-02
     task01 --> task02-03
-    task02-01 --> task03
-    task02-02 --> task03
-    task02-03 --> task03
+    task01 --> task03
+    task02-01 --> task04
+    task02-02 --> task04
+    task02-03 --> task04
     task03 --> task04
 ```
 
@@ -74,45 +72,37 @@ graph TD
 
 ---
 
-### Group 2: スクリプト・React（3並列実行）
+### Group 2: スクリプト・React・E2Eテスト（4並列実行）
 
 | タスク | 推定時間 | プロンプト |
 |--------|----------|------------|
 | task02-01 | 15min | [task02-01.md](task02-01.md) |
 | task02-02 | 10min | [task02-02.md](task02-02.md) |
-| task02-03 | 15min | [task02-03.md](task02-03.md) |
+| task02-03 | 25min | [task02-03.md](task02-03.md) |
+| task03 | 25min | [task03.md](task03.md) |
 
 **開始条件**: Group 1完了（task01完了）
-**完了条件**: task02-01, task02-02, task02-03 すべて完了
+**完了条件**: task02-01, task02-02, task02-03, task03 すべて完了
 
 **並列実行の根拠**:
 - 相互依存なし
 - 異なるディレクトリのファイルを編集:
   - task02-01: `scripts/dev-container.sh`
   - task02-02: `scripts/build-and-push-devcontainer.sh`
-  - task02-03: `package.json`, `src/`, `index.html`, `vite.config.ts`, `tsconfig*.json`, `eslint.config.js`, `.prettierrc`, `.gitignore`
+  - task02-03: `package.json`, `src/`, `index.html`, `vite.config.ts`, `tsconfig*.json`, `eslint.config.js`, `.prettierrc`, `.gitignore`, `public/`
+  - task03: `e2e/`, `playwright.config.ts`
 - 共有状態変更なし
+- task03はテストコード記述のみ（RED状態）、実行はverificationフェーズ
 
 ---
 
-### Group 3: E2Eテスト（単独実行）
-
-| タスク | 推定時間 | プロンプト |
-|--------|----------|------------|
-| task03 | 15min | [task03.md](task03.md) |
-
-**開始条件**: Group 2完了（task02-01, task02-02, task02-03 全完了）
-**完了条件**: task03完了
-
----
-
-### Group 4: ドキュメント（単独実行）
+### Group 3: ドキュメント（単独実行）
 
 | タスク | 推定時間 | プロンプト |
 |--------|----------|------------|
 | task04 | 10min | [task04.md](task04.md) |
 
-**開始条件**: Group 3完了（task03完了）
+**開始条件**: Group 2完了（task02-01, task02-02, task02-03, task03 全完了）
 **完了条件**: task04完了
 
 ---
@@ -121,12 +111,10 @@ graph TD
 
 1. **Phase 1**: task01を実行
 2. **Checkpoint 1**: task01の完了確認（devcontainer.json, Dockerfile, start-code-server.sh の存在確認）
-3. **Phase 2**: task02-01, task02-02, task02-03を並列実行
+3. **Phase 2**: task02-01, task02-02, task02-03, task03を並列実行
 4. **Checkpoint 2**: 並列タスクの全完了確認、cherry-pick完了確認
-5. **Phase 3**: task03を実行
-6. **Checkpoint 3**: E2Eテストファイルの存在確認（10ケース）
-7. **Phase 4**: task04を実行
-8. **Final**: 全タスク完了確認
+5. **Phase 3**: task04を実行
+6. **Final**: 全タスク完了確認
 
 ---
 
@@ -186,7 +174,7 @@ BASE_COMMIT=$(git rev-parse HEAD)
 
 # 並列タスクごとにworktree作成
 cd $REPO_ROOT/submodules/web-design
-for TASK_ID in task02-01 task02-02 task02-03; do
+for TASK_ID in task02-01 task02-02 task02-03 task03; do
     git branch ${REQUEST_NAME}-${TASK_ID} $BASE_COMMIT
     git worktree add /tmp/${REQUEST_NAME}-${TASK_ID} ${REQUEST_NAME}-${TASK_ID}
 done
@@ -223,7 +211,7 @@ REPO_ROOT=$(git rev-parse --show-toplevel)
 
 # 順番にcherry-pick（ファイル競合なし）
 cd /tmp/$REQUEST_NAME
-for TASK_ID in task02-01 task02-02 task02-03; do
+for TASK_ID in task02-01 task02-02 task02-03 task03; do
     cd /tmp/${REQUEST_NAME}-${TASK_ID}
     COMMIT_HASH=$(git rev-parse HEAD)
 
@@ -233,13 +221,13 @@ done
 
 # サブworktree一括削除
 cd $REPO_ROOT/submodules/web-design
-for TASK_ID in task02-01 task02-02 task02-03; do
+for TASK_ID in task02-01 task02-02 task02-03 task03; do
     git worktree remove /tmp/${REQUEST_NAME}-${TASK_ID} --force
     git branch -D ${REQUEST_NAME}-${TASK_ID}
 done
 ```
 
-### Phase 3, 4完了後（task03, task04）
+### Phase 3完了後（task04）
 
 同様にcherry-pickとworktree削除を実行。
 
@@ -307,9 +295,8 @@ done
 | ID | タイミング | チェック内容 | 結果 |
 |----|------------|--------------|------|
 | CP1 | Phase 1完了後 | task01完了、.devcontainer/配下の3ファイル存在確認 | ⬜ |
-| CP2 | Phase 2完了後 | task02-01/02/03全完了、cherry-pick完了、ファイル構造確認 | ⬜ |
-| CP3 | Phase 3完了後 | task03完了、e2e/配下の8ファイル存在確認 | ⬜ |
-| CP4 | Phase 4完了後 | task04完了、README.md存在確認 | ⬜ |
+| CP2 | Phase 2完了後 | task02-01/02/03/task03全完了、cherry-pick完了、ファイル構造確認 | ⬜ |
+| CP3 | Phase 3完了後 | task04完了、README.md存在確認 | ⬜ |
 
 ---
 
@@ -340,7 +327,7 @@ done
 
 - 各タスクプロンプト（task0X.md）の内容を正確に子エージェントに伝える
 - 並列タスク（Phase 2）は同じベースコミットから分岐させる
-- cherry-pickの順序を守る（Phase 2は task02-01 → task02-02 → task02-03 の順）
+- cherry-pickの順序を守る（Phase 2は task02-01 → task02-02 → task02-03 → task03 の順）
 - 全タスク完了後もメインworktreeは残す（ユーザー確認用）
 - テスト戦略はE2Eのみ。個別タスクでの単体テスト・結合テストは不要
 - コミットメッセージには `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>` を含める

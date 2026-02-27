@@ -49,7 +49,7 @@ description:
     - "DooD/DinD切り替え機構が動作する"
     - "copilot CLI, git, playwright, prettierが使用可能"
     - "code-serverにReact開発用拡張機能がインストールされている"
-    - "code-serverにGitHub Copilot拡張機能がインストールされている"
+    - "GitHub Copilot CLI が使用可能である（Open VSX制約によりCopilot拡張はCLIで代替）"
     - "画面デザインのモック作成・プレビューのワークフローが確立されている"
 
   test_scope:
