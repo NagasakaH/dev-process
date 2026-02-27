@@ -53,7 +53,6 @@ description:
     - "画面デザインのモック作成・プレビューのワークフローが確立されている"
 
   test_scope:
-    - unit
     - e2e
 
   scope:
