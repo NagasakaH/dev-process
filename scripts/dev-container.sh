@@ -26,6 +26,49 @@ CONTAINER_NAME="${PROJECT_NAME}-${PATH_HASH}"
 LABEL_MANAGED="managed-by=dev-container-sh"
 LABEL_WORKSPACE="workspace-path=${WORKSPACE_DIR}"
 
+# ---------------------------------------------------------------
+# Docker API version negotiation
+# ---------------------------------------------------------------
+detect_docker_api_version() {
+  # ユーザーが明示指定している場合はそれを尊重
+  if [ -n "${DOCKER_API_VERSION:-}" ]; then
+    echo "  docker API version: ${DOCKER_API_VERSION} (user-specified)"
+    return
+  fi
+
+  local host_version
+  host_version=$(docker version --format '{{.Server.Version}}' 2>/dev/null || echo "")
+
+  if [ -z "$host_version" ]; then
+    echo "  docker API version: (unable to detect host Docker version)"
+    return
+  fi
+
+  echo "  host docker version: ${host_version}"
+
+  # Docker API version mapping (major.minor → API version)
+  # See: https://docs.docker.com/reference/api/engine/version-history/
+  local major minor api_version=""
+  major=$(echo "$host_version" | cut -d. -f1)
+  minor=$(echo "$host_version" | cut -d. -f2)
+
+  if [ "$major" -lt 20 ] 2>/dev/null; then
+    # Docker 19.03.x → API 1.40
+    api_version="1.40"
+  elif [ "$major" -eq 20 ] && [ "$minor" -le 10 ] 2>/dev/null; then
+    # Docker 20.10.x → API 1.41
+    api_version="1.41"
+  fi
+  # Docker 23+ / 24+ / 25+ → API negotiation works, no override needed
+
+  if [ -n "$api_version" ]; then
+    export DOCKER_API_VERSION="$api_version"
+    echo "  docker API version: ${api_version} (auto-detected for Docker ${host_version})"
+  else
+    echo "  docker API version: (auto-negotiate, Docker ${host_version})"
+  fi
+}
+
 # Find container for current workspace by label
 find_container() {
   docker ps -a --filter "label=${LABEL_MANAGED}" --filter "label=${LABEL_WORKSPACE}" --format '{{.Names}}' | head -1
@@ -95,6 +138,13 @@ cmd_up() {
 
   # Docker mode specific flags
   local docker_flags=()
+
+  # Detect and set API version for old Docker hosts
+  detect_docker_api_version
+  if [ -n "${DOCKER_API_VERSION:-}" ]; then
+    docker_flags+=(-e "DOCKER_API_VERSION=${DOCKER_API_VERSION}")
+  fi
+
   case "${DOCKER_MODE}" in
     dind)
       docker_flags+=(--privileged)
@@ -110,6 +160,7 @@ cmd_up() {
       local sock_gid
       sock_gid=$(stat -f '%g' "$docker_sock" 2>/dev/null || stat -c '%g' "$docker_sock" 2>/dev/null)
       docker_flags+=(
+        --privileged
         -v "${docker_sock}:/var/run/docker.sock"
         --entrypoint start-tmux
       )
@@ -233,6 +284,7 @@ case "${1:-help}" in
     echo "  DEV_CONTAINER_IMAGE  Override image (default: ${IMAGE_NAME})"
     echo "  DOCKER_MODE          dind (default) or dood"
     echo "  DOCKER_HOST_SOCK     Docker socket path for dood (default: /var/run/docker.sock)"
+    echo "  DOCKER_API_VERSION   Override Docker API version (auto-detected if unset)"
     exit 1
     ;;
 esac
