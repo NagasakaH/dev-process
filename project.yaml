@@ -14,7 +14,7 @@ meta:
   target_repo: "web-design"
   branch: "feature/WEB-DESIGN-001"
   created_at: "2026-02-27T11:22:53+00:00"
-  updated_at: "2026-02-27T11:55:27+00:00"
+  updated_at: "2026-02-27T12:01:33+00:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -140,7 +140,7 @@ investigation:
   artifacts: "docs/web-design/investigation/"
   completed_at: "2026-02-27T11:34:18+00:00"
 design:
-  status: completed
+  status: approved
   started_at: "2026-02-27T11:42:09+00:00"
   summary: "dev-processの2段階ビルドパターンを踏襲し、Node.js LTS + code-server構成に置換。tmux→code-server起動、DooD/DinD切替移植、React+Vite+TypeScript+Tailwind CSS+MSW環境を設計"
   approach: "devcontainer.json(9 features) + Dockerfile(code-server+拡張機能インストール) + start-code-server.sh(UID/GID調整+code-server起動) + dev-container.sh(DooD/DinD切替移植) + Vite+React+TypeScript+Tailwind CSS"
@@ -151,68 +151,69 @@ design:
     - DooD時は--entrypoint start-code-serverでdocker-init.shをスキップ
     - E2Eテストのみ（Playwrightでdevcontainer起動後の動作確認）
   review:
-    round: 1
-    status: conditional
-    latest_verdict: 条件付き承認
-    completed_at: "2026-02-27T11:51:33+00:00"
-    summary: Major 4件・Minor 5件・Info 2件。Critical指摘なし。Open VSX制約対応、テスト実装詳細化、セキュリティガイドライン明文化が必要。
+    round: 2
+    status: approved
+    latest_verdict: 承認
+    completed_at: "2026-02-27T12:01:54+00:00"
+    summary: Round 2完了。Minor 3件（MRD-R2-001, MRD-R2-002, MRD-012）を修正し全指摘解決。承認。
     issues:
       - id: MRD-001
         severity: major
         category: 要件整合性
         description: setup.yamlの要件「devcontainerのfeatureとしてcode-serverを追加」に対し、設計はDockerfileでの手動インストール前提。実現手段を明記する必要あり
-        status: open
+        status: resolved
       - id: MRD-002
         severity: major
         category: Open VSX制約対応
         description: Copilot拡張のDockerfileインストールが || true で失敗許容。Open VSXにCopilotは非公開で100%失敗する。Copilot CLIフォールバックの設計方針を明確化する必要あり
-        status: open
+        status: resolved
       - id: MRD-003
         severity: major
         category: 実装可能性
         description: E2Eテストコード内の docker exec <container> がプレースホルダー。コンテナ名動的取得のヘルパー設計が必要
-        status: open
+        status: resolved
       - id: MRD-004
         severity: major
         category: テスト可能性
         description: 'acceptance_criteriaの未検証項目: Copilot拡張→CLIフォールバック確認、copilot CLIバージョン確認、HMR反映確認、MSWモック応答確認'
-        status: open
+        status: resolved
       - id: MRD-005
         severity: minor
         category: セキュリティ
         description: code-server --auth none等のリスクガード不足。ローカル限定・公開ネットワーク禁止を明文化
-        status: open
+        status: resolved
       - id: MRD-006
         severity: minor
         category: テスト設計
         description: DooD/DinDモード切替テストの実行方法が未設計
-        status: open
+        status: resolved
       - id: MRD-007
         severity: minor
         category: ファイル構造
         description: investigation文書との tailwind.config.js 不整合。Tailwind CSS v4ではCSS-first設定で不要であることを明記
-        status: open
+        status: resolved
       - id: MRD-008
         severity: minor
         category: MSW初期化
         description: main.tsxでのMSW初期化パターンが未設計
-        status: open
+        status: resolved
       - id: MRD-009
         severity: minor
         category: ESLint設定
         description: eslint.config.jsの具体的設定が未設計
-        status: open
+        status: resolved
       - id: MRD-010
         severity: info
         category: スコープ
         description: claude-code featureがスコープ外だが追加されている
-        status: open
+        status: resolved
       - id: MRD-011
         severity: info
         category: 重複
         description: Prettierがfeatureとnpm両方に存在
-        status: open
+        status: resolved
     artifacts:
       - docs/web-design/review-design/06_review-summary.md
+      - docs/web-design/review-design/round-02.md
   artifacts: "docs/web-design/design/"
-  completed_at: "2026-02-27T11:42:24+00:00"
+  completed_at: "2026-02-27T12:01:33+00:00"

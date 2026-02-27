@@ -109,8 +109,13 @@ web-design/
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.0.0",
+    "@eslint/js": "^9.0.0",
     "eslint": "^9.0.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.0",
+    "globals": "^15.0.0",
     "tailwindcss": "^4.0.0",
+    "typescript-eslint": "^8.0.0",
     "typescript": "^5.7.0",
     "vite": "^6.0.0"
   }

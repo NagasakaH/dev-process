@@ -103,7 +103,7 @@ flowchart TD
 | code-server認証 | `--auth none` が意図的であること | 設定ファイル確認、READMEに注意事項記載 | ⬜ |
 | `--privileged` | DinD/DooD両方で使用されること | dev-container.shのフラグ確認 | ⬜ |
 | Docker socket (DooD) | ホストDockerへのアクセス制御 | DooD時にchmod 666の影響確認 | ⬜ |
-| VSIX手動インストール | 公式ソースからのダウンロード確認 | Dockerfile内のインストールコマンド確認 | ⬜ |
+| Copilot CLI動作確認 | CLIが正常にインストール・動作すること | `github-copilot-cli --version` 実行確認 | ⬜ |
 
 ### 4.2 セキュリティリスク受容
 
@@ -160,7 +160,7 @@ flowchart TD
 
 1. devcontainerビルド確認
 2. code-server起動・アクセス確認
-3. 拡張機能インストール確認（Copilot含む）
+3. Copilot CLI動作確認
 4. React開発ワークフロー確認（Vite HMR）
 5. DinD/DooD動作確認
 6. パフォーマンス測定
