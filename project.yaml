@@ -14,7 +14,7 @@ meta:
   target_repo: "web-design"
   branch: "feature/WEB-DESIGN-001"
   created_at: "2026-02-27T11:22:53+00:00"
-  updated_at: "2026-02-27T13:00:23+00:00"
+  updated_at: "2026-02-27T13:05:25+00:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -338,7 +338,7 @@ verification:
     - docs/web-design/verification/results.md
   completed_at: "2026-02-27T12:49:31+00:00"
 code_review:
-  status: conditional
+  status: approved
   started_at: "2026-02-27T12:59:40+00:00"
   round: 1
   rounds: []
@@ -400,3 +400,4 @@ code_review:
       fixed_description: 明示的nullチェック + エラーメッセージ
   artifacts: docs/web-design/code-review/round-01.md
   summary: 'Round 1修正完了: Major 4件 + Minor 5件 全て修正済み。再レビュー待ち'
+  completed_at: "2026-02-27T13:05:25+00:00"
