@@ -14,7 +14,7 @@ meta:
   target_repo: "web-design"
   branch: "feature/WEB-DESIGN-001"
   created_at: "2026-02-27T11:22:53+00:00"
-  updated_at: "2026-02-27T11:51:33+00:00"
+  updated_at: "2026-02-27T11:55:27+00:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -146,7 +146,7 @@ design:
   approach: "devcontainer.json(9 features) + Dockerfile(code-server+拡張機能インストール) + start-code-server.sh(UID/GID調整+code-server起動) + dev-container.sh(DooD/DinD切替移植) + Vite+React+TypeScript+Tailwind CSS"
   key_decisions:
     - code-serverをDockerfile内でcurl installによりインストール（devcontainer feature非対応のため）
-    - GitHub Copilot拡張はVSIXインストール試行+Copilot CLIフォールバック（Open VSX制約対応）
+    - GitHub Copilot拡張はOpen VSXに非公開のためCopilot CLIで代替（devcontainer feature copilot-cli:1で導入済み）
     - Vite HMRはusePolling設定でbind mount環境に対応
     - DooD時は--entrypoint start-code-serverでdocker-init.shをスキップ
     - E2Eテストのみ（Playwrightでdevcontainer起動後の動作確認）

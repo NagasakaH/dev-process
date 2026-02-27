@@ -41,21 +41,27 @@ web-design/
 │   └── mockServiceWorker.js        # MSW Service Worker（npx msw initで生成）
 ├── e2e/
 │   ├── playwright.config.ts        # Playwright設定
+│   ├── helpers/
+│   │   └── container.ts            # コンテナ名取得ヘルパー（MRD-003対応）
 │   ├── code-server.spec.ts         # code-serverアクセステスト
 │   ├── react-preview.spec.ts       # Reactプレビューテスト
 │   ├── extensions.spec.ts          # 拡張機能確認テスト
-│   └── docker-mode.spec.ts         # DooD/DinD動作確認テスト
+│   ├── docker-mode.spec.ts         # DooD/DinD動作確認テスト
+│   ├── hmr.spec.ts                 # HMR反映確認テスト（MRD-004対応）
+│   └── msw.spec.ts                 # MSWモック応答確認テスト（MRD-004対応）
 ├── index.html                      # Viteエントリポイント HTML
 ├── package.json                    # npm依存定義
 ├── tsconfig.json                   # TypeScript設定
 ├── tsconfig.app.json               # アプリ用TypeScript設定
 ├── tsconfig.node.json              # Node.js用TypeScript設定
 ├── vite.config.ts                  # Vite設定
-├── eslint.config.js                # ESLint設定
+├── eslint.config.js                # ESLint設定（flat config）
 ├── .prettierrc                     # Prettier設定
 ├── .gitignore                      # Git除外設定
 └── README.md                       # プロジェクトREADME
 ```
+
+> **MRD-007対応**: Tailwind CSS v4ではCSS-first設定を採用しており、従来の `tailwind.config.js` は不要である。investigation文書で言及された `tailwind.config.js` はTailwind CSS v3以前の設定ファイルであり、v4では `@import "tailwindcss"` ディレクティブを `index.css` に記載するだけで利用可能になる。そのため本プロジェクトのファイル構造には `tailwind.config.js` を含めない。
 
 ### 1.2 ディレクトリ責務
 
@@ -204,6 +210,49 @@ export default defineConfig({
 }
 ```
 
+### 2.7 eslint.config.js（MRD-009対応）
+
+ESLint v9のFlat Config形式で設計する。React + TypeScript + Prettier連携の基本設定。
+
+```javascript
+// eslint.config.js
+import js from '@eslint/js';
+import globals from 'globals';
+import reactHooks from 'eslint-plugin-react-hooks';
+import reactRefresh from 'eslint-plugin-react-refresh';
+import tseslint from 'typescript-eslint';
+
+export default tseslint.config(
+  { ignores: ['dist', 'public/mockServiceWorker.js'] },
+  {
+    extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    files: ['**/*.{ts,tsx}'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+    },
+    plugins: {
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
+    },
+    rules: {
+      ...reactHooks.configs.recommended.rules,
+      'react-refresh/only-export-components': [
+        'warn',
+        { allowConstantExport: true },
+      ],
+    },
+  },
+);
+```
+
+**必要な追加devDependencies:**
+- `@eslint/js`
+- `globals`
+- `eslint-plugin-react-hooks`
+- `eslint-plugin-react-refresh`
+- `typescript-eslint`
+
 ---
 
 ## 3. 型定義
@@ -231,6 +280,40 @@ import { handlers } from './handlers';
 
 export const worker = setupWorker(...handlers);
 ```
+
+### 3.3 MSW初期化パターン（MRD-008対応）
+
+`main.tsx` でMSWを初期化する。開発環境でのみService Workerを起動し、本番ビルドには影響しない。
+
+```typescript
+// src/main.tsx
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './index.css';
+
+async function enableMocking() {
+  if (import.meta.env.DEV) {
+    const { worker } = await import('./mocks/browser');
+    return worker.start({
+      onUnhandledRequest: 'bypass',
+    });
+  }
+}
+
+enableMocking().then(() => {
+  ReactDOM.createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>,
+  );
+});
+```
+
+**ポイント:**
+- `import.meta.env.DEV` で開発環境のみMSWを有効化
+- 動的importでMSWモジュールを遅延読み込み（本番ビルドからの除外）
+- `onUnhandledRequest: 'bypass'` でモック未定義のリクエストはそのまま通過
 
 ---
 

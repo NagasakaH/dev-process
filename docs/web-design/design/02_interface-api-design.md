@@ -165,6 +165,10 @@ scripts/build-and-push-devcontainer.sh [options]
 
 ## 3. Dockerfile 設計
 
+> **MRD-001対応**: code-serverは公式devcontainer featureが存在しないため、Dockerfileで手動インストールする。setup.yamlの機能要件「devcontainerのfeatureとしてcode-serverを追加」は、この手段（Dockerfileでのcurl install）で実現する。devcontainer featureとして公式に提供されていないため、feature相当の組み込みをDockerfileレイヤーで行う方式を採用する。
+
+> **MRD-002対応（Copilot拡張機能）**: GitHub Copilot拡張機能はOpen VSX Registryに公開されていないため、code-serverへのインストールは不可能である。代替として **Copilot CLI**（devcontainer feature `ghcr.io/devcontainers/features/copilot-cli:1` で導入済み）を使用する。Dockerfileからは `|| true` のCopilot拡張インストール行を除去し、acceptance_criteriaの「Copilot拡張機能がインストールされている」は「Copilot CLIが使用可能」に修正を提案する。
+
 ```dockerfile
 FROM --platform=linux/amd64 nagasakah/web-design:base
 
@@ -182,9 +186,8 @@ RUN code-server --install-extension dbaeumer.vscode-eslint && \
     code-server --install-extension redhat.vscode-yaml && \
     code-server --install-extension dsznajder.es7-react-js-snippets
 
-# GitHub Copilot拡張機能（Open VSXに存在しない場合はスキップ）
-RUN code-server --install-extension GitHub.copilot || true && \
-    code-server --install-extension GitHub.copilot-chat || true
+# NOTE: GitHub Copilot拡張機能はOpen VSXに非公開のためインストール不可。
+# Copilot CLIで代替する（devcontainer feature copilot-cli:1 で導入済み）。
 
 # 起動スクリプト配置
 COPY scripts/start-code-server.sh /usr/local/bin/start-code-server
@@ -244,6 +247,23 @@ bind-addr: 0.0.0.0:8080
 auth: none
 disable-telemetry: true
 ```
+
+### 5.3 セキュリティガイドライン（MRD-005対応）
+
+> **⚠️ セキュリティに関する重要な注意事項**
+
+| 項目 | ガイドライン |
+|------|-------------|
+| **利用環境** | **ローカル開発環境専用**。公開ネットワーク上での使用は厳禁 |
+| **認証設定** | `--auth none` はローカル開発に限定して使用する。リモートアクセスが必要な場合は `--auth password` に変更すること |
+| **ポート公開** | ポート8080/5173は `localhost` へのフォワーディングのみを想定。ファイアウォールで外部からのアクセスをブロックすること |
+| **`--privileged`** | DinD/DooDに必要だが、信頼できるローカル環境でのみ使用すること |
+| **Docker socket (DooD)** | ホストDockerへの完全アクセスが付与される。共有環境での使用時は注意 |
+
+**禁止事項:**
+- 公開ネットワーク（インターネット）上でcode-serverを `--auth none` のまま起動しないこと
+- VPN/トンネル等で外部にポートを公開する際は必ず認証を有効にすること
+- 本番環境やステージング環境での使用は想定していない
 
 ---
 

@@ -54,9 +54,9 @@ dev-processリポジトリの2段階ビルドパターン（devcontainer build �
 
 | 案 | 概要 | メリット | デメリット | 採用 |
 |----|------|----------|------------|------|
-| 案1: VSIX手動インストール + Copilot CLI フォールバック | Dockerfile内でVSIXインストールを試行、失敗時はCopilot CLIで代替 | 段階的対応可能 | VSIXの入手・更新が手動 | ✅ |
-| 案2: marketplace.json上書き | code-serverの拡張機能マーケットプレースをMicrosoft Marketplaceに変更 | 全拡張機能が利用可能 | ライセンス上グレー | ❌ |
-| 案3: Copilot CLI のみ | ターミナルからCopilot CLIのみ使用 | 確実に動作 | インラインコード補完不可 | ❌ (フォールバックとして採用) |
+| 案1: Copilot CLI のみ | devcontainer feature (copilot-cli:1) でCLI提供 | 確実に動作、featureで自動インストール | インラインコード補完不可 | ✅ |
+| 案2: VSIX手動インストール | Dockerfile内でVSIXインストールを試行 | 拡張機能UIが使える | Open VSXに非公開で100%失敗する。VSIXの入手・更新が手動 | ❌ |
+| 案3: marketplace.json上書き | code-serverのマーケットプレースをMicrosoft Marketplaceに変更 | 全拡張機能が利用可能 | ライセンス上グレー | ❌ |
 
 ---
 
@@ -70,7 +70,7 @@ dev-processリポジトリの2段階ビルドパターン（devcontainer build �
 
 ### 3.2 トレードオフ
 
-- **Open VSX制約**: code-serverではMicrosoft Marketplace拡張機能を直接利用できないため、GitHub Copilot等はVSIXインストールまたはCLI代替が必要
+- **Open VSX制約**: code-serverではMicrosoft Marketplace拡張機能を直接利用できないため、GitHub CopilotはCopilot CLIで代替する
 - **パフォーマンス**: bind mount環境でのファイル監視はinotifyが効かない場合があり、Vite HMRに`usePolling`設定が必要
 - **node_modules I/O**: bind mountではnpm install/ビルドが遅くなるが、初回スコープではnamed volume未使用（必要に応じて追加）
 
@@ -81,7 +81,7 @@ dev-processリポジトリの2段階ビルドパターン（devcontainer build �
 | 制約 | 影響 | 対応方針 |
 |------|------|----------|
 | Platform linux/amd64 のみ | ARM Macではエミュレーション実行 | dev-processと同様、将来マルチアーキテクチャ対応検討 |
-| Open VSX Registry制約 | GitHub Copilot拡張がマーケットプレース経由で入手不可 | VSIXインストール試行 + Copilot CLIフォールバック |
+| Open VSX Registry制約 | GitHub Copilot拡張がマーケットプレース経由で入手不可 | Copilot CLIで代替（devcontainer feature copilot-cli:1 で導入済み） |
 | code-server認証なし (`--auth none`) | ローカルネットワーク内からアクセス可能 | ローカル開発専用として文書化 |
 | `--privileged` 必須 | DinD/DooD両方でコンテナ特権が必要 | ローカル開発環境のため許容 |
 | E2Eテストのみ | 単体テスト・結合テストはスコープ外 | brainstormingで決定済み、将来追加 |

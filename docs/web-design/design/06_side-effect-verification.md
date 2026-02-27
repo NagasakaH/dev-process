@@ -16,7 +16,7 @@
 
 | 箇所 | 影響度 | 発生可能性 | 検証方法 | 優先度 |
 |------|--------|------------|----------|--------|
-| GitHub Copilot拡張機能 (Open VSX制約) | 高 | 高 | code-server上でCopilot拡張の動作確認 | 高 |
+| GitHub Copilot拡張機能 (Open VSX制約) | 高 | 確実 | Copilot CLIの動作確認（`github-copilot-cli --version`） | 高 |
 | Vite HMR (bind mount環境) | 中 | 中 | ファイル変更時のホットリロード動作確認 | 高 |
 | DooD時のUID/GID不一致 | 中 | 低 | DooD起動後のファイルパーミッション確認 | 中 |
 | code-server拡張機能の互換性 | 中 | 中 | 各拡張機能の動作確認 | 中 |
@@ -39,7 +39,7 @@ flowchart TD
     D --> D1["UID/GID調整"]
     D --> D2["Docker socket"]
     
-    B2 -.->|"リスク: Open VSX"| R1["Copilot拡張機能<br/>動作しない可能性"]
+    B2 -.->|"リスク: Open VSX"| R1["Copilot拡張機能不可<br/>→ CLIで代替"]
     C1 -.->|"リスク: inotify"| R2["HMR遅延・不動作"]
     D1 -.->|"リスク: パーミッション"| R3["ファイルアクセス<br/>権限エラー"]
     
@@ -142,17 +142,15 @@ flowchart TD
 
 | No | シナリオ | 手順 | 期待結果 | フォールバック |
 |----|----------|------|----------|---------------|
-| 1 | VSIX直接インストール | Dockerfile内で `code-server --install-extension GitHub.copilot` | 拡張機能がインストールされる | シナリオ2へ |
-| 2 | VSIX手動ダウンロード | GitHub ReleasesからVSIXをダウンロードし、`code-server --install-extension copilot.vsix` | 拡張機能がインストール・動作する | シナリオ3へ |
-| 3 | Copilot CLI代替 | ターミナルから `github-copilot-cli` を使用 | CLIベースのAI支援が利用可能 | 許容（CLIのみ） |
+| 1 | Copilot CLIインストール確認 | devcontainer起動後 `github-copilot-cli --version` 実行 | バージョンが表示される | — |
+| 2 | Copilot CLI動作確認 | ターミナルから `github-copilot-cli` のサブコマンドを使用 | CLIベースのAI支援が利用可能 | 許容（CLIのみ） |
 
 ### 6.2 検証結果テンプレート
 
 | シナリオ | 結果 | 備考 |
 |----------|------|------|
-| VSIX直接インストール | ⬜ | |
-| VSIX手動ダウンロード | ⬜ | |
-| Copilot CLI代替 | ⬜ | |
+| Copilot CLIインストール確認 | ⬜ | |
+| Copilot CLI動作確認 | ⬜ | |
 
 ---
 
