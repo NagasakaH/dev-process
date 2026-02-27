@@ -14,7 +14,7 @@ meta:
   target_repo: "web-design"
   branch: "feature/WEB-DESIGN-001"
   created_at: "2026-02-27T11:22:53+00:00"
-  updated_at: "2026-02-27T12:01:33+00:00"
+  updated_at: "2026-02-27T12:10:13+00:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -217,3 +217,32 @@ design:
       - docs/web-design/review-design/round-02.md
   artifacts: "docs/web-design/design/"
   completed_at: "2026-02-27T12:01:33+00:00"
+plan:
+  status: completed
+  started_at: "2026-02-27T12:09:38+00:00"
+  summary: "6タスクに分割（4Phase構成）。Phase2で3並列実行。devcontainer基盤→スクリプト/React並列→E2Eテスト→README"
+  total_tasks: 6
+  tasks:
+    - id: task01
+      title: devcontainer構成ファイル作成
+      status: pending
+    - id: task02-01
+      title: dev-container.sh作成
+      status: pending
+    - id: task02-02
+      title: build-and-push-devcontainer.sh作成
+      status: pending
+    - id: task02-03
+      title: Reactプロジェクト初期化・ソースコード・MSW設定
+      status: pending
+    - id: task03
+      title: Playwright E2Eテスト作成
+      status: pending
+    - id: task04
+      title: README.md作成
+      status: pending
+  review:
+    round: 0
+    status: pending
+  artifacts: "docs/web-design/plan/"
+  completed_at: "2026-02-27T12:10:02+00:00"
