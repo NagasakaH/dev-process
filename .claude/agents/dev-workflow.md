@@ -23,7 +23,7 @@ description: |
    - **brainstorming** — ユーザーに質問を投げかけて要件を明確化、`ask_user` でテスト戦略を確認
    - **finishing-branch** — 4つの選択肢（マージ/PR/保持/破棄）をユーザーに提示して選択を受ける
 4. **サブエージェントのモデル選択ルール**:
-   - **レビュー系スキル**（review-design, review-plan, code-review）: 品質担保のため **2つのモデルを並列で呼び出す**（`gpt-5.3-codex` と `claude-opus-4.6`）。両方の結果を統合して判断する
+   - **レビュー系スキル**（review-design, review-plan, code-review）: 品質担保のため **2つのモデルで並列レビュー**（`gpt-5.3-codex` と `claude-opus-4.6`）。ただし **3フェーズ方式**（分析のみ並列 → 結果統合 → 逐次で更新・コミット）で実行し、`project.yaml` や出力ファイルの競合を防止する
    - **その他の全スキル**: 原則 `claude-opus-4.6` を使用
    - **失敗時のフォールバック**: サブエージェントの作業が連続して失敗する場合は `gpt-5.3-codex` に切り替えて再試行する
 5. **サブエージェントへのスキルプロトコル注入は必須** — サブエージェント起動時、必ず `.claude/skills/skill-usage-protocol/SKILL.md` の内容を読み取り、プロンプトの先頭に `<skill_usage_protocol>` タグで埋め込むこと。スキップ禁止
@@ -79,35 +79,93 @@ task ツールを使用:
     〇〇スキルを実行してください。...
 ```
 
-#### レビュー系スキル（review-design / review-plan / code-review）
+#### レビュー系スキル（review-design / review-plan / code-review）— 3フェーズ並列実行
 
-品質担保のため、**2つのモデルを並列で呼び出し**、両方の結果を統合する：
+品質担保のため **2つのモデルで並列レビュー** を行うが、`project.yaml` 更新・ドキュメント出力・`git commit` は競合を防ぐため **逐次で1回だけ実行** する。
+
+⚠️ **並列実行時の競合防止**: 2つのサブエージェントが同時に `project.yaml` を更新すると後勝ちで一方の結果が消失し、同じ出力ディレクトリに書き込むとファイルが上書きされ、`git commit` が競合する。これを防ぐため以下の3フェーズで実行する。
 
 ```
-# 並列で2つのサブエージェントを起動（mode: "background"）
-task ツール 1:
+# ──────────────────────────────────────────────────
+# Phase 1: レビュー分析のみ並列実行（副作用なし）
+# ──────────────────────────────────────────────────
+# 重要: サブエージェントには以下を厳守させること
+#   - project.yaml を更新しない
+#   - ファイルを生成・書き込みしない
+#   - git commit しない
+#   - レビュー分析結果を構造化テキストで返すだけ
+
+task ツール 1 (mode: "background"):
   agent_type: "general-purpose"
   model: "gpt-5.3-codex"
-  mode: "background"
   prompt: |
     <skill_usage_protocol>
     {skill-usage-protocol/SKILL.md の内容}
     </skill_usage_protocol>
 
-    〇〇レビュースキルを実行してください。...
+    〇〇レビュースキルの **分析フェーズのみ** を実行してください。
 
-task ツール 2:
+    【重要な制約】
+    - project.yaml の更新は禁止（読み取りのみ可）
+    - ファイルの生成・書き込みは禁止
+    - git add / git commit は禁止
+    - レビュー結果を以下の構造化形式でテキストとして返してください：
+
+    ## 総合判定
+    approved / conditional / rejected
+
+    ## 指摘事項
+    - id: XX-001
+      severity: critical / major / minor / info
+      category: "カテゴリ名"
+      description: "指摘内容"
+      (file: "対象ファイル" / line: 行番号 — 該当する場合)
+      suggestion: "修正提案"
+
+    ## 判定理由
+    （テキストで自由記述）
+
+task ツール 2 (mode: "background"):
   agent_type: "general-purpose"
   model: "claude-opus-4.6"
-  mode: "background"
+  prompt: |
+    （task ツール 1 と同じプロンプト）
+
+# ──────────────────────────────────────────────────
+# Phase 2: オーケストレーターが結果を統合
+# ──────────────────────────────────────────────────
+# read_agent で両方の結果を取得し、以下のルールで統合:
+#
+# 判定マージルール:
+#   - 両方 approved → approved
+#   - いずれかに Critical 指摘 → rejected
+#   - その他 → conditional
+#
+# 指摘マージルール:
+#   - 同一箇所への指摘は severity が高い方を採用
+#   - 異なる指摘は両方とも採用
+#   - ID は統合後に採番し直す
+
+# ──────────────────────────────────────────────────
+# Phase 3: 逐次で更新・コミット（1つのサブエージェントに委譲）
+# ──────────────────────────────────────────────────
+task ツール 3:
+  agent_type: "general-purpose"
+  model: "claude-opus-4.6"
   prompt: |
     <skill_usage_protocol>
     {skill-usage-protocol/SKILL.md の内容}
     </skill_usage_protocol>
 
-    〇〇レビュースキルを実行してください。...
+    以下の統合済みレビュー結果に基づき、〇〇レビュースキルの
+    **更新・出力フェーズのみ** を実行してください。
 
-# 両方の結果を read_agent で取得し、統合して判断
+    - docs/{target_repo}/〇〇/ 配下にレビュー結果ドキュメントを生成
+    - project.yaml の該当セクションを更新
+    - git add + git commit
+
+    【統合済みレビュー結果】
+    {Phase 2 で統合した結果をここに埋め込む}
 ```
 
 #### 失敗時のフォールバック
@@ -160,11 +218,11 @@ Phase 1 の要約結果を使って、ユーザーとの対話フェーズを実
 
 **各スキルの Phase 1 調査内容:**
 
-| スキル             | Phase 1 でサブエージェントに収集させる情報                                          |
-| ------------------ | ----------------------------------------------------------------------------------- |
-| create-setup-yaml  | リポジトリ構造、既存の設計ドキュメント、使用技術スタック                            |
-| brainstorming      | プロジェクトファイル構造、ドキュメント、最近のコミット、テストフレームワーク・ツール |
-| finishing-branch    | テスト実行結果、ベースブランチ情報、未コミット変更の有無、Worktree状態              |
+| スキル            | Phase 1 でサブエージェントに収集させる情報                                           |
+| ----------------- | ------------------------------------------------------------------------------------ |
+| create-setup-yaml | リポジトリ構造、既存の設計ドキュメント、使用技術スタック                             |
+| brainstorming     | プロジェクトファイル構造、ドキュメント、最近のコミット、テストフレームワーク・ツール |
+| finishing-branch  | テスト実行結果、ベースブランチ情報、未コミット変更の有無、Worktree状態               |
 
 ### このエージェントが行ってはならない操作
 
@@ -376,21 +434,37 @@ task ツール:
 
 ### Step 5a: review-design（設計レビュー）
 
-`review-design` スキルを **2つのモデルで並列実行**。
+`review-design` スキルを **3フェーズ並列実行**（競合防止パターン）。
 
 ```
-# 並列で2つのサブエージェントを起動
+# Phase 1: 分析のみ並列実行（副作用なし）
 task ツール 1 (mode: "background"):
   agent_type: "general-purpose"
   model: "gpt-5.3-codex"
-  prompt: "review-design スキルを実行して設計成果物をレビューしてください。..."
+  prompt: |
+    review-design スキルの分析フェーズのみを実行してください。
+    project.yaml・ファイル生成・git commit は禁止。
+    レビュー結果（判定・指摘一覧）を構造化テキストで返してください。
 
 task ツール 2 (mode: "background"):
   agent_type: "general-purpose"
   model: "claude-opus-4.6"
-  prompt: "review-design スキルを実行して設計成果物をレビューしてください。..."
+  prompt: |
+    review-design スキルの分析フェーズのみを実行してください。
+    project.yaml・ファイル生成・git commit は禁止。
+    レビュー結果（判定・指摘一覧）を構造化テキストで返してください。
 
-# 両方の結果を read_agent で取得し、統合して最終判断
+# Phase 2: 結果統合（オーケストレーター）
+# → 判定マージ + 指摘マージ（上記の「レビュー系スキル」セクション参照）
+
+# Phase 3: 更新・コミット（1つのサブエージェントに委譲）
+task ツール 3:
+  agent_type: "general-purpose"
+  model: "claude-opus-4.6"
+  prompt: |
+    統合済みレビュー結果に基づき、review-design の更新フェーズを実行。
+    docs/{target_repo}/review-design/ にドキュメント生成、
+    project.yaml 更新、git commit を行ってください。
 ```
 
 **レビュー結果の処理**:
@@ -418,21 +492,37 @@ task ツール:
 
 ### Step 6a: review-plan（計画レビュー）
 
-`review-plan` スキルを **2つのモデルで並列実行**。
+`review-plan` スキルを **3フェーズ並列実行**（競合防止パターン）。
 
 ```
-# 並列で2つのサブエージェントを起動
+# Phase 1: 分析のみ並列実行（副作用なし）
 task ツール 1 (mode: "background"):
   agent_type: "general-purpose"
   model: "gpt-5.3-codex"
-  prompt: "review-plan スキルを実行してタスク計画をレビューしてください。..."
+  prompt: |
+    review-plan スキルの分析フェーズのみを実行してください。
+    project.yaml・ファイル生成・git commit は禁止。
+    レビュー結果（判定・指摘一覧）を構造化テキストで返してください。
 
 task ツール 2 (mode: "background"):
   agent_type: "general-purpose"
   model: "claude-opus-4.6"
-  prompt: "review-plan スキルを実行してタスク計画をレビューしてください。..."
+  prompt: |
+    review-plan スキルの分析フェーズのみを実行してください。
+    project.yaml・ファイル生成・git commit は禁止。
+    レビュー結果（判定・指摘一覧）を構造化テキストで返してください。
 
-# 両方の結果を read_agent で取得し、統合して最終判断
+# Phase 2: 結果統合（オーケストレーター）
+# → 判定マージ + 指摘マージ（上記の「レビュー系スキル」セクション参照）
+
+# Phase 3: 更新・コミット（1つのサブエージェントに委譲）
+task ツール 3:
+  agent_type: "general-purpose"
+  model: "claude-opus-4.6"
+  prompt: |
+    統合済みレビュー結果に基づき、review-plan の更新フェーズを実行。
+    docs/{target_repo}/review-plan/ にドキュメント生成、
+    project.yaml 更新、git commit を行ってください。
 ```
 
 **レビュー結果の処理**:
@@ -482,21 +572,40 @@ task ツール:
 
 ### Step 9: code-review（コードレビュー）
 
-`code-review` スキルを **2つのモデルで並列実行**。
+`code-review` スキルを **3フェーズ並列実行**（競合防止パターン）。
 
 ```
-# 並列で2つのサブエージェントを起動
+# Phase 1: 分析のみ並列実行（副作用なし）
 task ツール 1 (mode: "background"):
   agent_type: "general-purpose"
   model: "gpt-5.3-codex"
-  prompt: "code-review スキルを実行してコードレビューを行ってください。..."
+  prompt: |
+    code-review スキルの分析フェーズのみを実行してください。
+    project.yaml・ファイル生成・git commit は禁止。
+    レビュー結果（判定・指摘一覧・チェックリスト結果）を
+    構造化テキストで返してください。
 
 task ツール 2 (mode: "background"):
   agent_type: "general-purpose"
   model: "claude-opus-4.6"
-  prompt: "code-review スキルを実行してコードレビューを行ってください。..."
+  prompt: |
+    code-review スキルの分析フェーズのみを実行してください。
+    project.yaml・ファイル生成・git commit は禁止。
+    レビュー結果（判定・指摘一覧・チェックリスト結果）を
+    構造化テキストで返してください。
 
-# 両方の結果を read_agent で取得し、統合して最終判断
+# Phase 2: 結果統合（オーケストレーター）
+# → 判定マージ + 指摘マージ + チェックリスト統合
+#   （上記の「レビュー系スキル」セクション参照）
+
+# Phase 3: 更新・コミット（1つのサブエージェントに委譲）
+task ツール 3:
+  agent_type: "general-purpose"
+  model: "claude-opus-4.6"
+  prompt: |
+    統合済みレビュー結果に基づき、code-review の更新フェーズを実行。
+    docs/{target_repo}/code-review/round-NN.md にラウンドレポート生成、
+    project.yaml 更新、git commit を行ってください。
 ```
 
 **レビュー結果の処理**:
