@@ -14,7 +14,7 @@ meta:
   target_repo: "web-design"
   branch: "feature/WEB-DESIGN-001"
   created_at: "2026-02-27T11:22:53+00:00"
-  updated_at: "2026-02-27T13:11:24+00:00"
+  updated_at: "2026-02-28T05:24:13+09:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -282,7 +282,7 @@ implement:
   artifacts: "docs/web-design/implement/"
   completed_at: "2026-02-27T12:44:06+00:00"
 verification:
-  status: completed_with_caveats
+  status: completed
   started_at: "2026-02-27T12:49:31+00:00"
   results:
     test:
@@ -332,11 +332,11 @@ verification:
       verified_by: build + e2e_test
       result: partial
       note: ビルド成功・MSW設定確認済。HMR/プレビューはdevcontainer起動後
-  summary: "ビルド・リント・型チェック・フォーマット全通過。E2Eテストはdevcontainer環境が必要なため未実行（テストファイル構文・一覧確認済）。acceptance_criteriaの完全検証にはdevcontainer起動後のE2Eテスト実行が必要。"
+  summary: "E2Eテスト全10件実施: 9 passed, 1 skipped (E2E-6 DooDテストはDinDモードのため正しくスキップ)"
   evidence: []
   artifacts:
     - docs/web-design/verification/results.md
-  completed_at: "2026-02-27T12:49:31+00:00"
+  completed_at: "2026-02-28T05:24:13+09:00"
 code_review:
   status: approved
   started_at: "2026-02-27T12:59:40+00:00"
