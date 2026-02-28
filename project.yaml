@@ -14,7 +14,7 @@ meta:
   target_repo: "web-design"
   branch: "feature/WEB-DESIGN-001"
   created_at: "2026-02-27T11:22:53+00:00"
-  updated_at: "2026-02-28T09:36:20+09:00"
+  updated_at: "2026-02-28T11:26:06+09:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -340,7 +340,7 @@ verification:
 code_review:
   status: approved
   started_at: "2026-02-27T12:59:40+00:00"
-  round: 3
+  round: 4
   rounds: []
   review_checklist: {}
   issues:
@@ -398,14 +398,11 @@ code_review:
       description: root element non-null assertion
       status: fixed
       fixed_description: 明示的nullチェック + エラーメッセージ
-  artifacts:
-    - docs/web-design/code-review/round-01.md
-    - docs/web-design/code-review/round-02.md
-    - docs/web-design/code-review/round-03.md
-  summary: 'Round 3: E2Eテスト実施時バグ修正のレビュー。Critical/Major/Minor指摘なし。全チェック通過。'
-  completed_at: "2026-02-28T09:36:20+09:00"
+  artifacts: docs/web-design/code-review/round-04.md
+  summary: 'Round 4: HTTPS機能追加。全チェック通過、指摘なし。承認。'
+  completed_at: "2026-02-28T11:26:15+09:00"
   base_sha: ac75285
-  head_sha: 296ad6b
+  head_sha: d985de6
   latest_verdict: 承認
 finishing:
   status: completed
