@@ -39,6 +39,7 @@
 | code-review        | `code_review`                    | チェックリスト、指摘、ラウンド                                   |
 | code-review-fix    | `code_review`                    | 指摘修正記録（同セクション更新）                                 |
 | finishing-branch   | `finishing`                      | 最終アクション、PR URL                                           |
+| 人間チェックポイント | `human_checkpoints`            | 人間レビューの承認・差し戻し履歴（3箇所）                        |
 
 ---
 
@@ -48,11 +49,15 @@
 flowchart LR
     SY[setup.yaml] --> BS[brainstorming]
     BS --> PY[project.yaml 生成]
-    PY --> INV[investigation]
+    PY --> HC1{👤 人間チェックポイント1\nbrainstorming_review}
+    HC1 -->|✅ 承認| INV[investigation]
+    HC1 -->|🔄 差し戻し| BS
     INV --> DES[design]
     DES --> RD[review-design]
-    RD -->|✅ 承認| PLN[plan]
+    RD -->|✅ 承認| HC2{👤 人間チェックポイント2\ndesign_review}
     RD -->|❌⚠️ 指摘あり| DES
+    HC2 -->|✅ 承認| PLN[plan]
+    HC2 -->|🔄 差し戻し| DES
     PLN --> RP[review-plan]
     RP -->|✅ 承認| IMP[implement]
     RP -->|❌⚠️ 指摘あり| PLN
@@ -61,6 +66,9 @@ flowchart LR
     CR -->|✅ 承認| FIN[finishing-branch]
     CR -->|❌⚠️ 指摘あり| CRF[code-review-fix]
     CRF --> CR
+    FIN -->|PR作成| HC3{👤 人間チェックポイント3\npr_review}
+    HC3 -->|✅ 承認| DONE[完了]
+    HC3 -->|🔄 差し戻し| IMP
 
     INV -.->|更新| PY
     DES -.->|更新| PY
@@ -72,4 +80,72 @@ flowchart LR
     CR -.->|更新| PY
     CRF -.->|更新| PY
     FIN -.->|更新| PY
+    HC1 -.->|更新| PY
+    HC2 -.->|更新| PY
+    HC3 -.->|更新| PY
+```
+
+---
+
+## 人間チェックポイント（human_checkpoints）
+
+ワークフロー中の3箇所で人間によるレビュー・承認が発生します。差し戻し時は指摘内容と対応履歴が `human_checkpoints` セクションに記録されます。
+
+### チェックポイント一覧
+
+| チェックポイント | タイミング | 確認内容 | 差し戻し先 |
+| --- | --- | --- | --- |
+| `brainstorming_review` | project.yaml 生成直後 | 要件定義・テスト戦略・設計方針の妥当性 | brainstorming |
+| `design_review` | review-design 承認後 | 設計全体の妥当性・実装可能性 | design または investigation |
+| `pr_review` | PR 発行後 | 実装・テスト・ドキュメントの最終確認 | implement, design 等 |
+
+### 構造
+
+```yaml
+human_checkpoints:
+  brainstorming_review:
+    status: approved              # pending | approved | revision_requested
+    current_round: 2              # 現在のラウンド番号
+    rounds:
+      - round: 1
+        reviewed_at: "2025-01-01T10:00:00+09:00"
+        verdict: revision_requested
+        feedback: "非機能要件のパフォーマンス基準が不足"
+        rollback_to: "brainstorming"
+        resolved_at: "2025-01-01T14:00:00+09:00"
+        resolution_summary: "レスポンスタイム200ms以内の基準を追加"
+      - round: 2
+        reviewed_at: "2025-01-01T15:00:00+09:00"
+        verdict: approved
+  design_review:
+    status: approved
+    current_round: 1
+    rounds:
+      - round: 1
+        reviewed_at: "2025-01-02T10:00:00+09:00"
+        verdict: approved
+  pr_review:
+    status: pending
+    current_round: 0
+    rounds: []
+```
+
+### CLIヘルパーの使用方法
+
+```bash
+# チェックポイントの結果を記録（承認）
+./scripts/project-yaml-helper.sh checkpoint brainstorming_review --verdict approved
+
+# チェックポイントの結果を記録（差し戻し）
+./scripts/project-yaml-helper.sh checkpoint design_review \
+  --verdict revision_requested \
+  --feedback "APIのエラーハンドリング設計が不十分" \
+  --rollback-to design
+
+# 差し戻し対応完了を記録
+./scripts/project-yaml-helper.sh resolve-checkpoint design_review \
+  --summary "エラーハンドリングのフロー図とリトライ戦略を追加"
+
+# 再レビュー結果を記録
+./scripts/project-yaml-helper.sh checkpoint design_review --verdict approved
 ```

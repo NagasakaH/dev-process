@@ -65,12 +65,19 @@ project-yaml-helper — project.yaml 操作用 CLI ヘルパー
   update <section> [yaml_path] [--status val] [--summary text] [--artifacts path]
     指定セクションのフィールドを更新
 
+  checkpoint <checkpoint_name> [yaml_path] --verdict <approved|revision_requested> [--feedback text] [--rollback-to phase]
+    人間チェックポイントの結果を記録
+    checkpoint_name: brainstorming_review, design_review, pr_review
+
+  resolve-checkpoint <checkpoint_name> [yaml_path] --summary text
+    差し戻しチェックポイントの対応完了を記録
+
   help
     このヘルプを表示
 
 対応セクション:
   brainstorming, overview, investigation, design, plan,
-  implement, verification, code_review, finishing
+  implement, verification, code_review, finishing, human_checkpoints
 EOF
 }
 
@@ -168,6 +175,55 @@ cmd_status() {
       fi
     fi
   done
+
+  # 人間チェックポイントセクション
+  local hc_exists
+  hc_exists=$(yq ".human_checkpoints | type" "$yaml_path" 2>/dev/null || echo "null")
+  if [ "$hc_exists" != "!!null" ] && [ "$hc_exists" != "null" ]; then
+    echo ""
+    echo -e "${BOLD}🔍 人間チェックポイント${NC}"
+    echo ""
+    printf "  %-24s %-20s %-8s\n" "チェックポイント" "ステータス" "ラウンド"
+    printf "  %-24s %-20s %-8s\n" "──────────────" "────────" "────"
+
+    local checkpoints=(brainstorming_review design_review pr_review)
+    local checkpoint_labels=("ブレスト後レビュー" "設計完了後レビュー" "PR発行後レビュー")
+
+    for j in "${!checkpoints[@]}"; do
+      local cp="${checkpoints[$j]}"
+      local cp_label="${checkpoint_labels[$j]}"
+
+      local cp_exists
+      cp_exists=$(yq ".human_checkpoints.$cp | type" "$yaml_path" 2>/dev/null || echo "null")
+      if [ "$cp_exists" = "!!null" ] || [ "$cp_exists" = "null" ]; then
+        printf "  %-24s ${YELLOW}%-20s${NC}\n" "$cp_label" "未作成"
+        continue
+      fi
+
+      local cp_status
+      cp_status=$(yq ".human_checkpoints.$cp.status // \"—\"" "$yaml_path" 2>/dev/null || echo "—")
+      local cp_round
+      cp_round=$(yq ".human_checkpoints.$cp.current_round // 0" "$yaml_path" 2>/dev/null || echo "0")
+
+      local cp_colored
+      case "$cp_status" in
+        approved) cp_colored="${GREEN}${cp_status}${NC}" ;;
+        pending) cp_colored="${YELLOW}${cp_status}${NC}" ;;
+        revision_requested) cp_colored="${RED}${cp_status}${NC}" ;;
+        *) cp_colored="${cp_status}" ;;
+      esac
+      printf "  %-24s %-32b %-8s\n" "$cp_label" "$cp_colored" "$cp_round"
+
+      # 最新の差し戻しフィードバックがある場合表示
+      if [ "$cp_status" = "revision_requested" ]; then
+        local latest_feedback
+        latest_feedback=$(yq ".human_checkpoints.$cp.rounds[-1].feedback // \"\"" "$yaml_path" 2>/dev/null || echo "")
+        if [ -n "$latest_feedback" ] && [ "$latest_feedback" != "null" ]; then
+          printf "    ${CYAN}└ 指摘: %s${NC}\n" "$latest_feedback"
+        fi
+      fi
+    done
+  fi
 
   echo ""
 }
@@ -360,10 +416,22 @@ cmd_init_section() {
              .finishing.started_at = \"$timestamp\" |
              .finishing.action = \"keep\"" "$yaml_path"
       ;;
+    human_checkpoints)
+      yq -i ".human_checkpoints.brainstorming_review.status = \"pending\" |
+             .human_checkpoints.brainstorming_review.current_round = 0 |
+             .human_checkpoints.brainstorming_review.rounds = [] |
+             .human_checkpoints.design_review.status = \"pending\" |
+             .human_checkpoints.design_review.current_round = 0 |
+             .human_checkpoints.design_review.rounds = [] |
+             .human_checkpoints.pr_review.status = \"pending\" |
+             .human_checkpoints.pr_review.current_round = 0 |
+             .human_checkpoints.pr_review.rounds = []" "$yaml_path"
+      ;;
     *)
       error "不明なセクション: $section"
       echo "  対応セクション: brainstorming, overview, investigation, design,"
-      echo "                  plan, implement, verification, code_review, finishing"
+      echo "                  plan, implement, verification, code_review, finishing,"
+      echo "                  human_checkpoints"
       exit 1
       ;;
   esac
@@ -433,6 +501,191 @@ cmd_update() {
 }
 
 # ---------------------------------------------------------------------------
+# コマンド: checkpoint
+# ---------------------------------------------------------------------------
+cmd_checkpoint() {
+  local checkpoint_name="${1:-}"
+  local yaml_path="${2:-${REPO_ROOT}/project.yaml}"
+  shift 2 2>/dev/null || true
+
+  if [ -z "$checkpoint_name" ]; then
+    error "チェックポイント名を指定してください"
+    echo "  使用方法: $0 checkpoint <brainstorming_review|design_review|pr_review> [yaml_path] --verdict <approved|revision_requested> [--feedback text] [--rollback-to phase]"
+    exit 1
+  fi
+
+  # チェックポイント名バリデーション
+  case "$checkpoint_name" in
+    brainstorming_review|design_review|pr_review) ;;
+    *)
+      error "不明なチェックポイント: $checkpoint_name"
+      echo "  対応チェックポイント: brainstorming_review, design_review, pr_review"
+      exit 1
+      ;;
+  esac
+
+  if [ ! -f "$yaml_path" ]; then
+    error "ファイルが見つかりません: $yaml_path"
+    exit 1
+  fi
+
+  local timestamp
+  timestamp=$(date -Iseconds)
+  local verdict=""
+  local feedback=""
+  local rollback_to=""
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --verdict)
+        verdict="$2"
+        shift 2
+        ;;
+      --feedback)
+        feedback="$2"
+        shift 2
+        ;;
+      --rollback-to)
+        rollback_to="$2"
+        shift 2
+        ;;
+      *)
+        warn "不明なオプション: $1"
+        shift
+        ;;
+    esac
+  done
+
+  if [ -z "$verdict" ]; then
+    error "--verdict オプションは必須です（approved または revision_requested）"
+    exit 1
+  fi
+
+  if [ "$verdict" != "approved" ] && [ "$verdict" != "revision_requested" ]; then
+    error "verdict は approved または revision_requested を指定してください"
+    exit 1
+  fi
+
+  # human_checkpoints セクションが存在しない場合は初期化
+  local hc_exists
+  hc_exists=$(yq ".human_checkpoints.$checkpoint_name | type" "$yaml_path" 2>/dev/null || echo "null")
+  if [ "$hc_exists" = "!!null" ] || [ "$hc_exists" = "null" ]; then
+    yq -i ".human_checkpoints.$checkpoint_name.status = \"pending\" |
+           .human_checkpoints.$checkpoint_name.current_round = 0 |
+           .human_checkpoints.$checkpoint_name.rounds = []" "$yaml_path"
+  fi
+
+  # ラウンド番号を取得・インクリメント
+  local current_round
+  current_round=$(yq ".human_checkpoints.$checkpoint_name.current_round // 0" "$yaml_path" 2>/dev/null || echo "0")
+  local new_round=$((current_round + 1))
+
+  # ステータス更新
+  yq -i ".human_checkpoints.$checkpoint_name.status = \"$verdict\" |
+         .human_checkpoints.$checkpoint_name.current_round = $new_round" "$yaml_path"
+
+  # ラウンド記録を追加
+  yq -i ".human_checkpoints.$checkpoint_name.rounds += [{\"round\": $new_round, \"reviewed_at\": \"$timestamp\", \"verdict\": \"$verdict\"}]" "$yaml_path"
+
+  # フィードバックがある場合
+  if [ -n "$feedback" ]; then
+    yq -i ".human_checkpoints.$checkpoint_name.rounds[-1].feedback = \"$feedback\"" "$yaml_path"
+  fi
+
+  # 差し戻し先がある場合
+  if [ -n "$rollback_to" ] && [ "$verdict" = "revision_requested" ]; then
+    yq -i ".human_checkpoints.$checkpoint_name.rounds[-1].rollback_to = \"$rollback_to\"" "$yaml_path"
+  fi
+
+  # updated_at を更新
+  yq -i ".meta.updated_at = \"$timestamp\"" "$yaml_path"
+
+  if [ "$verdict" = "approved" ]; then
+    success "チェックポイント '$checkpoint_name' を承認しました (round $new_round)"
+  else
+    warn "チェックポイント '$checkpoint_name' で差し戻しが発生しました (round $new_round)"
+    if [ -n "$feedback" ]; then
+      echo -e "  ${CYAN}指摘内容: $feedback${NC}"
+    fi
+    if [ -n "$rollback_to" ]; then
+      echo -e "  ${CYAN}差し戻し先: $rollback_to${NC}"
+    fi
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# コマンド: resolve-checkpoint
+# ---------------------------------------------------------------------------
+cmd_resolve_checkpoint() {
+  local checkpoint_name="${1:-}"
+  local yaml_path="${2:-${REPO_ROOT}/project.yaml}"
+  shift 2 2>/dev/null || true
+
+  if [ -z "$checkpoint_name" ]; then
+    error "チェックポイント名を指定してください"
+    echo "  使用方法: $0 resolve-checkpoint <brainstorming_review|design_review|pr_review> [yaml_path] --summary text"
+    exit 1
+  fi
+
+  # チェックポイント名バリデーション
+  case "$checkpoint_name" in
+    brainstorming_review|design_review|pr_review) ;;
+    *)
+      error "不明なチェックポイント: $checkpoint_name"
+      exit 1
+      ;;
+  esac
+
+  if [ ! -f "$yaml_path" ]; then
+    error "ファイルが見つかりません: $yaml_path"
+    exit 1
+  fi
+
+  local timestamp
+  timestamp=$(date -Iseconds)
+  local summary=""
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --summary)
+        summary="$2"
+        shift 2
+        ;;
+      *)
+        warn "不明なオプション: $1"
+        shift
+        ;;
+    esac
+  done
+
+  if [ -z "$summary" ]; then
+    error "--summary オプションは必須です"
+    exit 1
+  fi
+
+  # 現在のステータスを確認
+  local current_status
+  current_status=$(yq ".human_checkpoints.$checkpoint_name.status // \"pending\"" "$yaml_path" 2>/dev/null || echo "pending")
+
+  if [ "$current_status" != "revision_requested" ]; then
+    error "チェックポイント '$checkpoint_name' は差し戻し状態ではありません（現在: $current_status）"
+    exit 1
+  fi
+
+  # 最新ラウンドの resolved_at と resolution_summary を更新
+  yq -i ".human_checkpoints.$checkpoint_name.rounds[-1].resolved_at = \"$timestamp\" |
+         .human_checkpoints.$checkpoint_name.rounds[-1].resolution_summary = \"$summary\" |
+         .human_checkpoints.$checkpoint_name.status = \"pending\"" "$yaml_path"
+
+  # updated_at を更新
+  yq -i ".meta.updated_at = \"$timestamp\"" "$yaml_path"
+
+  success "チェックポイント '$checkpoint_name' の差し戻し対応を記録しました"
+  echo -e "  ${CYAN}対応内容: $summary${NC}"
+  info "再レビューのため、checkpoint コマンドで再度判定を記録してください"
+}
+
+# ---------------------------------------------------------------------------
 # メインルーティング
 # ---------------------------------------------------------------------------
 check_yq
@@ -453,6 +706,14 @@ case "${1:-help}" in
   update)
     shift
     cmd_update "$@"
+    ;;
+  checkpoint)
+    shift
+    cmd_checkpoint "$@"
+    ;;
+  resolve-checkpoint)
+    shift
+    cmd_resolve_checkpoint "$@"
     ;;
   help|--help|-h)
     show_help

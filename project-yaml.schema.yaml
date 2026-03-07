@@ -65,6 +65,66 @@ $defs:
     enum: [merge, pr, keep, discard]
     description: "ブランチ完了アクション"
 
+  human_checkpoint_verdict:
+    type: string
+    enum: [approved, revision_requested]
+    description: "人間チェックポイントの判定結果"
+
+  human_checkpoint_status:
+    type: string
+    enum: [pending, approved, revision_requested]
+    description: "人間チェックポイントの現在ステータス"
+
+  # ---------------------------------------------------------------------------
+  # 共通パターン: 人間チェックポイント差し戻しラウンド
+  # ---------------------------------------------------------------------------
+  revision_round:
+    type: object
+    description: "人間チェックポイントでのレビューラウンド記録"
+    properties:
+      round:
+        type: integer
+        minimum: 1
+        description: "ラウンド番号"
+      reviewed_at:
+        $ref: "#/$defs/iso8601"
+      verdict:
+        $ref: "#/$defs/human_checkpoint_verdict"
+      feedback:
+        type: string
+        description: "人間からの指摘・フィードバック内容"
+      rollback_to:
+        type: string
+        description: "差し戻し先のフェーズ名（revision_requested時のみ）"
+      resolved_at:
+        $ref: "#/$defs/iso8601"
+      resolution_summary:
+        type: string
+        description: "対応内容の要約（revision_requested時のみ）"
+    required: [round, reviewed_at, verdict]
+    additionalProperties: false
+
+  # ---------------------------------------------------------------------------
+  # 共通パターン: 人間チェックポイント
+  # ---------------------------------------------------------------------------
+  human_checkpoint:
+    type: object
+    description: "人間チェックポイントの状態管理"
+    properties:
+      status:
+        $ref: "#/$defs/human_checkpoint_status"
+      current_round:
+        type: integer
+        minimum: 0
+        description: "現在のラウンド番号（0=未レビュー）"
+      rounds:
+        type: array
+        items:
+          $ref: "#/$defs/revision_round"
+        description: "レビューラウンド履歴"
+    required: [status]
+    additionalProperties: false
+
   # ---------------------------------------------------------------------------
   # 共通パターン: artifacts パス
   # ---------------------------------------------------------------------------
@@ -724,6 +784,36 @@ properties:
         type: string
         description: "マージコミットハッシュ（マージ時のみ）"
     required: [status, action]
+    additionalProperties: false
+
+  # ---------------------------------------------------------------------------
+  # human_checkpoints — 人間チェックポイント管理
+  # ---------------------------------------------------------------------------
+  human_checkpoints:
+    type: object
+    description: |
+      人間によるレビューチェックポイントの管理セクション。
+      ワークフロー中の3箇所（brainstorming後、設計レビュー完了後、PR発行後）で
+      人間の承認・差し戻しを追跡し、指摘内容と対応履歴を記録する。
+    properties:
+      brainstorming_review:
+        $ref: "#/$defs/human_checkpoint"
+        description: |
+          brainstormingでproject.yaml生成後の人間レビュー。
+          要件定義・テスト戦略・設計方針の妥当性を確認する。
+          差し戻し時はbrainstormingからやり直す。
+      design_review:
+        $ref: "#/$defs/human_checkpoint"
+        description: |
+          設計レビュー（review-design）と指摘修正サイクル完了後の人間レビュー。
+          設計全体の妥当性・実装可能性を最終確認する。
+          差し戻し時はdesignまたはinvestigationからやり直す。
+      pr_review:
+        $ref: "#/$defs/human_checkpoint"
+        description: |
+          PR発行後の人間レビュー。
+          実装・テスト・ドキュメントの最終確認を行う。
+          差し戻し時はimplement, design等の適切なフェーズからやり直す。
     additionalProperties: false
 
   # ---------------------------------------------------------------------------

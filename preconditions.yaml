@@ -19,6 +19,9 @@ preconditions:
       - path: brainstorming.status
         value: completed
         description: "ブレインストーミングが完了していること"
+      - path: human_checkpoints.brainstorming_review.status
+        value: approved
+        description: "brainstorming後の人間チェックポイントが承認されていること"
 
   design:
     requires:
@@ -40,6 +43,9 @@ preconditions:
       - path: design.review.status
         value: approved
         description: "設計レビューが承認されていること"
+      - path: human_checkpoints.design_review.status
+        value: approved
+        description: "設計完了後の人間チェックポイントが承認されていること"
 
   review-plan:
     requires:
@@ -73,3 +79,14 @@ preconditions:
       - path: code_review.status
         value: approved
         description: "コードレビューが承認されていること"
+
+  # PR発行後の人間チェックポイント（finishing-branch で PR を作成した場合）
+  # pr_review は finishing-branch 完了後に別途評価される
+  pr-completion:
+    requires:
+      - path: finishing.status
+        value: completed
+        description: "finishing-branchが完了していること"
+      - path: human_checkpoints.pr_review.status
+        value: approved
+        description: "PR発行後の人間チェックポイントが承認されていること"
