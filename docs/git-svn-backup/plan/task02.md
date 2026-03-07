@@ -6,8 +6,8 @@
 |------|-----|
 | タスク識別子 | task02 |
 | タスク名 | 方式A vs 方式B 比較ドキュメント作成 |
-| 前提条件タスク | なし |
-| 並列実行可否 | 可（task01と並列） |
+| 前提条件タスク | Phase 0（syncブランチ初期化） |
+| 並列実行可否 | 可（task01と並列。Phase 0 完了後に開始） |
 | 推定所要時間 | 10分 |
 | 優先度 | 中 |
 
@@ -27,7 +27,7 @@
 
 ### 確認事項
 
-- [ ] sync ブランチが存在すること（task01 未完了の場合は先に作成）
+- [ ] Phase 0 が完了し、sync ブランチが存在すること
 
 ---
 
@@ -61,7 +61,19 @@ acceptance_criteria「2つの同期方式のメリット・デメリット比較
 
 ### RED: 失敗するテストケース
 
-ドキュメント作成タスクのため、自動テストはなし。以下の手動チェックで検証：
+**目的**: 実装前にファイルが存在しないことを確認し、テストが失敗する状態を記録する
+
+```bash
+# 【実装前に実行して失敗を確認すること】
+# ファイルが存在しないことを確認
+test -f docs/comparison-method-a-vs-b.md && echo "FAIL: already exists" || echo "PASS: not yet created"
+```
+
+**完了条件**: 上記コマンドの実行結果（失敗）をログに記録すること
+
+### GREEN: 最小限の実装
+
+ドキュメント作成後、以下の手動チェックで検証：
 
 ```bash
 # ファイルが存在すること
@@ -73,8 +85,6 @@ grep -q "方式B" docs/comparison-method-a-vs-b.md
 grep -q "比較" docs/comparison-method-a-vs-b.md
 grep -q "推奨" docs/comparison-method-a-vs-b.md
 ```
-
-### GREEN: 最小限の実装
 
 以下の構成でドキュメントを作成：
 
@@ -131,6 +141,7 @@ grep -q "推奨" docs/comparison-method-a-vs-b.md
 
 - [ ] 設計書（01_implementation-approach.md）の内容と整合している
 - [ ] Markdown として正しくレンダリングされる
+- [ ] RED実行証跡（実装前のテスト失敗ログ）が記録されていること
 
 ---
 

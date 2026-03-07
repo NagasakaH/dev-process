@@ -9,7 +9,7 @@
 | リポジトリ | git-svn-backup |
 | 総タスク数 | 7 |
 | 並列グループ数 | 3 |
-| 推定総時間 | 1.5時間 |
+| 推定総時間 | 2〜3時間 |
 | クリティカルパス | task01 → task03 → task04 → task05 → task06 |
 
 ---
@@ -18,13 +18,13 @@
 
 | タスク識別子 | タスク名 | 前提条件 | 並列可否 | 推定時間 | ステータス |
 |--------------|----------|----------|----------|----------|------------|
-| task01 | 基盤ファイル作成 | なし | 可（task02と並列） | 10min | ⬜ 未着手 |
-| task02 | 方式比較ドキュメント作成 | なし | 可（task01と並列） | 10min | ⬜ 未着手 |
-| task03 | E2Eテストスクリプト作成（RED） | task01 | 不可 | 15min | ⬜ 未着手 |
-| task04 | 同期スクリプト実装（GREEN） | task03 | 不可 | 20min | ⬜ 未着手 |
+| task01 | 基盤ファイル作成 | Phase 0 | 可（task02と並列） | 10min | ⬜ 未着手 |
+| task02 | 方式比較ドキュメント作成 | Phase 0 | 可（task01と並列） | 10min | ⬜ 未着手 |
+| task03 | E2Eテストスクリプト作成（RED） | task01 | 不可 | 20〜30min | ⬜ 未着手 |
+| task04 | 同期スクリプト実装（GREEN） | task03 | 不可 | 30〜45min | ⬜ 未着手 |
 | task05-01 | CI構成ファイル作成 | task04 | 可（task05-02と並列） | 5min | ⬜ 未着手 |
 | task05-02 | README.md 作成 | task04 | 可（task05-01と並列） | 10min | ⬜ 未着手 |
-| task06 | E2E全体検証・REFACTOR | task05-01, task05-02 | 不可 | 15min | ⬜ 未着手 |
+| task06 | E2E全体検証・REFACTOR | task02, task05-01, task05-02 | 不可 | 30〜60min | ⬜ 未着手 |
 
 ---
 
@@ -32,6 +32,10 @@
 
 ```mermaid
 graph TD
+    subgraph "Phase 0: syncブランチ初期化"
+        phase0["Phase 0: syncブランチ初期化<br/>orphanブランチ作成・push"]
+    end
+
     subgraph "Phase 1: 基盤準備（並列）"
         task01["task01: 基盤ファイル作成<br/>compose.yaml, .gitignore,<br/>.sync-state.yml, variables.example"]
         task02["task02: 方式比較ドキュメント<br/>comparison-method-a-vs-b.md"]
@@ -54,7 +58,10 @@ graph TD
         task06["task06: E2E全体検証<br/>REFACTOR"]
     end
 
+    phase0 --> task01
+    phase0 --> task02
     task01 --> task03
+    task02 --> task06
     task03 --> task04
     task04 --> task05-01
     task04 --> task05-02
@@ -66,9 +73,14 @@ graph TD
 
 ## フェーズ別実行計画
 
+### Phase 0: syncブランチ初期化（親エージェントが実行）
+- sync ブランチ（orphan）を作成し、origin に push
+- 開始条件: なし
+- 完了条件: sync ブランチが origin に存在
+
 ### Phase 1: 基盤準備（並列実行）
 - **task01** + **task02** を同時実行
-- 開始条件: なし
+- 開始条件: Phase 0 完了（sync ブランチが存在すること）
 - 完了条件: 両タスク完了
 
 ### Phase 2: TDD RED（単独実行）

@@ -12,7 +12,7 @@
 | 実装先ブランチ | sync（orphan ブランチ） |
 | 総タスク数 | 7 |
 | 並列グループ数 | 3 |
-| 推定総時間 | 1.5時間 |
+| 推定総時間 | 2〜3時間 |
 
 ---
 
@@ -20,13 +20,13 @@
 
 | タスク識別子 | タスク名 | 前提条件 | 並列可否 | 推定時間 | ステータス |
 |--------------|----------|----------|----------|----------|------------|
-| task01 | 基盤ファイル作成 | なし | 可 | 10min | ⬜ 未着手 |
-| task02 | 方式比較ドキュメント作成 | なし | 可 | 10min | ⬜ 未着手 |
-| task03 | E2Eテストスクリプト作成（RED） | task01 | 不可 | 15min | ⬜ 未着手 |
-| task04 | 同期スクリプト実装（GREEN） | task03 | 不可 | 20min | ⬜ 未着手 |
+| task01 | 基盤ファイル作成 | Phase 0 | 可 | 10min | ⬜ 未着手 |
+| task02 | 方式比較ドキュメント作成 | Phase 0 | 可 | 10min | ⬜ 未着手 |
+| task03 | E2Eテストスクリプト作成（RED） | task01 | 不可 | 20〜30min | ⬜ 未着手 |
+| task04 | 同期スクリプト実装（GREEN） | task03 | 不可 | 30〜45min | ⬜ 未着手 |
 | task05-01 | CI構成ファイル作成 | task04 | 可 | 5min | ⬜ 未着手 |
 | task05-02 | README.md 作成 | task04 | 可 | 10min | ⬜ 未着手 |
-| task06 | E2E全体検証・REFACTOR | task05-01, task05-02 | 不可 | 15min | ⬜ 未着手 |
+| task06 | E2E全体検証・REFACTOR | task02, task05-01, task05-02 | 不可 | 30〜60min | ⬜ 未着手 |
 
 ---
 
@@ -34,6 +34,10 @@
 
 ```mermaid
 graph TD
+    subgraph "Phase 0: syncブランチ初期化"
+        phase0["Phase 0: syncブランチ初期化<br/>orphanブランチ作成・push"]
+    end
+
     subgraph "Phase 1: 基盤準備（並列）"
         task01["task01: 基盤ファイル作成<br/>compose.yaml, .gitignore,<br/>.sync-state.yml, variables.example"]
         task02["task02: 方式比較ドキュメント<br/>comparison-method-a-vs-b.md"]
@@ -56,7 +60,10 @@ graph TD
         task06["task06: E2E全体検証<br/>REFACTOR"]
     end
 
+    phase0 --> task01
+    phase0 --> task02
     task01 --> task03
+    task02 --> task06
     task03 --> task04
     task04 --> task05-01
     task04 --> task05-02
@@ -68,6 +75,23 @@ graph TD
 
 ## 並列実行グループ
 
+### Phase 0: syncブランチ初期化（親エージェントが実行）
+
+Phase 1 の前に、親エージェントが sync ブランチを初期化する。task01/task02 はこのブランチが存在する前提で作業する。
+
+```bash
+cd submodules/git-svn-backup
+git checkout --orphan sync
+git rm -rf . 2>/dev/null || true
+git commit --allow-empty -m "Initialize sync branch"
+git push origin sync
+```
+
+**開始条件**: なし
+**完了条件**: sync ブランチが origin に存在すること
+
+---
+
 ### Group 1: 基盤準備（並列実行）
 
 | タスク | 推定時間 | プロンプト |
@@ -75,7 +99,7 @@ graph TD
 | task01 | 10min | [task01.md](task01.md) |
 | task02 | 10min | [task02.md](task02.md) |
 
-**開始条件**: なし（初期グループ）
+**開始条件**: Phase 0 完了（sync ブランチが存在すること）
 **完了条件**: task01, task02 両方完了
 
 **並列実行の根拠**:
@@ -89,8 +113,8 @@ graph TD
 
 | タスク | 推定時間 | プロンプト |
 |--------|----------|------------|
-| task03 | 15min | [task03.md](task03.md) |
-| task04 | 20min | [task04.md](task04.md) |
+| task03 | 20〜30min | [task03.md](task03.md) |
+| task04 | 30〜45min | [task04.md](task04.md) |
 
 **開始条件**: Group 1完了（task01 完了が必須。task02 は task03 に依存しないが、Group 1 として待機）
 **完了条件**: task03, task04 順次完了
@@ -119,7 +143,7 @@ graph TD
 
 | タスク | 推定時間 | プロンプト |
 |--------|----------|------------|
-| task06 | 15min | [task06.md](task06.md) |
+| task06 | 30〜60min | [task06.md](task06.md) |
 
 **開始条件**: Group 3完了
 **完了条件**: 全E2Eテスト PASS、全 acceptance_criteria 充足
@@ -128,16 +152,18 @@ graph TD
 
 ## 実行順序
 
-1. **Phase 1**: task01, task02 を並列実行
-2. **Checkpoint 1**: task01, task02 の完了確認
-3. **Phase 2**: task03（E2Eテストスクリプト）を実行
-4. **Checkpoint 2**: task03 完了確認（E2E-1 PASS, E2E-2以降 FAIL = RED 状態）
-5. **Phase 3**: task04（同期スクリプト実装）を実行
-6. **Checkpoint 3**: task04 完了確認（全E2Eテスト PASS = GREEN 状態）
-7. **Phase 4**: task05-01, task05-02 を並列実行
-8. **Checkpoint 4**: task05-01, task05-02 の完了確認
-9. **Phase 5**: task06（E2E全体検証 + REFACTOR）を実行
-10. **Final**: 全タスク完了確認
+1. **Phase 0**: syncブランチ初期化（親エージェントが実行）
+2. **Checkpoint 0**: sync ブランチが origin に存在することを確認
+3. **Phase 1**: task01, task02 を並列実行
+4. **Checkpoint 1**: task01, task02 の完了確認
+5. **Phase 2**: task03（E2Eテストスクリプト）を実行
+6. **Checkpoint 2**: task03 完了確認（E2E-1 PASS, E2E-2以降 FAIL = RED 状態）
+7. **Phase 3**: task04（同期スクリプト実装）を実行
+8. **Checkpoint 3**: task04 完了確認（全E2Eテスト PASS = GREEN 状態）
+9. **Phase 4**: task05-01, task05-02 を並列実行
+10. **Checkpoint 4**: task05-01, task05-02 の完了確認
+11. **Phase 5**: task06（E2E全体検証 + REFACTOR）を実行
+12. **Final**: 全タスク完了確認
 
 ---
 
@@ -161,14 +187,7 @@ graph TD
 
 全タスクは submodules/git-svn-backup リポジトリの **sync ブランチ（orphan）** 上で作業する。
 
-```bash
-# sync ブランチが存在しない場合（task01 で実施）
-cd submodules/git-svn-backup
-git checkout --orphan sync
-git rm -rf . 2>/dev/null || true
-git commit --allow-empty -m "Initialize sync branch"
-git push origin sync
-```
+sync ブランチの作成は **Phase 0** で親エージェントが実施する（各タスクでは作成しない）。
 
 ### worktree 管理が不要な場合
 
@@ -333,6 +352,7 @@ done
 
 | ID | タイミング | チェック内容 | 結果 |
 |----|------------|--------------|------|
+| CP0 | Phase 0完了後 | syncブランチがoriginに存在すること | ⬜ |
 | CP1 | Phase 1完了後 | task01: compose.yaml起動確認, task02: ドキュメント存在確認 | ⬜ |
 | CP2 | Phase 2完了後 | task03: E2E-1 PASS, E2E-2以降 FAIL（RED状態） | ⬜ |
 | CP3 | Phase 3完了後 | task04: 全E2Eテスト PASS（GREEN状態） | ⬜ |

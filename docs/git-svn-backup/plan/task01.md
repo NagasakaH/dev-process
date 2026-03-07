@@ -6,7 +6,7 @@
 |------|-----|
 | タスク識別子 | task01 |
 | タスク名 | 基盤ファイル作成（compose.yaml, .gitignore, .sync-state.yml, variables.example） |
-| 前提条件タスク | なし |
+| 前提条件タスク | Phase 0（syncブランチ初期化） |
 | 並列実行可否 | 可（task02と並列） |
 | 推定所要時間 | 10分 |
 | 優先度 | 高 |
@@ -19,7 +19,7 @@
 - **ブランチ**: GIT-SVN-001-task01
 - **ターゲットリポジトリ**: submodules/git-svn-backup
 - **作業ブランチ**: sync（orphan ブランチ）
-- **重要**: sync ブランチ上で作業すること。sync ブランチが存在しない場合は orphan ブランチとして作成
+- **重要**: sync ブランチ上で作業すること。sync ブランチは Phase 0 で作成済みであること
 
 ---
 
@@ -27,6 +27,7 @@
 
 ### 確認事項
 
+- [ ] Phase 0 が完了し、sync ブランチが存在すること
 - [ ] submodules/git-svn-backup リポジトリが存在すること
 - [ ] Docker / Docker Compose が利用可能であること
 
@@ -46,7 +47,7 @@
 
 ### 実装ステップ
 
-1. sync ブランチが存在しない場合は orphan ブランチとして作成
+1. sync ブランチに切り替え（Phase 0 で作成済み）
 2. compose.yaml を作成（SVNサーバーコンテナ定義）
 3. .sync-state.yml の初期テンプレートを作成
 4. .gitlab-ci-local-variables.yml.example を作成
@@ -68,7 +69,24 @@
 
 ### RED: 失敗するテストケース
 
-**目的**: compose.yaml の動作確認（手動検証）
+**目的**: 実装前にファイルが存在しないことを確認し、テストが失敗する状態を記録する
+
+```bash
+# 【実装前に実行して失敗を確認すること】
+# compose.yaml が存在しないことを確認
+test -f compose.yaml && echo "FAIL: already exists" || echo "PASS: not yet created"
+
+# SVNサーバーが起動しないことを確認
+docker compose up -d 2>&1 || echo "Expected: compose.yaml not found"
+```
+
+**完了条件**: 上記コマンドの実行結果（失敗）をログに記録すること
+
+### GREEN: 最小限の実装
+
+以下の4ファイルを設計に基づき作成し、動作確認を行う。
+
+**動作確認**:
 
 ```bash
 # SVNサーバーが起動すること
@@ -81,10 +99,6 @@ svn info svn://localhost:3690/ 2>&1 || echo "Expected: no repos yet"
 
 docker compose down -v
 ```
-
-### GREEN: 最小限の実装
-
-以下の4ファイルを設計に基づき作成する。
 
 **compose.yaml**:
 ```yaml
@@ -159,6 +173,7 @@ SVN_PASSWORD: "svnpass"
 
 - [ ] compose.yaml が設計書（03_data-structure-design.md）と一致すること
 - [ ] .sync-state.yml の初期値が設計書と一致すること
+- [ ] RED実行証跡（実装前のテスト失敗ログ）が記録されていること
 
 ---
 
@@ -179,6 +194,6 @@ git commit -m "task01: 基盤ファイル作成
 
 ## 注意事項
 
-- sync ブランチは orphan ブランチとして作成する（main の履歴を含めない）
+- sync ブランチは Phase 0 で作成済み。このタスクではブランチの作成は行わない
 - compose.yaml は設計書通りに作成する（独自の変更を加えない）
 - SVNリポジトリの初期化（svnadmin create）はこのタスクでは行わない（E2Eテストスクリプトで実施）
