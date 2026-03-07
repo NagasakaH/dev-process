@@ -1,0 +1,139 @@
+# =============================================================================
+# project.yaml — プロジェクトコンテキストファイル（全プロセスの SSOT）
+# =============================================================================
+# brainstorming プロセスが setup.yaml を基に初期生成。
+# 以降の各プロセスが自セクションを追記し、コミットする。
+
+# -----------------------------------------------------------------------------
+# メタ情報
+# -----------------------------------------------------------------------------
+meta:
+  version: "1.0"
+  ticket_id: "GIT-SVN-001"
+  task_name: "Git→SVN一方向同期の検証環境構築"
+  target_repo: "git-svn-backup"
+  branch: "feature/GIT-SVN-001"
+  created_at: "2026-03-07T00:41:38+00:00"
+  updated_at: "2026-03-07T00:41:38+00:00"
+
+# -----------------------------------------------------------------------------
+# setup（setup.yaml から引き継ぎ — 読み取り専用）
+# -----------------------------------------------------------------------------
+setup:
+  description:
+    overview: |
+      Dockerコンテナ上にSVNサーバーを構築し、Gitリポジトリのmainブランチの内容を
+      SVNに一方向同期する仕組みを検証・実装する。
+      最終的にはGitLab CIで定期実行し、main/masterブランチをSVNに自動同期する。
+    purpose: |
+      Gitリポジトリの変更をSVNに自動反映する同期スクリプトとインフラ構成を確立する。
+      マージコミットを含むGit履歴をSVN互換の形式に変換して同期する方式を検証する。
+    background: |
+      既存のGitワークフロー（GitLab）を維持しつつ、SVNにもバックアップ・ミラーリングが
+      必要なケースに対応する。git-svn dcommitはリニアな履歴しか扱えないため、
+      マージコミットを含むmainブランチをそのままdcommitすることはできない。
+      この制約を回避しつつ、意味のあるコミット粒度をSVN側でも保持する方式を検証する。
+      双方向同期は不要で、Git→SVNの一方向のみ。
+      SVNの登録者がGitLabに埋め込んだユーザーになることは許容する。
+    requirements:
+      functional:
+        - "compose.yamlでSVNサーバーコンテナを起動できる（検証用）"
+        - "Gitリポジトリのmainブランチの内容をSVNに同期するBashスクリプトを作成する"
+        - "マージコミットを含むGit履歴をSVN互換形式に変換して同期できる"
+        - "同期方式として2つのアプローチを設計・比較する:"
+        - "  方式A: マージ単位コミット方式（--first-parentでマージ単位、単体コミットはそのまま）"
+        - "  方式B: 日次バッチ方式（1日のコミットをまとめて1SVNコミットに）"
+        - "初回同期（全履歴）と増分同期（差分のみ）の両方に対応する"
+        - "同期状態の記録・管理（最後に同期したコミットSHA）をsyncブランチに保持"
+        - "GitLab CI (.gitlab-ci.yml) をsyncブランチに配置し、定期実行する構成を作成する"
+        - "SVN接続情報（URL、ユーザー名、パスワード）は環境変数で管理する"
+      non_functional:
+        - "同期スクリプトがべき等であること（再実行しても問題ない）"
+        - "エラー発生時に適切なログ出力を行うこと"
+        - "SVNリポジトリの構造が標準的なtrunk/branches/tagsレイアウトであること"
+    acceptance_criteria:
+      - "compose.yamlでSVNサーバーが起動し、svnコマンドでアクセスできる"
+      - "同期スクリプトがGitのmainブランチの内容をSVNに正しく反映する"
+      - "マージコミットを含む履歴が適切に変換されてSVNに記録される"
+      - "増分同期が正しく動作する（前回同期以降の変更のみ反映）"
+      - "同期スクリプトの再実行がべき等である"
+      - "syncブランチにGitLab CI構成（.gitlab-ci.yml）が定義されている"
+      - "gitlab-ci-localでE2Eテストが実行できる"
+      - "2つの同期方式のメリット・デメリット比較ドキュメントが存在する"
+    scope:
+      - "SVNサーバーのDocker構成（compose.yaml）"
+      - "Git→SVN同期スクリプト（Bash）"
+      - "2つの同期方式の設計・比較"
+      - "syncブランチの構成（スクリプト、CI設定、同期履歴）"
+      - "GitLab CI定期実行構成（.gitlab-ci.yml）"
+      - "同期状態管理の仕組み"
+      - "E2Eテスト（gitlab-ci-localで実行）"
+    out_of_scope:
+      - "SVN→Git方向の同期（双方向同期）"
+      - "main以外のブランチの同期"
+      - "本番SVNサーバーへの接続"
+      - "SVN認証の複雑な設定（検証環境では簡易認証）"
+      - "単体テスト・結合テスト"
+    notes: |
+      同期方式の選定は設計フェーズで両方を詳細比較し、ユーザーが選択する。
+      検証環境はcompose.yamlで完結し、ローカルで動作確認できることを重視する。
+      SVNサーバーはgarethflowers/svn-server等の軽量イメージを候補とする。
+      スクリプト・CI設定はsyncブランチに配置し、mainブランチは汚さない。
+      syncブランチに同期履歴（最終同期コミットSHA等）を記録してよい。
+  related_repositories:
+    - name: "dev-process"
+      url: "https://github.com/NagasakaH/dev-process.git"
+  target_repositories:
+    - name: "git-svn-backup"
+      url: "git@gitlab.com:nagasaka-experimental/git-svn-backup.git"
+      base_branch: "main"
+  options:
+    create_design_document: true
+    design_document_dir: "docs"
+    submodules_dir: "submodules"
+
+# -----------------------------------------------------------------------------
+# brainstorming（対話完了後に記入）
+# -----------------------------------------------------------------------------
+brainstorming:
+  status: "completed"
+  started_at: "2026-03-07T00:10:00+00:00"
+  completed_at: "2026-03-07T00:41:38+00:00"
+  summary: |
+    Git→SVN一方向同期の方式・ブランチ構成・テスト戦略を対話で確定。
+    3ブランチ構成（main/svn/sync）を採用し、git-svn dcommitベースの同期方式を決定。
+    2つの同期方式（マージ単位/日次バッチ）は設計フェーズで比較しユーザーが選択する。
+  decisions:
+    - question: "ブランチ構成はどうするか"
+      decision: "3ブランチ構成: main（開発）、svn（SVN同期用orphan）、sync（同期ツール・CI設定・履歴管理用orphan）"
+    - question: "同期方式はどれを採用するか"
+      decision: "方式A（マージ単位コミット）と方式B（日次バッチ）の2案を設計フェーズで詳細比較し、ユーザーが選択"
+    - question: "技術的な同期手法は何を使うか"
+      decision: "mainの履歴をリニア化→svnブランチにコミット→git-svn dcommit。dcommit後のgit-svn-idメタ情報でCI環境破棄後も差分のみ同期可能"
+    - question: "同期状態の管理方法は"
+      decision: ".sync-state.yml をsyncブランチに配置。last_synced_commit/timestamp/sync_historyを記録"
+    - question: "テスト戦略はどうするか"
+      decision: "E2Eテストのみ（単体・結合なし）。gitlab-ci-localでcompose.yamlのSVNコンテナに対して実行"
+  refined_requirements:
+    - "svnブランチはorphanブランチとして作成し、dcommit後にgit push --forceする"
+    - "syncブランチもorphanブランチとして作成する"
+    - "CI実行時は毎回git clone→svnブランチcheckout→git svn init/fetchでSVN履歴を復元する"
+    - "環境変数: SVN_URL, SVN_USERNAME, SVN_PASSWORD"
+    - "同期フロー: clone→checkout svn→svn init→svn fetch→sync-state確認→リニア化→dcommit→push --force→履歴記録"
+    - "E2Eテストで0から環境再構築後の増分同期の正常動作を検証する"
+  test_strategy:
+    scope:
+      - "e2e"
+    e2e:
+      method: "gitlab-ci-localでcompose.yamlのSVNサーバーコンテナに対して同期を実行し検証"
+      criteria:
+        - "compose.yamlでSVNサーバーが起動し、svnコマンドでアクセスできる"
+        - "同期スクリプトがGitのmainブランチの内容をSVNに正しく反映する"
+        - "マージコミットを含む履歴が適切に変換されてSVNに記録される"
+        - "増分同期が正しく動作する（前回同期以降の変更のみ反映）"
+        - "同期スクリプトの再実行がべき等である"
+        - "syncブランチにGitLab CI構成（.gitlab-ci.yml）が定義されている"
+        - "gitlab-ci-localでE2Eテストが実行できる"
+        - "0から環境を再構築後、増分同期が正しく動作する"
+      environment: "Docker compose（ローカル SVN コンテナ）"
+  artifacts: "docs/git-svn-backup/brainstorming/"
