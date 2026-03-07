@@ -40,6 +40,7 @@
 | code-review-fix    | `code_review`                    | 指摘修正記録（同セクション更新）                                 |
 | finishing-branch   | `finishing`                      | 最終アクション、PR URL                                           |
 | 人間チェックポイント | `human_checkpoints`            | 人間レビューの承認・差し戻し履歴（3箇所）                        |
+| 差し戻し履歴       | 各セクション`.revision_history`  | 差し戻し前のセクション状態スナップショット                       |
 
 ---
 
@@ -137,6 +138,7 @@ human_checkpoints:
 ./scripts/project-yaml-helper.sh checkpoint brainstorming_review --verdict approved
 
 # チェックポイントの結果を記録（差し戻し）
+# ※ --rollback-to 指定時、影響セクションのスナップショットが自動保存される
 ./scripts/project-yaml-helper.sh checkpoint design_review \
   --verdict revision_requested \
   --feedback "APIのエラーハンドリング設計が不十分" \
@@ -148,4 +150,56 @@ human_checkpoints:
 
 # 再レビュー結果を記録
 ./scripts/project-yaml-helper.sh checkpoint design_review --verdict approved
+
+# 手動でセクションのスナップショットを保存
+./scripts/project-yaml-helper.sh snapshot-section design pr_review --rollback-to design
 ```
+
+---
+
+## 差し戻し時の作業履歴保全（revision_history）
+
+差し戻しが発生すると、再実行されるセクションの内容は上書きされます。`revision_history` はこの問題を解決し、差し戻し前の作業状態をスナップショットとして保全します。
+
+### 自動スナップショットの仕組み
+
+`checkpoint` コマンドで `--verdict revision_requested --rollback-to <phase>` を指定すると、**差し戻し先以降の全セクション**（`pending` を除く）のスナップショットが `revision_history` に自動保存されます。
+
+```
+差し戻し先: implement の場合
+  → implement, verification, code_review, finishing がスナップショット対象
+```
+
+### revision_history の構造
+
+```yaml
+design:
+  status: completed
+  summary: "修正後の設計結果"      # ← 再実行で更新された内容
+  artifacts: "docs/design/"
+  revision_history:                 # ← 差し戻し前の状態が保全される
+    - round: 1
+      snapshot_at: "2025-01-03T10:00:00+09:00"
+      triggered_by: "design_review"
+      rollback_to: "design"
+      status: "completed"
+      summary: "初回の設計結果"     # ← 差し戻し前の内容
+      artifacts: "docs/design/"
+    - round: 2
+      snapshot_at: "2025-01-05T10:00:00+09:00"
+      triggered_by: "pr_review"
+      rollback_to: "design"
+      status: "completed"
+      summary: "2回目の設計結果"
+      artifacts: "docs/design/"
+```
+
+### 照合可能な情報
+
+| 情報 | 参照先 |
+| --- | --- |
+| 何回差し戻されたか | `revision_history` の配列長 |
+| 各ラウンドでの作業内容 | `revision_history[].summary` |
+| どのチェックポイントがトリガーか | `revision_history[].triggered_by` |
+| 差し戻しの指摘内容 | `human_checkpoints.{name}.rounds[].feedback` |
+| 差し戻しへの対応内容 | `human_checkpoints.{name}.rounds[].resolution_summary` |

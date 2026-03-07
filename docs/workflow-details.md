@@ -85,9 +85,10 @@
 
 1. `human_checkpoints.brainstorming_review.status` を `revision_requested` に設定
 2. 指摘内容（`feedback`）と差し戻し先（`rollback_to`）を記録
-3. brainstorming を再実行し、指摘を反映
-4. 対応完了後、`resolve-checkpoint` で解決を記録
-5. 再レビューで `checkpoint` コマンドを再実行
+3. 影響セクション（差し戻し先以降）の現在状態を `revision_history` に自動スナップショット
+4. brainstorming を再実行し、指摘を反映
+5. 対応完了後、`resolve-checkpoint` で解決を記録
+6. 再レビューで `checkpoint` コマンドを再実行
 
 **前提条件への影響:**
 
@@ -169,9 +170,10 @@
 
 1. `human_checkpoints.design_review.status` を `revision_requested` に設定
 2. 指摘内容（`feedback`）と差し戻し先（`rollback_to`: design または investigation）を記録
-3. 指定されたフェーズから再実行し、指摘を反映
-4. 対応完了後、`resolve-checkpoint` で解決を記録
-5. 再レビューで `checkpoint` コマンドを再実行
+3. 影響セクション（差し戻し先以降）の現在状態を `revision_history` に自動スナップショット
+4. 指定されたフェーズから再実行し、指摘を反映
+5. 対応完了後、`resolve-checkpoint` で解決を記録
+6. 再レビューで `checkpoint` コマンドを再実行
 
 **前提条件への影響:**
 
@@ -331,10 +333,11 @@
 
 1. `human_checkpoints.pr_review.status` を `revision_requested` に設定
 2. 指摘内容（`feedback`）と差し戻し先（`rollback_to`: implement, design 等）を記録
-3. 指定されたフェーズから再実行し、指摘を反映
-4. 再度 verification → code-review → finishing-branch の流れを実行
-5. 対応完了後、`resolve-checkpoint` で解決を記録
-6. 再レビューで `checkpoint` コマンドを再実行
+3. 影響セクション（差し戻し先以降）の現在状態を `revision_history` に自動スナップショット
+4. 指定されたフェーズから再実行し、指摘を反映
+5. 再度 verification → code-review → finishing-branch の流れを実行
+6. 対応完了後、`resolve-checkpoint` で解決を記録
+7. 再レビューで `checkpoint` コマンドを再実行
 
 **前提条件への影響:**
 

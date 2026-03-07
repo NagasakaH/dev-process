@@ -68,9 +68,13 @@ project-yaml-helper — project.yaml 操作用 CLI ヘルパー
   checkpoint <checkpoint_name> [yaml_path] --verdict <approved|revision_requested> [--feedback text] [--rollback-to phase]
     人間チェックポイントの結果を記録
     checkpoint_name: brainstorming_review, design_review, pr_review
+    ※ revision_requested 時は rollback_to 以降のセクションを自動スナップショット
 
   resolve-checkpoint <checkpoint_name> [yaml_path] --summary text
     差し戻しチェックポイントの対応完了を記録
+
+  snapshot-section <section> <triggered_by> [yaml_path] [--rollback-to phase]
+    指定セクションの現在状態をスナップショットとして revision_history に保存
 
   help
     このヘルプを表示
@@ -609,6 +613,9 @@ cmd_checkpoint() {
     fi
     if [ -n "$rollback_to" ]; then
       echo -e "  ${CYAN}差し戻し先: $rollback_to${NC}"
+      # 影響を受けるセクションを自動スナップショット
+      info "影響を受けるセクションのスナップショットを保存中..."
+      auto_snapshot_affected_sections "$rollback_to" "$checkpoint_name" "$yaml_path"
     fi
   fi
 }
@@ -686,6 +693,123 @@ cmd_resolve_checkpoint() {
 }
 
 # ---------------------------------------------------------------------------
+# フェーズ順序定義（差し戻し時の影響範囲判定用）
+# ---------------------------------------------------------------------------
+PHASE_ORDER=(brainstorming investigation design plan implement verification code_review finishing)
+
+# ---------------------------------------------------------------------------
+# コマンド: snapshot-section
+# ---------------------------------------------------------------------------
+cmd_snapshot_section() {
+  local section="${1:-}"
+  local triggered_by="${2:-}"
+  local yaml_path="${3:-${REPO_ROOT}/project.yaml}"
+  shift 3 2>/dev/null || true
+
+  if [ -z "$section" ] || [ -z "$triggered_by" ]; then
+    error "セクション名とトリガー元を指定してください"
+    echo "  使用方法: $0 snapshot-section <section> <triggered_by> [yaml_path] [--rollback-to phase]"
+    exit 1
+  fi
+
+  if [ ! -f "$yaml_path" ]; then
+    error "ファイルが見つかりません: $yaml_path"
+    exit 1
+  fi
+
+  local rollback_to=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --rollback-to)
+        rollback_to="$2"
+        shift 2
+        ;;
+      *)
+        shift
+        ;;
+    esac
+  done
+
+  # セクションの存在・ステータスチェック
+  local section_status
+  section_status=$(yq ".$section.status // \"\"" "$yaml_path" 2>/dev/null || echo "")
+  if [ -z "$section_status" ] || [ "$section_status" = "null" ] || [ "$section_status" = "pending" ]; then
+    info "セクション '$section' はスナップショット不要です（status: ${section_status:-未設定}）"
+    return 0
+  fi
+
+  local timestamp
+  timestamp=$(date -Iseconds)
+
+  # 既存の revision_history のラウンド数を取得
+  local existing_rounds
+  existing_rounds=$(yq ".$section.revision_history | length // 0" "$yaml_path" 2>/dev/null || echo "0")
+  local new_round=$((existing_rounds + 1))
+
+  # 現在の summary と artifacts を取得
+  local current_summary
+  current_summary=$(yq ".$section.summary // \"\"" "$yaml_path" 2>/dev/null || echo "")
+  local current_artifacts
+  current_artifacts=$(yq ".$section.artifacts // \"\"" "$yaml_path" 2>/dev/null || echo "")
+
+  # スナップショットを追加
+  yq -i ".$section.revision_history += [{
+    \"round\": $new_round,
+    \"snapshot_at\": \"$timestamp\",
+    \"triggered_by\": \"$triggered_by\",
+    \"status\": \"$section_status\"
+  }]" "$yaml_path"
+
+  # rollback_to がある場合
+  if [ -n "$rollback_to" ]; then
+    yq -i ".$section.revision_history[-1].rollback_to = \"$rollback_to\"" "$yaml_path"
+  fi
+
+  # summary がある場合
+  if [ -n "$current_summary" ] && [ "$current_summary" != "null" ]; then
+    yq -i ".$section.revision_history[-1].summary = \"$current_summary\"" "$yaml_path"
+  fi
+
+  # artifacts がある場合
+  if [ -n "$current_artifacts" ] && [ "$current_artifacts" != "null" ]; then
+    yq -i ".$section.revision_history[-1].artifacts = \"$current_artifacts\"" "$yaml_path"
+  fi
+
+  success "セクション '$section' のスナップショットを保存しました (round $new_round)"
+}
+
+# ---------------------------------------------------------------------------
+# ヘルパー: 差し戻し先以降のセクションを自動スナップショット
+# ---------------------------------------------------------------------------
+auto_snapshot_affected_sections() {
+  local rollback_to="$1"
+  local triggered_by="$2"
+  local yaml_path="$3"
+
+  local found=false
+  local snapshotted=0
+
+  for phase in "${PHASE_ORDER[@]}"; do
+    if [ "$phase" = "$rollback_to" ]; then
+      found=true
+    fi
+    if [ "$found" = true ]; then
+      # セクションが存在し、pending以外のステータスの場合のみスナップショット
+      local section_status
+      section_status=$(yq ".$phase.status // \"\"" "$yaml_path" 2>/dev/null || echo "")
+      if [ -n "$section_status" ] && [ "$section_status" != "null" ] && [ "$section_status" != "pending" ]; then
+        cmd_snapshot_section "$phase" "$triggered_by" "$yaml_path" --rollback-to "$rollback_to"
+        snapshotted=$((snapshotted + 1))
+      fi
+    fi
+  done
+
+  if [ $snapshotted -gt 0 ]; then
+    info "$snapshotted セクションのスナップショットを保存しました"
+  fi
+}
+
+# ---------------------------------------------------------------------------
 # メインルーティング
 # ---------------------------------------------------------------------------
 check_yq
@@ -714,6 +838,10 @@ case "${1:-help}" in
   resolve-checkpoint)
     shift
     cmd_resolve_checkpoint "$@"
+    ;;
+  snapshot-section)
+    shift
+    cmd_snapshot_section "$@"
     ;;
   help|--help|-h)
     show_help

@@ -126,6 +126,37 @@ $defs:
     additionalProperties: false
 
   # ---------------------------------------------------------------------------
+  # 共通パターン: セクションスナップショット（差し戻し履歴用）
+  # ---------------------------------------------------------------------------
+  section_snapshot:
+    type: object
+    description: "差し戻し前のセクション状態スナップショット"
+    properties:
+      round:
+        type: integer
+        minimum: 1
+        description: "差し戻しラウンド番号"
+      snapshot_at:
+        $ref: "#/$defs/iso8601"
+      triggered_by:
+        type: string
+        description: "差し戻しをトリガーしたチェックポイント名（例: design_review）"
+      rollback_to:
+        type: string
+        description: "差し戻し先のフェーズ名"
+      status:
+        type: string
+        description: "スナップショット時のステータス"
+      summary:
+        type: string
+        description: "スナップショット時のサマリー"
+      artifacts:
+        type: string
+        description: "スナップショット時のアーティファクトパス"
+    required: [round, snapshot_at, triggered_by]
+    additionalProperties: false
+
+  # ---------------------------------------------------------------------------
   # 共通パターン: artifacts パス
   # ---------------------------------------------------------------------------
   artifacts_path:
@@ -406,6 +437,11 @@ properties:
         additionalProperties: false
       artifacts:
         $ref: "#/$defs/artifacts_path"
+      revision_history:
+        type: array
+        items:
+          $ref: "#/$defs/section_snapshot"
+        description: "差し戻しによる再実行時のスナップショット履歴"
     required: [status]
     additionalProperties: false
 
@@ -458,6 +494,11 @@ properties:
         description: "特定されたリスク（3件以内）"
       artifacts:
         $ref: "#/$defs/artifacts_path"
+      revision_history:
+        type: array
+        items:
+          $ref: "#/$defs/section_snapshot"
+        description: "差し戻しによる再実行時のスナップショット履歴"
     required: [status]
     additionalProperties: false
 
@@ -489,6 +530,11 @@ properties:
         $ref: "#/$defs/review_section"
       artifacts:
         $ref: "#/$defs/artifacts_path"
+      revision_history:
+        type: array
+        items:
+          $ref: "#/$defs/section_snapshot"
+        description: "差し戻しによる再実行時のスナップショット履歴"
     required: [status]
     additionalProperties: false
 
@@ -535,6 +581,11 @@ properties:
         $ref: "#/$defs/review_section"
       artifacts:
         $ref: "#/$defs/artifacts_path"
+      revision_history:
+        type: array
+        items:
+          $ref: "#/$defs/section_snapshot"
+        description: "差し戻しによる再実行時のスナップショット履歴"
     required: [status]
     additionalProperties: false
 
@@ -582,6 +633,11 @@ properties:
         description: "実装タスク一覧"
       artifacts:
         $ref: "#/$defs/artifacts_path"
+      revision_history:
+        type: array
+        items:
+          $ref: "#/$defs/section_snapshot"
+        description: "差し戻しによる再実行時のスナップショット履歴"
     required: [status, started_at]
     additionalProperties: false
 
@@ -672,6 +728,11 @@ properties:
         type: array
         items: { type: string }
         description: "検証結果ファイルパス"
+      revision_history:
+        type: array
+        items:
+          $ref: "#/$defs/section_snapshot"
+        description: "差し戻しによる再実行時のスナップショット履歴"
     required: [status]
     additionalProperties: false
 
@@ -758,6 +819,11 @@ properties:
         type: array
         items: { type: string }
         description: "レビュー結果ファイルパス"
+      revision_history:
+        type: array
+        items:
+          $ref: "#/$defs/section_snapshot"
+        description: "差し戻しによる再実行時のスナップショット履歴"
     required: [status]
     additionalProperties: false
 
@@ -783,6 +849,11 @@ properties:
       merge_commit:
         type: string
         description: "マージコミットハッシュ（マージ時のみ）"
+      revision_history:
+        type: array
+        items:
+          $ref: "#/$defs/section_snapshot"
+        description: "差し戻しによる再実行時のスナップショット履歴"
     required: [status, action]
     additionalProperties: false
 
