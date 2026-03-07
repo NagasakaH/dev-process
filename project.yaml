@@ -14,8 +14,7 @@ meta:
   target_repo: "git-svn-backup"
   branch: "feature/GIT-SVN-001"
   created_at: "2026-03-07T00:41:38+00:00"
-  updated_at: "2026-03-07T00:41:38+00:00"
-
+  updated_at: "2026-03-07T00:51:34+00:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -91,7 +90,6 @@ setup:
     create_design_document: true
     design_document_dir: "docs"
     submodules_dir: "submodules"
-
 # -----------------------------------------------------------------------------
 # brainstorming（対話完了後に記入）
 # -----------------------------------------------------------------------------
@@ -137,3 +135,19 @@ brainstorming:
         - "0から環境を再構築後、増分同期が正しく動作する"
       environment: "Docker compose（ローカル SVN コンテナ）"
   artifacts: "docs/git-svn-backup/brainstorming/"
+investigation:
+  status: completed
+  started_at: "2026-03-07T00:51:33+00:00"
+  summary: "git-svn詳細動作・SVNコンテナ・gitlab-ci-local・履歴リニア化・3ブランチ構成の技術検証を実施。全て実験で動作確認済み。"
+  key_findings:
+    - git-svn dcommitはコミットSHAを書き換える（git-svn-id追加のため）。svnブランチではforce pushが必須
+    - git-svn-idメタ情報によりCI環境で毎回git svn init/fetchしても.rev_mapが自動再構築される
+    - git checkout COMMIT -- . 方式がリニア化に最適（ファイル追加/削除/リネームを正しく処理、実験確認済み）
+    - gitlab-ci-localはservicesキーワード非対応。Docker Compose + --network hostで代替する
+    - garethflowers/svn-serverが最もシンプル（svn://プロトコル、svnserve.conf + passwd認証）
+  risks:
+    - dcommit後のforce pushが拒否される可能性（svnブランチの保護解除が必要）
+    - gitlab-ci-localとGitLab Runnerの動作差異（services非対応、ファイル同期差異）
+    - 大量コミットの初回同期でCIジョブがタイムアウトする可能性
+  artifacts: "docs/git-svn-backup/investigation/"
+  completed_at: "2026-03-07T00:51:33+00:00"
