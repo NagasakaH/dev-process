@@ -14,7 +14,7 @@ meta:
   target_repo: "git-svn-backup"
   branch: "feature/GIT-SVN-001"
   created_at: "2026-03-07T00:41:38+00:00"
-  updated_at: "2026-03-07T00:59:41+00:00"
+  updated_at: "2026-03-07T01:24:20+00:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -163,7 +163,109 @@ design:
     - sync-to-svn.sh に --mode オプションで方式切替可能に設計
     - E2Eテスト9ケースを定義（初回同期・増分・べき等性・環境再構築等）
   review:
-    round: 0
-    status: pending
+    round: 2
+    status: approved
+    latest_verdict: 承認
+    completed_at: "2026-03-07T01:24:20+00:00"
+    summary: 2ラウンドのレビューで全16件の指摘を修正完了。Critical 1件・Major 6件・Minor 7件・Info 2件、全て resolved。
+    artifacts:
+      - docs/git-svn-backup/review-design/06_review-summary.md
+    issues:
+      - id: RD-001
+        severity: critical
+        status: resolved
+        description: dcommit部分失敗時のリカバリフロー欠落
+        detected_in_round: 1
+        resolved_in_round: 2
+      - id: RD-002
+        severity: major
+        status: resolved
+        description: 方式A確定の未反映
+        detected_in_round: 1
+        resolved_in_round: 2
+      - id: RD-003
+        severity: major
+        status: resolved
+        description: 認証情報の平文管理
+        detected_in_round: 1
+        resolved_in_round: 2
+      - id: RD-004
+        severity: major
+        status: resolved
+        description: 処理順序の不一致
+        detected_in_round: 1
+        resolved_in_round: 2
+      - id: RD-005
+        severity: major
+        status: resolved
+        description: CI e2e-testのDocker構成不備
+        detected_in_round: 1
+        resolved_in_round: 2
+      - id: RD-006
+        severity: major
+        status: resolved
+        description: SVN認証フロー未定義
+        detected_in_round: 1
+        resolved_in_round: 2
+      - id: RD-007
+        severity: major
+        status: resolved
+        description: svn_revision変数未定義
+        detected_in_round: 1
+        resolved_in_round: 2
+      - id: RD-008
+        severity: minor
+        status: resolved
+        description: 状態更新push失敗時のハンドリング
+        detected_in_round: 1
+        resolved_in_round: 2
+      - id: RD-009
+        severity: minor
+        status: resolved
+        description: stdout汚染
+        detected_in_round: 1
+        resolved_in_round: 2
+      - id: RD-010
+        severity: minor
+        status: resolved
+        description: git svn init再実行時の挙動
+        detected_in_round: 1
+        resolved_in_round: 2
+      - id: RD-011
+        severity: minor
+        status: resolved
+        description: SVN初期構造
+        detected_in_round: 1
+        resolved_in_round: 2
+      - id: RD-012
+        severity: minor
+        status: resolved
+        description: テスト計画とCI定義の整合性
+        detected_in_round: 1
+        resolved_in_round: 2
+      - id: RD-013
+        severity: info
+        status: resolved
+        description: 日時保存ポリシー
+        detected_in_round: 1
+        resolved_in_round: 2
+      - id: RD-014
+        severity: minor
+        status: resolved
+        description: --no-auth-cacheの矛盾
+        detected_in_round: 2
+        resolved_in_round: 2
+      - id: RD-015
+        severity: info
+        status: resolved
+        description: get_last_synced_commit()呼び出し順序
+        detected_in_round: 2
+        resolved_in_round: 2
+      - id: RD-003-residual
+        severity: minor
+        status: resolved
+        description: syncブランチファイル構成
+        detected_in_round: 2
+        resolved_in_round: 2
   artifacts: "docs/git-svn-backup/design/"
   completed_at: "2026-03-07T00:59:41+00:00"
