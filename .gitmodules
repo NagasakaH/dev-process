@@ -1,0 +1,3 @@
+[submodule "submodules/git-svn-backup"]
+	path = submodules/git-svn-backup
+	url = git@gitlab.com:nagasaka-experimental/git-svn-backup.git
