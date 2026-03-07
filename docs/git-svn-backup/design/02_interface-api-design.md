@@ -21,7 +21,7 @@
 # 基本実行（環境変数から設定を取得）
 ./sync-to-svn.sh
 
-# 同期モード指定
+# 同期モード指定（将来拡張: 現在は merge-unit 固定）
 ./sync-to-svn.sh [--mode <merge-unit|daily-batch>]
 
 # ドライラン（SVNへの書き込みを行わない）
@@ -38,7 +38,7 @@
 
 | 引数 | 短縮 | 必須 | デフォルト | 説明 |
 |------|------|------|------------|------|
-| `--mode` | `-m` | No | `merge-unit` | 同期方式（`merge-unit` / `daily-batch`） |
+| `--mode` | `-m` | No | `merge-unit` | 同期方式（`merge-unit` / `daily-batch`）。現在は `merge-unit` 固定。将来拡張用 |
 | `--dry-run` | `-n` | No | false | 実際のdcommit/pushを行わない |
 | `--full-sync` | `-f` | No | false | .sync-state.yml を無視して全履歴を同期 |
 | `--help` | `-h` | No | - | ヘルプ表示 |
@@ -153,6 +153,8 @@ ensure_svn_branch()
 
 # svn ブランチ上で git svn init + fetch を実行
 # git-svn-id から .rev_map を自動再構築
+# 初期化済み判定: git config --get svn-remote.svn.url で確認し、未設定時のみ init を実行
+# SVN認証キャッシュ: svn info --username $SVN_USERNAME --password $SVN_PASSWORD --non-interactive --no-auth-cache で事前投入
 setup_git_svn()
 ```
 
@@ -160,6 +162,7 @@ setup_git_svn()
 
 ```bash
 # .sync-state.yml から最終同期コミットSHA を読み取り
+# ブランチ切り替えなしに sync ブランチから読み取る: git show sync:.sync-state.yml
 # 初回（ファイルなし）の場合は空文字を返す
 # 戻り値: last_synced_commit（stdout）
 get_last_synced_commit()
@@ -167,6 +170,7 @@ get_last_synced_commit()
 # 方式A: --first-parent でコミット一覧を取得し、各コミットをリニア化してsvnブランチにコミット
 # 引数: last_synced_commit（空の場合は全履歴）
 # 戻り値: 処理したコミット数（stdout）
+# 注意: 内部のgitコマンド出力は >/dev/null 2>&1 または >&2 にリダイレクトし、stdout汚染を防ぐ
 sync_merge_unit() { local last_synced="$1"; }
 
 # 方式B: 日付グループ化し、各日の最終コミットの状態をsvnブランチにコミット
@@ -175,8 +179,11 @@ sync_merge_unit() { local last_synced="$1"; }
 sync_daily_batch() { local last_synced="$1"; }
 
 # git svn dcommit を実行
+# --username $SVN_USERNAME フラグを使用してSVN認証を行う
 # --dry-run の場合はスキップ
 # 失敗時は exit 5
+# 戻り値: 最新SVNリビジョン番号（stdout）
+#   取得方法: svn info $SVN_URL | grep 'Revision:' | awk '{print $2}'
 execute_dcommit()
 
 # svn ブランチを force push
@@ -211,13 +218,16 @@ main() {
   fetch_branches
   ensure_svn_branch
 
-  # sync ブランチから状態読み取り
+  # sync ブランチから状態読み取り（ブランチ切り替えなし）
   local last_synced
   last_synced=$(get_last_synced_commit)
 
   # svn ブランチに切り替え
   git checkout svn
   setup_git_svn
+
+  # dcommit部分失敗時のリカバリ: SVNと同期済みの状態にリセット
+  git reset --hard refs/remotes/origin/trunk
 
   # 同期実行（モードに応じて分岐）
   local synced_count
@@ -231,10 +241,11 @@ main() {
     exit 0
   fi
 
-  execute_dcommit
+  local svn_revision
+  svn_revision=$(execute_dcommit)
   push_svn_branch
 
-  # 状態更新
+  # 状態更新（sync ブランチに切り替えて更新）
   git checkout sync
   update_sync_state "$(git rev-parse origin/main)" "$svn_revision" "$synced_count"
   commit_sync_state
@@ -303,3 +314,4 @@ EOF'
 | 日付 | バージョン | 変更内容 | 変更者 |
 |------|------------|----------|--------|
 | 2026-03-07 | 1.0 | 初版作成 | Copilot |
+| 2026-03-07 | 1.1 | 設計レビュー指摘対応（RD-001,002,004,006,007,009,010） | Copilot |

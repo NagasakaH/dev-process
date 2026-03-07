@@ -124,6 +124,13 @@ repos/
 └── tags/           # （未使用）
 ```
 
+> **注意**: `git svn init --stdlayout` 実行時、trunk ディレクトリが自動作成されない場合がある。
+> E2Eテスト（e2e-test.sh）内で trunk の存在を確認し、存在しない場合は以下で初期化する:
+> ```bash
+> svn mkdir "$SVN_URL/trunk" -m "Initialize trunk" \
+>   --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --non-interactive
+> ```
+
 ---
 
 ## 3. .gitlab-ci.yml
@@ -160,9 +167,14 @@ sync-to-svn:
 
 e2e-test:
   stage: test
-  image: debian:bookworm-slim
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
   before_script:
-    - apt-get update -qq && apt-get install -y -qq git git-svn subversion docker.io docker-compose-plugin > /dev/null
+    - apk add --no-cache bash git git-svn subversion perl-git
     - |
       YQ_VERSION="v4.44.1"
       wget -qO /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
@@ -178,13 +190,23 @@ e2e-test:
     - if: $CI_PIPELINE_SOURCE == "web"
 ```
 
+> **gitlab-ci-local（ローカル実行）での注意事項**:
+> gitlab-ci-local は `services` ディレクティブに非対応のため、Docker Compose でSVNサーバーを事前起動し、`--network host` で接続する。
+> ```bash
+> docker compose up -d
+> gitlab-ci-local e2e-test --network host
+> docker compose down -v
+> ```
+
 ### 3.1 設計判断
 
 | 項目 | 判断 | 理由 |
 |------|------|------|
 | `GIT_DEPTH: 0` | 全履歴取得 | main の全コミット履歴が必要 |
 | `GIT_STRATEGY: clone` | 毎回クリーン clone | 一貫した動作のため |
-| ベースイメージ | `debian:bookworm-slim` | git-svn (Perl依存) のインストールが容易 |
+| ベースイメージ（sync） | `debian:bookworm-slim` | git-svn (Perl依存) のインストールが容易 |
+| ベースイメージ（e2e-test） | `docker:latest` + `docker:dind` | Docker Compose によるSVNサーバー起動が必要 |
+| SVN初期化 | `e2e-test.sh` 内で実施 | CI定義とテスト計画の整合性を確保 |
 | sync ジョブのトリガー | schedule / web | 定期実行 + 手動実行 |
 | e2e-test のトリガー | merge_request / web | MR 時 + 手動実行 |
 
@@ -192,12 +214,26 @@ e2e-test:
 
 ## 4. .gitlab-ci-local-variables.yml
 
-ローカルテスト用の変数定義ファイル（sync ブランチに配置、.gitignore に追加しない）。
+ローカルテスト用の変数定義ファイル（sync ブランチに配置）。
+
+> **セキュリティ**: `.gitlab-ci-local-variables.yml` は実値を含むため **`.gitignore` に追加**し、リポジトリには含めない。
+> `.gitlab-ci-local-variables.yml.example` のみバージョン管理し、実値は環境変数またはCI Variables（Masked）で注入する。
+
+### 4.1 .gitlab-ci-local-variables.yml.example（バージョン管理対象）
 
 ```yaml
+# .gitlab-ci-local-variables.yml.example
+# コピーして .gitlab-ci-local-variables.yml を作成し、実際の値を設定してください
 SVN_URL: "svn://localhost:3690/repos"
 SVN_USERNAME: "svnuser"
 SVN_PASSWORD: "svnpass"
+```
+
+### 4.2 .gitignore への追加
+
+```
+# ローカルCI用変数ファイル（実値を含むため除外）
+.gitlab-ci-local-variables.yml
 ```
 
 ---
@@ -273,3 +309,4 @@ erDiagram
 | 日付 | バージョン | 変更内容 | 変更者 |
 |------|------------|----------|--------|
 | 2026-03-07 | 1.0 | 初版作成 | Copilot |
+| 2026-03-07 | 1.1 | 設計レビュー指摘対応（RD-003,005,011,012） | Copilot |

@@ -44,6 +44,9 @@ for sha in $COMMITS; do
   git add -A
 
   # 差分がある場合のみコミット（べき等性確保）
+  # 日時保存ポリシー:
+  #   GIT_AUTHOR_DATE  = 元コミットの日時（author date）を保持
+  #   GIT_COMMITTER_DATE = 同期実行時の日時（自動設定）
   if ! git diff --cached --quiet; then
     GIT_AUTHOR_DATE="$author_date" git commit -m "$msg"
   fi
@@ -169,7 +172,7 @@ main の履歴（2日間で4コミット）:
 - SVNコミット数は方式Bより多くなるが、検証環境では問題ない規模
 - PR内の個別コミット履歴はいずれの方式でも失われる（`--first-parent` の特性）
 
-> **注意**: 最終的な方式選定はユーザーが行う。本設計書では両方式の実装に必要な情報を提供し、推奨案を提示する。
+> **決定**: 設計レビューにより**方式Aで実装確定**とする。方式Bは比較資料として本ドキュメントに残す。
 
 ---
 
@@ -227,6 +230,7 @@ sync ブランチ:
 
 - [x] ターゲットリポジトリ（git-svn-backup）が GitLab 上に存在する
 - [x] 3ブランチ構成（main/svn/sync）が brainstorming で合意済み
+- [x] 方式Aでの実装が設計レビューにより確定済み
 - [x] `git checkout COMMIT -- .` 方式の動作が実験で確認済み
 - [x] garethflowers/svn-server の動作が実験で確認済み
 - [x] git-svn-id による .rev_map 自動再構築が実験で確認済み
@@ -240,3 +244,4 @@ sync ブランチ:
 | 日付 | バージョン | 変更内容 | 変更者 |
 |------|------------|----------|--------|
 | 2026-03-07 | 1.0 | 初版作成 | Copilot |
+| 2026-03-07 | 1.1 | 設計レビュー指摘対応（RD-002, RD-013） | Copilot |

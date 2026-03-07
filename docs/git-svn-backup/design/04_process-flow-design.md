@@ -26,11 +26,12 @@ flowchart TD
     DEPS -->|OK| SVN_TEST[SVN接続テスト]
     SVN_TEST -->|失敗| ERR_SVN[exit 3: SVN接続エラー]
     SVN_TEST -->|OK| FETCH[ブランチ情報取得]
-    FETCH --> READ_STATE[.sync-state.yml 読み込み]
-    READ_STATE --> ENSURE_SVN[svnブランチ確認/作成]
+    FETCH --> ENSURE_SVN[svnブランチ確認/作成]
     ENSURE_SVN --> CHECKOUT_SVN[git checkout svn]
     CHECKOUT_SVN --> SETUP_GITSVN[git svn init + fetch]
-    SETUP_GITSVN --> CHECK_COMMITS{新規コミットあり?}
+    SETUP_GITSVN --> READ_STATE["git show sync:.sync-state.yml<br/>で状態読み込み"]
+    READ_STATE --> RESET_TRUNK["git reset --hard<br/>refs/remotes/origin/trunk"]
+    RESET_TRUNK --> CHECK_COMMITS{新規コミットあり?}
     CHECK_COMMITS -->|なし| NO_CHANGE[ログ出力: 変更なし]
     NO_CHANGE --> EXIT_OK([exit 0])
     CHECK_COMMITS -->|あり| MODE{同期モード?}
@@ -113,13 +114,16 @@ sequenceDiagram
     SCRIPT->>GIT: git fetch origin main svn
     Note over GIT: svn ブランチが存在しない場合あり
 
-    SCRIPT->>SYNC_BR: .sync-state.yml 読み込み
-    Note over SYNC_BR: last_synced_commit = ""（初回）
-
     SCRIPT->>SVN_BR: git checkout --orphan svn（初回作成）
     SCRIPT->>SVN_BR: git svn init $SVN_URL --stdlayout
     SCRIPT->>SVN_SRV: git svn fetch
     SVN_SRV-->>SVN_BR: （空リポジトリ、何も取得しない）
+
+    SCRIPT->>SYNC_BR: git show sync:.sync-state.yml で状態読み込み
+    Note over SYNC_BR: last_synced_commit = ""（初回）
+
+    SCRIPT->>SVN_BR: git reset --hard refs/remotes/origin/trunk
+    Note over SVN_BR: dcommit部分失敗時のリカバリポイント
 
     loop main の全 first-parent コミット
         SCRIPT->>GIT: git log --first-parent で SHA 取得
@@ -155,13 +159,16 @@ sequenceDiagram
 
     SCRIPT->>GIT: git fetch origin main svn
 
-    SCRIPT->>SYNC_BR: .sync-state.yml 読み込み
-    Note over SYNC_BR: last_synced_commit = "abc123..."
-
     SCRIPT->>SVN_BR: git checkout svn
     SCRIPT->>SVN_BR: git svn init $SVN_URL --stdlayout
     SCRIPT->>SVN_SRV: git svn fetch
     SVN_SRV-->>SVN_BR: .rev_map 再構築（git-svn-idから）
+
+    SCRIPT->>SYNC_BR: git show sync:.sync-state.yml で状態読み込み
+    Note over SYNC_BR: last_synced_commit = "abc123..."
+
+    SCRIPT->>SVN_BR: git reset --hard refs/remotes/origin/trunk
+    Note over SVN_BR: dcommit部分失敗時のリカバリポイント
 
     loop abc123..HEAD の first-parent コミット
         SCRIPT->>GIT: git log --first-parent abc123..origin/main
@@ -265,7 +272,7 @@ flowchart TD
     I -->|OK| K{force push}
     K -->|NG| L["log_error + exit 4"]
     K -->|OK| M{状態更新 push}
-    M -->|NG| N["log_warn（次回再実行で復旧）"]
+    M -->|NG| N["log_error + exit 4<br/>（.sync-state.yml は次回再生成）"]
     M -->|OK| O["exit 0"]
 ```
 
@@ -278,14 +285,15 @@ flowchart TD
 | ブランチ操作エラー | checkout/fetch 失敗 | ログ出力して終了 | Yes |
 | dcommit エラー | SVN側でコンフリクト等 | ログ出力して終了。.sync-state 未更新のため再実行安全 | Yes |
 | push エラー | force push 拒否 | ブランチ保護設定を確認するよう案内 | Yes |
-| 状態更新 push エラー | sync ブランチの push 失敗 | 警告のみ。次回実行時に同じコミットを再処理（べき等） | Yes |
+| 状態更新 push エラー | sync ブランチの push 失敗 | ログ出力して終了（exit 4）。次回実行時に .sync-state.yml を再生成し、同じコミットを再処理（べき等） | Yes |
 
 ### 4.3 べき等性の保証メカニズム
 
 ```mermaid
 flowchart TD
-    A["sync-to-svn.sh 開始"] --> B["last_synced_commit 読み込み"]
-    B --> C{"last_synced_commit<br/>以降にコミットあり?"}
+    A["sync-to-svn.sh 開始"] --> B["git show sync:.sync-state.yml で<br/>last_synced_commit 読み込み"]
+    B --> B2["git reset --hard refs/remotes/origin/trunk<br/>（SVN同期済み状態にリセット）"]
+    B2 --> C{"last_synced_commit<br/>以降にコミットあり?"}
     C -->|なし| D["何もせず exit 0"]
     C -->|あり| E["リニア化処理"]
     E --> F["git diff --cached --quiet"]
@@ -305,10 +313,11 @@ flowchart TD
 
 **べき等性が保証される理由:**
 
-1. **状態ベース**: `.sync-state.yml` の `last_synced_commit` を基準に差分を計算。同じ状態で再実行すれば同じ結果
-2. **差分チェック**: `git diff --cached --quiet` で実際に変更がない場合はコミットをスキップ
-3. **dcommit の性質**: `git svn dcommit` は未送信のコミットのみをSVNに送信。既に送信済みのコミットは処理しない
-4. **エラー時の安全性**: `.sync-state.yml` は同期成功後にのみ更新。エラー中断時は前回の状態が保持され、次回実行で同じ処理を再試行
+1. **リカバリ**: `git reset --hard refs/remotes/origin/trunk` により、前回の dcommit 部分失敗時もSVNと同期済みの状態から再開
+2. **状態ベース**: `.sync-state.yml` の `last_synced_commit` を基準に差分を計算。同じ状態で再実行すれば同じ結果
+3. **差分チェック**: `git diff --cached --quiet` で実際に変更がない場合はコミットをスキップ
+4. **dcommit の性質**: `git svn dcommit` は未送信のコミットのみをSVNに送信。既に送信済みのコミットは処理しない
+5. **エラー時の安全性**: `.sync-state.yml` は同期成功後にのみ更新。エラー中断時は前回の状態が保持され、次回実行で同じ処理を再試行
 
 ---
 
@@ -328,13 +337,16 @@ sequenceDiagram
     WD->>SYNC: git clone (sync ブランチ)
     WD->>WD: git fetch origin main svn
 
-    WD->>SYNC: .sync-state.yml 読み込み
-    Note over WD: last_synced_commit 取得
-
     WD->>SVN: git checkout svn
     Note over WD: 作業ディレクトリ = svn のファイル群
 
     WD->>SVN: git svn init + fetch
+
+    WD->>SYNC: git show sync:.sync-state.yml で読み込み
+    Note over WD: last_synced_commit 取得（ブランチ切り替え不要）
+
+    WD->>SVN: git reset --hard refs/remotes/origin/trunk
+    Note over WD: dcommit部分失敗時のリカバリ
 
     loop リニア化
         WD->>MAIN: git checkout SHA -- .
@@ -358,3 +370,4 @@ sequenceDiagram
 | 日付 | バージョン | 変更内容 | 変更者 |
 |------|------------|----------|--------|
 | 2026-03-07 | 1.0 | 初版作成 | Copilot |
+| 2026-03-07 | 1.1 | 設計レビュー指摘対応（RD-001,004,008） | Copilot |

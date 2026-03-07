@@ -34,13 +34,13 @@ brainstorming で決定した通り、E2Eテストのみ実施。単体テスト
 
 ### 1.3 テスト実行方法
 
+> **注意**: SVNリポジトリの初期化（`svnadmin create`、認証設定、trunk作成確認）は `e2e-test.sh` 内のセットアップ処理に含める。
+> これにより、CI定義（`.gitlab-ci.yml`）とテスト計画の整合性を確保する。
+
 ```bash
 # 方法1: 直接実行
 docker compose up -d
 sleep 3
-# SVNリポジトリ初期化
-docker compose exec svn-server svnadmin create /var/opt/svn/repos
-docker compose exec svn-server sh -c '...'  # 認証設定
 ./e2e-test.sh --with-server
 docker compose down -v
 
@@ -70,6 +70,7 @@ docker compose down -v
 | E2E-7 | ファイル削除の同期 | main でファイル削除→同期 | SVN trunk からもファイルが削除される | 中 |
 | E2E-8 | ファイルリネームの同期 | main でファイルリネーム→同期 | SVN trunk でも旧ファイル削除・新ファイル追加 | 中 |
 | E2E-9 | .sync-state.yml 整合性 | 各テスト後に .sync-state.yml を検証 | version, last_synced_commit, svn_revision が正しい値 | 中 |
+| E2E-10 | SVN trunk 自動作成検証 | git svn init --stdlayout 後に trunk の存在を確認 | trunk が存在しない場合は svn mkdir で自動初期化される | 中 |
 
 ### 2.2 acceptance_criteria との対応
 
@@ -91,6 +92,36 @@ docker compose down -v
 ### 3.1 テスト用Gitリポジトリ構築
 
 E2Eテストでは、テスト用のGitリポジトリを動的に構築する。
+
+#### SVNリポジトリ初期化（e2e-test.sh 内で実施）
+
+```bash
+setup_svn_repo() {
+  # SVNリポジトリ作成
+  docker compose exec svn-server svnadmin create /var/opt/svn/repos
+
+  # 認証設定
+  docker compose exec svn-server sh -c 'cat > /var/opt/svn/repos/conf/svnserve.conf << EOF
+[general]
+anon-access = none
+auth-access = write
+password-db = passwd
+realm = Git-SVN Sync Repository
+EOF'
+  docker compose exec svn-server sh -c 'cat > /var/opt/svn/repos/conf/passwd << EOF
+[users]
+svnuser = svnpass
+EOF'
+
+  # trunk の存在確認と自動初期化
+  if ! svn ls "$SVN_URL/trunk" --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --non-interactive >/dev/null 2>&1; then
+    svn mkdir "$SVN_URL/trunk" -m "Initialize trunk" \
+      --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --non-interactive
+  fi
+}
+```
+
+#### テスト用Gitリポジトリ構築
 
 ```bash
 setup_test_repo() {
@@ -251,14 +282,15 @@ docker compose down -v
 ### 6.1 テスト実行順序
 
 1. E2E-1: SVNサーバー接続確認（前提条件）
-2. E2E-2: 初回同期（基本）
-3. E2E-3: 初回同期（マージコミット）
-4. E2E-4: 増分同期
-5. E2E-5: べき等性テスト
-6. E2E-6: 環境再構築後の増分同期
-7. E2E-7: ファイル削除の同期
-8. E2E-8: ファイルリネームの同期
-9. E2E-9: .sync-state.yml 整合性
+2. E2E-10: SVN trunk 自動作成検証
+3. E2E-2: 初回同期（基本）
+4. E2E-3: 初回同期（マージコミット）
+5. E2E-4: 増分同期
+6. E2E-5: べき等性テスト
+7. E2E-6: 環境再構築後の増分同期
+8. E2E-7: ファイル削除の同期
+9. E2E-8: ファイルリネームの同期
+10. E2E-9: .sync-state.yml 整合性
 
 ### 6.2 CI/CD連携
 
@@ -275,3 +307,4 @@ docker compose down -v
 | 日付 | バージョン | 変更内容 | 変更者 |
 |------|------------|----------|--------|
 | 2026-03-07 | 1.0 | 初版作成 | Copilot |
+| 2026-03-07 | 1.1 | 設計レビュー指摘対応（RD-011,012） | Copilot |
