@@ -1,81 +1,104 @@
 # =============================================================================
 # 開発セットアップ設定ファイル（SSOT: Single Source of Truth）
 # =============================================================================
-# 生成日時: 2026-02-27T10:55:34Z
+# 生成日時: 2026-03-07T00:10:00Z
 # スキル: create-setup-yaml（対話的生成）
 # =============================================================================
 
-task_name: "ウェブデザイン要件定義プロジェクト環境構築"
-ticket_id: "WEB-DESIGN-001"
+task_name: "Git→SVN一方向同期の検証環境構築"
+ticket_id: "GIT-SVN-001"
 
 # =============================================================================
 # 説明（階層化フォーマット）
 # =============================================================================
 description:
   overview: |
-    dev-processを参考に、ウェブデザインの要件定義を行うためのプロジェクト環境を構築する。
-    画面デザインや画面の振る舞いを定義・プレビューできる開発環境を確立し、
-    Reactベースの画面モックを作成してcode-server上でプレビューするワークフローを整備する。
+    Dockerコンテナ上にSVNサーバーを構築し、Gitリポジトリのmainブランチの内容を
+    SVNに一方向同期する仕組みを検証・実装する。
+    最終的にはGitLab CIで定期実行し、main/masterブランチをSVNに自動同期する。
 
   purpose: |
-    ウェブアプリケーションの要件定義フェーズにおいて、画面デザインと画面の振る舞いを
-    コードベースで定義・検証できる環境を提供する。バックエンドはモックで代替し、
-    フロントエンドの画面のみに集中して要件を可視化・共有する。
+    Gitリポジトリの変更をSVNに自動反映する同期スクリプトとインフラ構成を確立する。
+    マージコミットを含むGit履歴をSVN互換の形式に変換して同期する方式を検証する。
 
   background: |
-    dev-processリポジトリが提供するdevcontainer構成（DooD/DinD切り替え、開発ツール統合）
-    を参考にしつつ、ウェブデザインに特化した環境を構築する。
-    tmux起動の代わりにcode-serverを起動し、ブラウザベースのVS Code環境で
-    React開発とプレビューを行う。
+    既存のGitワークフロー（GitLab）を維持しつつ、SVNにもバックアップ・ミラーリングが
+    必要なケースに対応する。git-svn dcommitはリニアな履歴しか扱えないため、
+    マージコミットを含むmainブランチをそのままdcommitすることはできない。
+    この制約を回避しつつ、意味のあるコミット粒度をSVN側でも保持する方式を検証する。
+    双方向同期は不要で、Git→SVNの一方向のみ。
+    SVNの登録者がGitLabに埋め込んだユーザーになることは許容する。
+
+  architecture: |
+    ブランチ構成:
+    - main ブランチ: 通常の開発用（同期スクリプト等は配置しない）
+    - sync ブランチ: 同期スクリプト、compose.yaml、.gitlab-ci.yml、同期履歴を配置
+      - GitLab CIのスケジュール実行はsyncブランチで動作
+      - CIジョブ内でmainブランチをチェックアウトし、内容をSVNに同期
+      - 同期履歴（最終同期コミットSHA等）はsyncブランチに記録・コミット
+
+    SVN接続設定:
+    - SVN_URL: SVNリポジトリURL（環境変数）
+    - SVN_USERNAME: SVNユーザー名（環境変数）
+    - SVN_PASSWORD: SVNパスワード（環境変数）
 
   requirements:
     functional:
-      - "devcontainerのfeatureとしてcode-serverを追加し、コンテナ起動時にcode-serverを自動起動する（tmuxの代替）"
-      - "copilot CLI、git、playwright、prettierをdevcontainerに含める"
-      - "dev-processと同様のDooD/DinD起動切り替え機構を実装する"
-      - "Reactプロジェクトを初期化し、画面コンポーネントを作成できる環境を整える"
-      - "code-server上でReactアプリをプレビュー（ホットリロード対応）する方法を確立する"
-      - "画面のみを作成し、バックエンドはモックで代替する構成にする"
-      - "code-serverにReact開発に必要なVS Code拡張機能をプリインストールする"
-      - "code-serverにGitHub Copilot拡張機能をプリインストールする"
+      - "compose.yamlでSVNサーバーコンテナを起動できる（検証用）"
+      - "Gitリポジトリのmainブランチの内容をSVNに同期するBashスクリプトを作成する"
+      - "マージコミットを含むGit履歴をSVN互換形式に変換して同期できる"
+      - "同期方式として2つのアプローチを設計・比較する:"
+      - "  方式A: マージ単位コミット方式（--first-parentでマージ単位、単体コミットはそのまま）"
+      - "  方式B: 日次バッチ方式（1日のコミットをまとめて1SVNコミットに）"
+      - "初回同期（全履歴）と増分同期（差分のみ）の両方に対応する"
+      - "同期状態の記録・管理（最後に同期したコミットSHA）をsyncブランチに保持"
+      - "GitLab CI (.gitlab-ci.yml) をsyncブランチに配置し、定期実行する構成を作成する"
+      - "SVN接続情報（URL、ユーザー名、パスワード）は環境変数で管理する"
     non_functional:
-      - "code-serverがブラウザからアクセス可能であること"
-      - "Reactアプリのホットリロードがcode-server環境で動作すること"
-      - "Playwrightによる画面スクリーンショット・テストが実行可能であること"
+      - "同期スクリプトがべき等であること（再実行しても問題ない）"
+      - "エラー発生時に適切なログ出力を行うこと"
+      - "SVNリポジトリの構造が標準的なtrunk/branches/tagsレイアウトであること"
 
   acceptance_criteria:
-    - "devcontainerでcode-serverが起動し、ブラウザからアクセスできる"
-    - "Reactプロジェクトが初期化され、code-server上でプレビューできる"
-    - "DooD/DinD切り替え機構が動作する"
-    - "copilot CLI, git, playwright, prettierが使用可能"
-    - "code-serverにReact開発用拡張機能がインストールされている"
-    - "code-serverにGitHub Copilot拡張機能がインストールされている"
-    - "画面デザインのモック作成・プレビューのワークフローが確立されている"
+    - "compose.yamlでSVNサーバーが起動し、svnコマンドでアクセスできる"
+    - "同期スクリプトがGitのmainブランチの内容をSVNに正しく反映する"
+    - "マージコミットを含む履歴が適切に変換されてSVNに記録される"
+    - "増分同期が正しく動作する（前回同期以降の変更のみ反映）"
+    - "同期スクリプトの再実行がべき等である"
+    - "syncブランチにGitLab CI構成（.gitlab-ci.yml）が定義されている"
+    - "gitlab-ci-localでE2Eテストが実行できる"
+    - "2つの同期方式のメリット・デメリット比較ドキュメントが存在する"
 
   test_scope:
     - e2e
 
+  test_strategy: |
+    E2Eテストのみ。gitlab-ci-localを使用してGitLab CIパイプラインをローカル実行し、
+    compose.yamlで起動したSVNコンテナに対して実際に同期を実行して検証する。
+    単体テスト・結合テストは実施しない。
+
   scope:
-    - "devcontainer環境構築（code-server起動、DooD/DinD切り替え）"
-    - "Reactプロジェクト初期設定"
-    - "code-server用VS Code拡張機能の設定（React開発用 + Copilot）"
-    - "画面デザイン・モックのプレビュー環境確立"
-    - "Playwrightによるスクリーンショット/テスト環境"
+    - "SVNサーバーのDocker構成（compose.yaml）"
+    - "Git→SVN同期スクリプト（Bash）"
+    - "2つの同期方式の設計・比較"
+    - "syncブランチの構成（スクリプト、CI設定、同期履歴）"
+    - "GitLab CI定期実行構成（.gitlab-ci.yml）"
+    - "同期状態管理の仕組み"
+    - "E2Eテスト（gitlab-ci-localで実行）"
 
   out_of_scope:
-    - "バックエンドAPI実装（モックで代替）"
-    - "データベース設計・構築"
-    - "本番デプロイ環境"
-    - "CI/CDパイプライン"
+    - "SVN→Git方向の同期（双方向同期）"
+    - "main以外のブランチの同期"
+    - "本番SVNサーバーへの接続"
+    - "SVN認証の複雑な設定（検証環境では簡易認証）"
+    - "単体テスト・結合テスト"
 
   notes: |
-    dev-processリポジトリの以下の構成を参考にする:
-    - .devcontainer/ の構成（devcontainer.json, Dockerfile, docker-compose）
-    - scripts/dev-container.sh のDooD/DinD切り替え機構
-    - tmuxの代わりにcode-serverを起動する構成に変更
-    Reactのビルドツールは Vite を推奨。
-    将来的にはdev-processと同様のCopilot向けスキル（.claude/skills/）設定を
-    web-designリポジトリにも組み込んでいく予定。初回スコープでは環境構築に集中する。
+    同期方式の選定は設計フェーズで両方を詳細比較し、ユーザーが選択する。
+    検証環境はcompose.yamlで完結し、ローカルで動作確認できることを重視する。
+    SVNサーバーはgarethflowers/svn-server等の軽量イメージを候補とする。
+    スクリプト・CI設定はsyncブランチに配置し、mainブランチは汚さない。
+    syncブランチに同期履歴（最終同期コミットSHA等）を記録してよい。
 
 # =============================================================================
 # リポジトリ設定
@@ -85,8 +108,8 @@ related_repositories:
     url: "https://github.com/NagasakaH/dev-process.git"
 
 target_repositories:
-  - name: "web-design"
-    url: "git@github.com:NagasakaH/web-design.git"
+  - name: "git-svn-backup"
+    url: "git@gitlab.com:nagasaka-experimental/git-svn-backup.git"
     base_branch: "main"
 
 # オプション設定
