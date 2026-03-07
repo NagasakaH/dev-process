@@ -14,7 +14,7 @@ meta:
   target_repo: "git-svn-backup"
   branch: "feature/GIT-SVN-001"
   created_at: "2026-03-07T00:41:38+00:00"
-  updated_at: "2026-03-07T01:24:20+00:00"
+  updated_at: "2026-03-07T01:33:16+00:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -269,3 +269,35 @@ design:
         resolved_in_round: 2
   artifacts: "docs/git-svn-backup/design/"
   completed_at: "2026-03-07T00:59:41+00:00"
+plan:
+  status: completed
+  started_at: "2026-03-07T01:32:58+00:00"
+  summary: "7タスクに分割（5フェーズ）。TDD方式でE2Eテスト先行、並列実行可能な3グループを特定"
+  total_tasks: 7
+  tasks:
+    - id: task01
+      title: 基盤ファイル作成（compose.yaml, .gitignore, .sync-state.yml, variables.example）
+      status: pending
+    - id: task02
+      title: 方式比較ドキュメント作成（comparison-method-a-vs-b.md）
+      status: pending
+    - id: task03
+      title: E2Eテストスクリプト作成（e2e-test.sh）- TDD RED
+      status: pending
+    - id: task04
+      title: 同期スクリプト実装（sync-to-svn.sh）- TDD GREEN
+      status: pending
+    - id: task05-01
+      title: CI構成ファイル作成（.gitlab-ci.yml）
+      status: pending
+    - id: task05-02
+      title: README.md 作成
+      status: pending
+    - id: task06
+      title: E2E全体検証・REFACTOR
+      status: pending
+  review:
+    round: 0
+    status: pending
+  artifacts: "docs/git-svn-backup/plan/"
+  completed_at: "2026-03-07T01:33:16+00:00"
