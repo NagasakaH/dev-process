@@ -788,24 +788,26 @@ auto_snapshot_affected_sections() {
 
   local found=false
   local snapshotted=0
+  local snapshotted_sections=""
 
   for phase in "${PHASE_ORDER[@]}"; do
     if [ "$phase" = "$rollback_to" ]; then
       found=true
     fi
-    if [ "$found" = true ]; then
+    if $found; then
       # セクションが存在し、pending以外のステータスの場合のみスナップショット
       local section_status
       section_status=$(yq ".$phase.status // \"\"" "$yaml_path" 2>/dev/null || echo "")
       if [ -n "$section_status" ] && [ "$section_status" != "null" ] && [ "$section_status" != "pending" ]; then
         cmd_snapshot_section "$phase" "$triggered_by" "$yaml_path" --rollback-to "$rollback_to"
         snapshotted=$((snapshotted + 1))
+        snapshotted_sections="${snapshotted_sections:+$snapshotted_sections, }$phase"
       fi
     fi
   done
 
   if [ $snapshotted -gt 0 ]; then
-    info "$snapshotted セクションのスナップショットを保存しました"
+    info "${snapshotted} セクションをスナップショット: ${snapshotted_sections}"
   fi
 }
 
