@@ -207,7 +207,7 @@ sync ブランチ:
 ├── e2e-test.sh                # E2Eテストスクリプト
 ├── compose.yaml               # SVNサーバーコンテナ定義
 ├── .gitlab-ci.yml             # GitLab CI ジョブ定義
-├── .gitlab-ci-local-variables.yml  # ローカルCI用変数
+├── .gitlab-ci-local-variables.yml.example  # ローカルCI用変数テンプレート（実ファイルは .gitignore 管理）
 ├── .sync-state.yml            # 同期状態記録
 └── README.md                  # sync ブランチの説明
 ```
@@ -245,3 +245,4 @@ sync ブランチ:
 |------|------------|----------|--------|
 | 2026-03-07 | 1.0 | 初版作成 | Copilot |
 | 2026-03-07 | 1.1 | 設計レビュー指摘対応（RD-002, RD-013） | Copilot |
+| 2026-03-07 | 1.2 | 設計レビュー Round 2 指摘対応（RD-003残余） | Copilot |

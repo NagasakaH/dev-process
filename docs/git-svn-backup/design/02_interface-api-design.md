@@ -154,7 +154,7 @@ ensure_svn_branch()
 # svn ブランチ上で git svn init + fetch を実行
 # git-svn-id から .rev_map を自動再構築
 # 初期化済み判定: git config --get svn-remote.svn.url で確認し、未設定時のみ init を実行
-# SVN認証キャッシュ: svn info --username $SVN_USERNAME --password $SVN_PASSWORD --non-interactive --no-auth-cache で事前投入
+# SVN認証キャッシュの事前投入（~/.subversion/auth/に保存）: svn info --username $SVN_USERNAME --password $SVN_PASSWORD --non-interactive $SVN_URL
 setup_git_svn()
 ```
 
@@ -218,13 +218,13 @@ main() {
   fetch_branches
   ensure_svn_branch
 
-  # sync ブランチから状態読み取り（ブランチ切り替えなし）
-  local last_synced
-  last_synced=$(get_last_synced_commit)
-
   # svn ブランチに切り替え
   git checkout svn
   setup_git_svn
+
+  # sync ブランチから状態読み取り（ブランチ切り替えなし）
+  local last_synced
+  last_synced=$(get_last_synced_commit)
 
   # dcommit部分失敗時のリカバリ: SVNと同期済みの状態にリセット
   git reset --hard refs/remotes/origin/trunk
@@ -315,3 +315,4 @@ EOF'
 |------|------------|----------|--------|
 | 2026-03-07 | 1.0 | 初版作成 | Copilot |
 | 2026-03-07 | 1.1 | 設計レビュー指摘対応（RD-001,002,004,006,007,009,010） | Copilot |
+| 2026-03-07 | 1.2 | 設計レビュー Round 2 指摘対応（RD-014, RD-015） | Copilot |
