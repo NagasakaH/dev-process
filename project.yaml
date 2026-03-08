@@ -14,7 +14,7 @@ meta:
   target_repo: "git-svn-backup"
   branch: "feature/GIT-SVN-001"
   created_at: "2026-03-07T00:41:38+00:00"
-  updated_at: "2026-03-08T12:12:49+00:00"
+  updated_at: "2026-03-08T12:22:57+00:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -536,3 +536,7 @@ code_review:
   latest_verdict: 承認
   summary: 全指摘解決済み。Critical/Major/Minor指摘なし。finishing-branchへ進行可能。
   completed_at: "2026-03-08T12:12:48+00:00"
+finishing:
+  status: completed
+  started_at: "2026-03-08T12:22:57+00:00"
+  action: pr
