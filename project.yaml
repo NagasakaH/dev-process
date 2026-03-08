@@ -14,7 +14,7 @@ meta:
   target_repo: "git-svn-backup"
   branch: "feature/GIT-SVN-001"
   created_at: "2026-03-07T00:41:38+00:00"
-  updated_at: "2026-03-08T11:36:50+00:00"
+  updated_at: "2026-03-08T12:09:25+00:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -440,7 +440,7 @@ verification:
 code_review:
   status: conditional
   started_at: "2026-03-08T10:36:54+00:00"
-  round: 1
+  round: 2
   rounds:
     - round: 1
       result: conditional
@@ -449,6 +449,19 @@ code_review:
       major_count: 2
       minor_count: 4
       info_count: 2
+    - round: 2
+      result: conditional
+      timestamp: "2026-03-08T12:09:25+00:00"
+      critical_count: 0
+      major_count: 0
+      minor_count: 1
+      info_count: 2
+      resolved_issues:
+        - CR-001
+        - CR-002
+        - CR-003
+        - CR-004
+        - CR-005
   review_checklist: {}
   issues:
     - id: CR-001
@@ -457,51 +470,58 @@ code_review:
       checklist_id: DC-01
       description: --dry-run フラグが parse されるが main() で未使用
       file: sync-to-svn.sh
-      status: fixed
+      status: resolved
       fixed_description: DRY_RUNチェックをmain()に追加。dcommit/push/state更新をスキップ
+      resolved_in_round: 2
     - id: CR-002
       severity: major
       category: 設計準拠性
       checklist_id: DC-01
       description: --full-sync フラグが parse されるが main() で未使用
       file: sync-to-svn.sh
-      status: fixed
+      status: resolved
       fixed_description: FULL_SYNCチェックを追加。get_last_synced_commit後にlast_synced=空文字に上書き
+      resolved_in_round: 2
     - id: CR-003
       severity: minor
       category: 設計準拠性
       checklist_id: DC-02
       description: 短縮オプション -m/-n/-f/-h 未実装
       file: sync-to-svn.sh
-      status: fixed
+      status: resolved
       fixed_description: parse_argsに-m/-n/-f/-h短縮オプションを追加
+      resolved_in_round: 2
     - id: CR-004
       severity: minor
       category: エラーハンドリング
       checklist_id: LP-02
       description: dcommit失敗時の終了コードが1（設計は5）
       file: sync-to-svn.sh
-      status: fixed
+      status: resolved
       fixed_description: execute_dcommitのreturn 1をexit 5に変更
+      resolved_in_round: 2
     - id: CR-005
       severity: minor
       category: エラーハンドリング
       checklist_id: LP-02
       description: push_svn_branch のエラーハンドリング不足
       file: sync-to-svn.sh
-      status: fixed
+      status: resolved
       fixed_description: push_svn_branchにifチェック追加、失敗時exit 4
+      resolved_in_round: 2
     - id: CR-006
       severity: minor
       category: Git作法
       checklist_id: GH-03
       description: .sync-state.yml にE2Eテストデータ残留
       file: .sync-state.yml
-      status: fixed
+      status: open
       fixed_description: .sync-state.ymlを初期テンプレート状態にリセット
   artifacts:
     - docs/git-svn-backup/code-review/round-01.md
+    - docs/git-svn-backup/code-review/round-02.md
   base_sha: ba73443
-  head_sha: 85a53da
+  head_sha: 93973cb
   latest_verdict: 条件付き承認
-  summary: Major 2件（--dry-run/--full-sync未実装）、Minor 4件。Critical なし。
+  summary: Major 2件解決済み。Minor 1件（CR-006 .sync-state.yml テストデータ残留）が継続。
+  completed_at: "2026-03-08T12:09:24+00:00"
