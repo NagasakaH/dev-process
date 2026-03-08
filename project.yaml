@@ -14,7 +14,7 @@ meta:
   target_repo: "git-svn-backup"
   branch: "feature/GIT-SVN-001"
   created_at: "2026-03-07T00:41:38+00:00"
-  updated_at: "2026-03-08T10:36:55+00:00"
+  updated_at: "2026-03-08T11:36:50+00:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -457,42 +457,48 @@ code_review:
       checklist_id: DC-01
       description: --dry-run フラグが parse されるが main() で未使用
       file: sync-to-svn.sh
-      status: open
+      status: fixed
+      fixed_description: DRY_RUNチェックをmain()に追加。dcommit/push/state更新をスキップ
     - id: CR-002
       severity: major
       category: 設計準拠性
       checklist_id: DC-01
       description: --full-sync フラグが parse されるが main() で未使用
       file: sync-to-svn.sh
-      status: open
+      status: fixed
+      fixed_description: FULL_SYNCチェックを追加。get_last_synced_commit後にlast_synced=空文字に上書き
     - id: CR-003
       severity: minor
       category: 設計準拠性
       checklist_id: DC-02
       description: 短縮オプション -m/-n/-f/-h 未実装
       file: sync-to-svn.sh
-      status: open
+      status: fixed
+      fixed_description: parse_argsに-m/-n/-f/-h短縮オプションを追加
     - id: CR-004
       severity: minor
       category: エラーハンドリング
       checklist_id: LP-02
       description: dcommit失敗時の終了コードが1（設計は5）
       file: sync-to-svn.sh
-      status: open
+      status: fixed
+      fixed_description: execute_dcommitのreturn 1をexit 5に変更
     - id: CR-005
       severity: minor
       category: エラーハンドリング
       checklist_id: LP-02
       description: push_svn_branch のエラーハンドリング不足
       file: sync-to-svn.sh
-      status: open
+      status: fixed
+      fixed_description: push_svn_branchにifチェック追加、失敗時exit 4
     - id: CR-006
       severity: minor
       category: Git作法
       checklist_id: GH-03
       description: .sync-state.yml にE2Eテストデータ残留
       file: .sync-state.yml
-      status: open
+      status: fixed
+      fixed_description: .sync-state.ymlを初期テンプレート状態にリセット
   artifacts:
     - docs/git-svn-backup/code-review/round-01.md
   base_sha: ba73443
