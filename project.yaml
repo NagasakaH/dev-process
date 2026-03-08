@@ -14,7 +14,7 @@ meta:
   target_repo: "git-svn-backup"
   branch: "feature/GIT-SVN-001"
   created_at: "2026-03-07T00:41:38+00:00"
-  updated_at: "2026-03-08T10:22:21+00:00"
+  updated_at: "2026-03-08T10:36:55+00:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -437,3 +437,65 @@ verification:
   artifacts:
     - docs/git-svn-backup/verification/results.md
   completed_at: "2026-03-08T10:22:20+00:00"
+code_review:
+  status: conditional
+  started_at: "2026-03-08T10:36:54+00:00"
+  round: 1
+  rounds:
+    - round: 1
+      result: conditional
+      timestamp: "2026-03-08T10:36:55+00:00"
+      critical_count: 0
+      major_count: 2
+      minor_count: 4
+      info_count: 2
+  review_checklist: {}
+  issues:
+    - id: CR-001
+      severity: major
+      category: 設計準拠性
+      checklist_id: DC-01
+      description: --dry-run フラグが parse されるが main() で未使用
+      file: sync-to-svn.sh
+      status: open
+    - id: CR-002
+      severity: major
+      category: 設計準拠性
+      checklist_id: DC-01
+      description: --full-sync フラグが parse されるが main() で未使用
+      file: sync-to-svn.sh
+      status: open
+    - id: CR-003
+      severity: minor
+      category: 設計準拠性
+      checklist_id: DC-02
+      description: 短縮オプション -m/-n/-f/-h 未実装
+      file: sync-to-svn.sh
+      status: open
+    - id: CR-004
+      severity: minor
+      category: エラーハンドリング
+      checklist_id: LP-02
+      description: dcommit失敗時の終了コードが1（設計は5）
+      file: sync-to-svn.sh
+      status: open
+    - id: CR-005
+      severity: minor
+      category: エラーハンドリング
+      checklist_id: LP-02
+      description: push_svn_branch のエラーハンドリング不足
+      file: sync-to-svn.sh
+      status: open
+    - id: CR-006
+      severity: minor
+      category: Git作法
+      checklist_id: GH-03
+      description: .sync-state.yml にE2Eテストデータ残留
+      file: .sync-state.yml
+      status: open
+  artifacts:
+    - docs/git-svn-backup/code-review/round-01.md
+  base_sha: ba73443
+  head_sha: 85a53da
+  latest_verdict: 条件付き承認
+  summary: Major 2件（--dry-run/--full-sync未実装）、Minor 4件。Critical なし。
