@@ -14,7 +14,7 @@ meta:
   target_repo: "git-svn-backup"
   branch: "feature/GIT-SVN-001"
   created_at: "2026-03-07T00:41:38+00:00"
-  updated_at: "2026-03-08T12:09:25+00:00"
+  updated_at: "2026-03-08T12:11:59+00:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -515,8 +515,8 @@ code_review:
       checklist_id: GH-03
       description: .sync-state.yml にE2Eテストデータ残留
       file: .sync-state.yml
-      status: open
-      fixed_description: .sync-state.ymlを初期テンプレート状態にリセット
+      status: fixed
+      fixed_description: E2Eテスト実行前にコミット。初期テンプレート状態に正しくリセット
   artifacts:
     - docs/git-svn-backup/code-review/round-01.md
     - docs/git-svn-backup/code-review/round-02.md
