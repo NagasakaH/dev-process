@@ -14,7 +14,7 @@ meta:
   target_repo: "git-svn-backup"
   branch: "feature/GIT-SVN-001"
   created_at: "2026-03-07T00:41:38+00:00"
-  updated_at: "2026-03-08T12:11:59+00:00"
+  updated_at: "2026-03-08T12:12:49+00:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -438,9 +438,9 @@ verification:
     - docs/git-svn-backup/verification/results.md
   completed_at: "2026-03-08T10:22:20+00:00"
 code_review:
-  status: conditional
+  status: approved
   started_at: "2026-03-08T10:36:54+00:00"
-  round: 2
+  round: 3
   rounds:
     - round: 1
       result: conditional
@@ -462,6 +462,15 @@ code_review:
         - CR-003
         - CR-004
         - CR-005
+    - round: 3
+      result: approved
+      timestamp: "2026-03-08T12:12:48+00:00"
+      critical_count: 0
+      major_count: 0
+      minor_count: 0
+      info_count: 2
+      resolved_issues:
+        - CR-006
   review_checklist: {}
   issues:
     - id: CR-001
@@ -515,13 +524,15 @@ code_review:
       checklist_id: GH-03
       description: .sync-state.yml にE2Eテストデータ残留
       file: .sync-state.yml
-      status: fixed
+      status: resolved
       fixed_description: E2Eテスト実行前にコミット。初期テンプレート状態に正しくリセット
+      resolved_in_round: 3
   artifacts:
     - docs/git-svn-backup/code-review/round-01.md
     - docs/git-svn-backup/code-review/round-02.md
+    - docs/git-svn-backup/code-review/round-03.md
   base_sha: ba73443
-  head_sha: 93973cb
-  latest_verdict: 条件付き承認
-  summary: Major 2件解決済み。Minor 1件（CR-006 .sync-state.yml テストデータ残留）が継続。
-  completed_at: "2026-03-08T12:09:24+00:00"
+  head_sha: 650cd95
+  latest_verdict: 承認
+  summary: 全指摘解決済み。Critical/Major/Minor指摘なし。finishing-branchへ進行可能。
+  completed_at: "2026-03-08T12:12:48+00:00"
