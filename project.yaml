@@ -14,7 +14,7 @@ meta:
   target_repo: "git-svn-backup"
   branch: "feature/GIT-SVN-001"
   created_at: "2026-03-07T00:41:38+00:00"
-  updated_at: "2026-03-08T12:23:56+00:00"
+  updated_at: "2026-03-08T12:33:05+00:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -540,5 +540,5 @@ finishing:
   status: completed
   started_at: "2026-03-08T12:22:57+00:00"
   action: pr
-  pr_url: https://github.com/NagasakaH/dev-process/pull/new/feature/GIT-SVN-001
-  completed_at: "2026-03-08T12:23:56+00:00"
+  pr_url: https://github.com/NagasakaH/dev-process/pull/8
+  completed_at: "2026-03-08T12:33:05+00:00"
