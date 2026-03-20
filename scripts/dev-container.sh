@@ -23,6 +23,7 @@ WORKSPACE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PROJECT_NAME="$(basename "$WORKSPACE_DIR")"
 PATH_HASH="$(echo -n "${WORKSPACE_DIR}" | md5sum 2>/dev/null | head -c 6 || echo -n "${WORKSPACE_DIR}" | md5 -q 2>/dev/null | head -c 6)"
 CONTAINER_NAME="${PROJECT_NAME}-${PATH_HASH}"
+CONTAINER_USER="${DEV_CONTAINER_USER:-vscode}"
 LABEL_MANAGED="managed-by=dev-container-sh"
 LABEL_WORKSPACE="workspace-path=${WORKSPACE_DIR}"
 
@@ -242,8 +243,8 @@ cmd_shell() {
     exit 1
   fi
 
-  docker exec -it "${target}" tmux attach-session -t "${PROJECT_NAME}" 2>/dev/null \
-    || docker exec -it "${target}" bash
+  docker exec -it --user "${CONTAINER_USER}" "${target}" tmux attach-session -t "${PROJECT_NAME}" 2>/dev/null \
+    || docker exec -it --user "${CONTAINER_USER}" "${target}" bash
 }
 
 cmd_list() {
@@ -285,6 +286,7 @@ case "${1:-help}" in
     echo "  DOCKER_MODE          dind (default) or dood"
     echo "  DOCKER_HOST_SOCK     Docker socket path for dood (default: /var/run/docker.sock)"
     echo "  DOCKER_API_VERSION   Override Docker API version (auto-detected if unset)"
+    echo "  DEV_CONTAINER_USER   User for 'shell' command (default: ${CONTAINER_USER})"
     exit 1
     ;;
 esac
