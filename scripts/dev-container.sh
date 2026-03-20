@@ -84,6 +84,11 @@ build_mounts() {
   # Workspace (always)
   mounts+=(-v "${WORKSPACE_DIR}:/workspaces/${PROJECT_NAME}")
 
+  # Use the workspace copy of start-tmux so lifecycle fixes take effect without rebuilding the image
+  if [ -f "${WORKSPACE_DIR}/.devcontainer/scripts/start-tmux.sh" ]; then
+    mounts+=(-v "${WORKSPACE_DIR}/.devcontainer/scripts/start-tmux.sh:/usr/local/bin/start-tmux:ro")
+  fi
+
   # Optional host paths: source|target[:options]
   local entries=(
     "${HOME}/.aws|/home/vscode/.aws:cached"
@@ -105,6 +110,22 @@ build_mounts() {
   done
 
   echo "${mounts[@]}"
+}
+
+wait_for_tmux_session() {
+  local target="$1"
+  local retries="${DEV_CONTAINER_TMUX_WAIT_RETRIES:-30}"
+  local delay="${DEV_CONTAINER_TMUX_WAIT_DELAY:-1}"
+  local attempt
+
+  for ((attempt = 0; attempt < retries; attempt++)); do
+    if docker exec --user "${CONTAINER_USER}" "${target}" tmux has-session -t "${PROJECT_NAME}" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep "${delay}"
+  done
+
+  return 1
 }
 
 # ---------------------------------------------------------------
@@ -177,7 +198,7 @@ cmd_up() {
   esac
 
   # shellcheck disable=SC2086
-  docker run -it \
+  docker run -d \
     --name "${CONTAINER_NAME}" \
     --hostname "${PROJECT_NAME}" \
     --platform linux/amd64 \
@@ -189,6 +210,12 @@ cmd_up() {
     "${docker_flags[@]}" \
     ${mount_flags} \
     "${IMAGE_NAME}"
+
+  if ! wait_for_tmux_session "${CONTAINER_NAME}"; then
+    echo "Warning: tmux session '${PROJECT_NAME}' is not ready yet. Falling back if needed."
+  fi
+
+  cmd_shell
 }
 
 cmd_down() {
