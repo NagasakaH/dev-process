@@ -3,6 +3,20 @@ FROM --platform=linux/amd64 nagasakah/dev-process:base
 # Install tini for proper PID 1 zombie reaping
 RUN apt-get update && apt-get install -y --no-install-recommends tini && rm -rf /var/lib/apt/lists/*
 
+# Build tmux 3.6a from source
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      libevent-dev ncurses-dev build-essential bison pkg-config \
+    && cd /tmp \
+    && curl -fsSL https://github.com/tmux/tmux/releases/download/3.6a/tmux-3.6a.tar.gz | tar xz \
+    && cd tmux-3.6a \
+    && ./configure && make -j$(nproc) && make install \
+    && cd / && rm -rf /tmp/tmux-3.6a \
+    && apt-get purge -y build-essential bison && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Playwright CLI globally
+RUN npm install -g playwright && npx playwright install-deps 2>/dev/null || true
+
 # Install pip tools
 RUN pip install jsonschema pyyaml
 # RHEL でdindが動かない問題を修正
