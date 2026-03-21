@@ -101,6 +101,10 @@ COPY scripts/cplt /usr/local/bin/cplt
 RUN chmod +x /usr/local/bin/start-viewer /usr/local/bin/cplt
 
 EXPOSE 3000
+
+# Ensure named volume mount point exists with correct ownership
+RUN mkdir -p /home/node/.copilot && chown node:node /home/node/.copilot
+
 USER node
 
 ENTRYPOINT ["tini", "--"]
@@ -120,7 +124,7 @@ CMD ["start-viewer"]
 | curl | 推奨 | ヘルスチェック |
 | Copilot CLI | 必須 | セッション実行環境（ユーザーがインストール） |
 
-### 3.6 .dockerignore
+### 3.5 .dockerignore
 
 ビルドコンテキストから不要ファイルを除外し、イメージサイズ削減とセキュリティを確保する。
 
@@ -155,7 +159,7 @@ LICENSE
 .next/cache/
 ```
 
-### 3.7 dev-process ツールセット比較表
+### 3.6 dev-process ツールセット比較表
 
 機能要件「Include a dev-process devcontainer-equivalent development toolset」への対応を明確化するため、dev-process ベースイメージと viewer ベースイメージのツール比較を示す。
 
@@ -178,7 +182,7 @@ LICENSE
 > **方針**: dev-process のコア開発ツール（tmux, tini, git, gh, Copilot CLI, ripgrep）を全て含め、
 > .NET / Python 等の viewer に不要な言語ランタイムは除外。Playwright 依存は E2E テスト用に追加。
 
-### 3.8 テストフレームワーク
+### 3.7 テストフレームワーク
 
 | 種別 | フレームワーク | 理由 |
 |------|--------------|------|
@@ -268,3 +272,4 @@ LICENSE
 | 2026-03-21 | 1.0 | 初版作成 | Copilot |
 | 2026-03-21 | 1.1 | devcontainer ベースイメージ + アプリ層の2層構成に変更。案C を採用に変更 | Copilot |
 | 2026-03-21 | 1.2 | MRD-003: WORKDIR /app、パス統一。MRD-010: EXPOSE/ENV/USER 追加。MRD-011: .dockerignore 内容追加。MRD-012: ツール比較表追加 | Copilot |
+| 2026-03-21 | 1.3 | MRD-R2-001: named volume 権限の mkdir 追加。MRD-R2-002: セクション番号の連番修正（3.5→3.7） | Copilot |
