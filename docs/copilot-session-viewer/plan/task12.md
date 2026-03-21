@@ -1,0 +1,169 @@
+# Task 12: E2E テスト (Playwright コンテナフロー)
+
+## タスク情報
+
+| 項目 | 内容 |
+|------|------|
+| ID | 12 |
+| タスク名 | E2E テスト (Playwright コンテナフロー) |
+| 前提タスク | 10, 11 |
+| 並列実行 | 不可（最終統合テスト） |
+| 見積時間 | 30分 |
+
+## 作業環境
+
+- **worktree**: `/tmp/viewer-container-local-12/`
+- **ブランチ**: `task/12-e2e-tests`
+- **サブモジュール**: `submodules/copilot-session-viewer/`
+
+## 前提条件
+
+- Task 10: Dockerfile + compose.yaml が存在し、コンテナビルド可能
+- Task 11: Integration テスト PASS
+
+## 作業内容
+
+### 目的
+
+コンテナ環境で Playwright E2E テストを実行し、acceptance criteria の全項目を検証する:
+1. コンテナ起動で viewer + tmux が利用可能
+2. tmux セッションの安定性 (30秒 + 5分耐久)
+3. Basic Auth の動作確認
+4. GITHUB_TOKEN 供給確認
+
+### 設計参照
+
+- `docs/copilot-session-viewer/design/05_test-plan.md` — セクション 5 (E2E テスト: E2E-1 to E2E-7)
+- `docs/copilot-session-viewer/design/06_side-effect-verification.md` — セクション 2.2 (パフォーマンス検証)
+
+### 実装ステップ
+
+1. **E2E テストファイル作成**: `e2e/container-startup.spec.ts`
+   - E2E-1: コンテナ起動確認 (ヘルスチェック → HTTP 200)
+   - E2E-2: tmux セッション確認 (docker exec tmux list-sessions)
+   - E2E-5: セッション一覧表示 (ブラウザでトップページ)
+
+2. **tmux 安定性テスト**: `e2e/tmux-stability.spec.ts`
+   - E2E-3: tmux 安定性 (30秒待機 → セッション維持)
+   - E2E-6: tmux 耐久性 (5分間、定期的操作 + detach/再接続)
+
+3. **認証テスト**: `e2e/auth.spec.ts`
+   - E2E-4: Basic Auth 動作確認 (.env に設定 → 認証なしアクセスで 401)
+   - E2E-7: GITHUB_TOKEN 供給確認 (docker exec printenv)
+
+4. **テストセットアップ**: `e2e/global-setup.ts` (必要に応じて)
+   - コンテナ起動 (`docker compose up -d`)
+   - ヘルスチェック待機
+   - テスト後のクリーンアップ (`docker compose down`)
+
+### 対象ファイル
+
+| ファイル | 操作 |
+|---------|------|
+| `submodules/copilot-session-viewer/e2e/container-startup.spec.ts` | 新規作成 |
+| `submodules/copilot-session-viewer/e2e/tmux-stability.spec.ts` | 新規作成 |
+| `submodules/copilot-session-viewer/e2e/auth.spec.ts` | 新規作成 |
+| `submodules/copilot-session-viewer/e2e/global-setup.ts` | 新規作成 (必要に応じて) |
+
+## TDD アプローチ
+
+### RED (失敗するテストを書く)
+
+```typescript
+// e2e/container-startup.spec.ts
+import { test, expect } from "@playwright/test";
+
+test.describe("Container Startup (E2E-1, E2E-2, E2E-5)", () => {
+  test("E2E-1: viewer should be accessible via healthcheck", async ({ request }) => {
+    const response = await request.get("/api/sessions");
+    expect(response.ok()).toBeTruthy();
+  });
+
+  test("E2E-2: tmux session should exist in container", async () => {
+    // This test uses exec to verify tmux inside container
+    // Implementation depends on test setup (docker exec or playwright)
+  });
+
+  test("E2E-5: session list page should render", async ({ page }) => {
+    await page.goto("/");
+    await expect(page).toHaveTitle(/Copilot Session Viewer/i);
+  });
+});
+
+// e2e/tmux-stability.spec.ts
+test.describe("tmux Stability (E2E-3, E2E-6)", () => {
+  test("E2E-3: tmux session should persist after 30 seconds", async () => {
+    // Wait 30s, then verify tmux session still exists
+  });
+
+  test.skip("E2E-6: tmux should be durable for 5 minutes", async () => {
+    // Long-running test, skip by default
+    // Run with: npx playwright test --grep "E2E-6"
+  });
+});
+
+// e2e/auth.spec.ts
+test.describe("Authentication (E2E-4, E2E-7)", () => {
+  test("E2E-4: should return 401 without Basic Auth", async ({ request }) => {
+    // Requires BASIC_AUTH_USER/PASS to be set in .env
+    const response = await request.get("/api/sessions", {
+      headers: {} // No auth header
+    });
+    // Only assert 401 if Basic Auth is configured
+  });
+
+  test("E2E-7: GITHUB_TOKEN should be available in container", async () => {
+    // Verify via docker exec printenv
+  });
+});
+```
+
+コンテナ未起動のため全テスト FAIL。
+
+### GREEN (テストを通す最小実装)
+
+1. E2E テストファイルを作成
+2. global-setup.ts でコンテナ起動ロジックを追加
+3. コンテナを起動し (`docker compose up -d --build`)、E2E テスト実行
+4. テスト PASS
+
+### REFACTOR (改善)
+
+- テストタイムアウトの最適化
+- E2E-6 (5分間耐久) のスキップ/CI 分離
+- テストレポート設定
+
+## 期待される成果物
+
+- `submodules/copilot-session-viewer/e2e/container-startup.spec.ts`
+- `submodules/copilot-session-viewer/e2e/tmux-stability.spec.ts`
+- `submodules/copilot-session-viewer/e2e/auth.spec.ts`
+- `submodules/copilot-session-viewer/e2e/global-setup.ts` (必要に応じて)
+
+## 完了条件
+
+- [ ] E2E-1: HTTP 200 応答確認
+- [ ] E2E-2: tmux セッション存在確認
+- [ ] E2E-3: 30秒後 tmux セッション維持確認
+- [ ] E2E-4: Basic Auth 401 確認 (設定時)
+- [ ] E2E-5: セッション一覧ページ表示確認
+- [ ] E2E-6: 5分間耐久テスト (スキップ可、手動実行)
+- [ ] E2E-7: GITHUB_TOKEN 供給確認
+- [ ] `npm run test:e2e` が成功する (E2E-6 除く)
+
+## コミット
+
+```bash
+git add -A
+git commit -m "test: add Playwright E2E tests for container flow
+
+- E2E-1: container startup and healthcheck
+- E2E-2: tmux session existence
+- E2E-3: tmux 30s stability
+- E2E-4: Basic Auth verification
+- E2E-5: session list page rendering
+- E2E-6: 5-minute tmux durability (skip by default)
+- E2E-7: GITHUB_TOKEN supply verification
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+```
