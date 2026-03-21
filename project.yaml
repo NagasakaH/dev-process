@@ -14,7 +14,7 @@ meta:
   target_repo: "copilot-session-viewer"
   branch: "feature/viewer-container-local"
   created_at: "2026-03-21T23:09:11+09:00"
-  updated_at: "2026-03-22T01:09:38+09:00"
+  updated_at: "2026-03-22T01:22:48+09:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -328,78 +328,112 @@ plan:
         - "10"
         - "11"
   review:
-    round: 1
+    round: 2
     status: conditional
-    latest_verdict: '条件付き承認: 7 Major + 5 Minor + 1 Info'
-    completed_at: "2026-03-22T01:09:38+09:00"
-    summary: 両レビュアー conditional。TDD RED具体化不足、依存関係欠落、AC検証不足等を指摘。
+    latest_verdict: '条件付き承認: Round 1の11件解決、残存2件+新規4件'
+    completed_at: "2026-03-22T01:22:48+09:00"
+    summary: Round 1の13件中11件解決。gosu未インストール、Copilot CLI検証不足等の残存/新規5件を指摘。
     issues:
       - id: MPR-001
         severity: major
         category: TDD
         description: findDockerContainers未エクスポートでtask03/11テスト不成立
-        status: fixed
+        status: resolved
+        resolved_in_round: 2
       - id: MPR-002
         severity: major
         category: 依存関係
         description: Task06→Task10依存関係欠落
-        status: fixed
+        status: resolved
+        resolved_in_round: 2
       - id: MPR-003
         severity: major
         category: TDD
         description: TDD REDテストがプレースホルダー
-        status: fixed
+        status: resolved
+        resolved_in_round: 2
       - id: MPR-004
         severity: major
         category: TDD
         description: Task12 global-setup.ts任意扱い
-        status: fixed
+        status: resolved
+        resolved_in_round: 2
       - id: MPR-005
         severity: major
         category: 受入基準
         description: AC2 E2E-6 skipでtmux安定性検証不足
-        status: fixed
+        status: resolved
+        resolved_in_round: 2
       - id: MPR-006
         severity: major
         category: 受入基準
         description: AC3 PAT有効性機能検証不足
-        status: fixed
+        status: resolved
+        resolved_in_round: 2
       - id: MPR-007
         severity: major
         category: 受入基準
         description: AC4コンテナ間分離テスト不足
-        status: fixed
+        status: resolved
+        resolved_in_round: 2
       - id: MPR-008
         severity: minor
         category: タスク分割
         description: start-viewer.sh su -l環境変数消失リスク
-        status: fixed
+        status: partially_resolved
+        resolved_in_round: 2
       - id: MPR-009
         severity: minor
         category: タスク分割
         description: Task11/Task03テスト重複
-        status: fixed
+        status: partially_resolved
+        resolved_in_round: 2
       - id: MPR-010
         severity: minor
         category: 見積もり
         description: Task10見積もり20分がタイト
-        status: fixed
+        status: resolved
+        resolved_in_round: 2
       - id: MPR-011
         severity: minor
         category: タスク分割
         description: task01/02成果物・対象ファイル不一致
-        status: fixed
+        status: resolved
+        resolved_in_round: 2
       - id: MPR-012
         severity: minor
         category: 見積もり
         description: 総見積もり楽観的バッファなし
-        status: fixed
+        status: resolved
+        resolved_in_round: 2
       - id: MPR-013
         severity: info
         category: タスク分割
         description: テストファイル配置規約未明記
-        status: fixed
+        status: resolved
+        resolved_in_round: 2
+      - id: NPR-001
+        severity: major
+        category: 依存関係
+        description: task10 Dockerfileにgosuパッケージ未追加
+        status: open
+      - id: NPR-002
+        severity: major
+        category: 受入基準
+        description: AC1 Copilot CLI動作確認テスト未定義
+        status: open
+      - id: NPR-003
+        severity: minor
+        category: タスク分割
+        description: container-isolation.spec.ts対象ファイル表未記載
+        status: open
+      - id: NPR-004
+        severity: minor
+        category: TDD
+        description: E2E .env自動セットアップ未定義
+        status: open
     artifacts:
       - docs/copilot-session-viewer/review-plan/round-01.md
+      - docs/copilot-session-viewer/review-plan/round-02.md
   artifacts: "docs/copilot-session-viewer/plan/"
   completed_at: "2026-03-22T00:50:03+09:00"
