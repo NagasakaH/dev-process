@@ -148,93 +148,109 @@ design:
     - Named volume copilot-data でセッションデータ永続化
     - Vitest (unit/integration) + Playwright (E2E) テスト基盤
   review:
-    round: 1
+    round: 2
     status: conditional
     latest_verdict: 条件付き承認
-    completed_at: "2026-03-21T15:10:44+09:00"
-    summary: Major 5件・Minor 7件・Info 4件。compose.yaml起動整合性、パス不整合、テストマッピングエラー等の修正が必要。
+    completed_at: "2026-03-21T15:27:40+09:00"
+    summary: Round 1全12件resolved。新規Minor 2件+Info 1件。パス残存・named volume権限・セクション番号修正。
     issues:
       - id: MRD-001
         severity: major
         category: 実装可能性 — compose.yaml 起動整合性
         description: compose.yaml depends_on と profiles の矛盾。起動手順が不整合
-        status: open
+        status: resolved
       - id: MRD-002
         severity: major
         category: 実装可能性 — 未定義ファイル参照
         description: devcontainer-build.Dockerfile が未定義でビルド不能
-        status: open
+        status: resolved
       - id: MRD-003
         severity: major
         category: 実装可能性 — パス不整合
         description: Dockerfile COPY先とstart-viewer.sh/playwright実行パスが不一致
-        status: open
+        status: resolved
       - id: MRD-004
         severity: major
         category: テスト可能性 — acceptance_criteria マッピングエラー
         description: PAT認証要件のテストマッピングが誤り（UT-5,6→UT-9〜11）
-        status: open
+        status: resolved
       - id: MRD-005
         severity: major
         category: データ構造 — $HOME パス不一致
         description: $HOME想定が/home/vscodeと/home/nodeで不整合
-        status: open
+        status: resolved
       - id: MRD-006
         severity: minor
         category: 要件整合性 — PAT 認証
         description: GITHUB_TOKEN以外のCopilot CLI利用経路が不明確
-        status: open
+        status: resolved
       - id: MRD-007
         severity: minor
         category: テスト可能性 — tmux 耐久性
         description: tmux安定性検証が30秒のみで不十分
-        status: open
+        status: resolved
       - id: MRD-008
         severity: minor
         category: 技術的妥当性 — healthcheck
         description: compose.yamlにDocker healthcheck未定義
-        status: open
+        status: resolved
       - id: MRD-009
         severity: minor
         category: テスト可能性 — module-level const
         description: DISABLE_DOCKER_DETECTIONがconstでテスト時に変更不可
-        status: open
+        status: resolved
       - id: MRD-010
         severity: minor
         category: 技術的妥当性 — Dockerfile 品質
         description: WORKDIR/USER/EXPOSE/ENV欠落、root実行リスク
-        status: open
+        status: resolved
       - id: MRD-011
         severity: minor
         category: 実装可能性 — .dockerignore
         description: .dockerignore内容未定義
-        status: open
+        status: resolved
       - id: MRD-012
         severity: minor
         category: 要件カバレッジ — dev-process ツールセット
         description: ツール含有/除外の比較表・判断基準が不明確
-        status: open
+        status: resolved
       - id: MRD-013
         severity: info
         category: 依存関係
         description: better-sqlite3が未使用だがdependenciesに残存
-        status: open
+        status: resolved
       - id: MRD-014
         severity: info
         category: テストカバレッジ
         description: カバレッジ目標が控えめ（terminal.ts 60%+）。初回として妥当
-        status: open
+        status: resolved
       - id: MRD-015
         severity: info
         category: ビルド方式
         description: Next.js standaloneビルドがホスト側事前実行前提
-        status: open
+        status: resolved
       - id: MRD-016
         severity: info
         category: Dockerfile効率
         description: apt-get updateが2回実行される
+        status: resolved
+      - id: MRD-003-残
+        severity: minor
+        category: 実装可能性 — パス不整合の残存
+        description: セクション1.2にnode .next/standalone/server.jsの旧パス表記が残存
+        status: open
+      - id: MRD-R2-001
+        severity: minor
+        category: 技術的妥当性 — named volume 権限
+        description: USER node下でnamed volumeマウント先/home/node/.copilotが未作成
+        status: open
+      - id: MRD-R2-002
+        severity: info
+        category: ドキュメント — セクション番号
+        description: 01_implementation-approach.mdのセクション3.xに欠番あり（3.4→3.6）
         status: open
     artifacts:
       - docs/copilot-session-viewer/review-design/round-01.md
+      - docs/copilot-session-viewer/review-design/round-02.md
   artifacts: "docs/copilot-session-viewer/design/"
   completed_at: "2026-03-21T23:35:28+09:00"
