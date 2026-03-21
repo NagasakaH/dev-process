@@ -23,6 +23,7 @@ WORKSPACE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PROJECT_NAME="$(basename "$WORKSPACE_DIR")"
 PATH_HASH="$(echo -n "${WORKSPACE_DIR}" | md5sum 2>/dev/null | head -c 6 || echo -n "${WORKSPACE_DIR}" | md5 -q 2>/dev/null | head -c 6)"
 CONTAINER_NAME="${PROJECT_NAME}-${PATH_HASH}"
+CONTAINER_USER="${DEV_CONTAINER_USER:-vscode}"
 LABEL_MANAGED="managed-by=dev-container-sh"
 LABEL_WORKSPACE="workspace-path=${WORKSPACE_DIR}"
 
@@ -83,6 +84,16 @@ build_mounts() {
   # Workspace (always)
   mounts+=(-v "${WORKSPACE_DIR}:/workspaces/${PROJECT_NAME}")
 
+  # Worktree storage — persistent across container recreations
+  local worktree_dir="${WORKSPACE_DIR}-worktrees"
+  mkdir -p "${worktree_dir}"
+  mounts+=(-v "${worktree_dir}:/workspaces/worktrees")
+
+  # Use the workspace copy of start-tmux so lifecycle fixes take effect without rebuilding the image
+  if [ -f "${WORKSPACE_DIR}/.devcontainer/scripts/start-tmux.sh" ]; then
+    mounts+=(-v "${WORKSPACE_DIR}/.devcontainer/scripts/start-tmux.sh:/usr/local/bin/start-tmux:ro")
+  fi
+
   # Optional host paths: source|target[:options]
   local entries=(
     "${HOME}/.aws|/home/vscode/.aws:cached"
@@ -104,6 +115,26 @@ build_mounts() {
   done
 
   echo "${mounts[@]}"
+}
+
+locale_env_flags() {
+  echo "-e LANG=C.UTF-8 -e LC_ALL=C.UTF-8"
+}
+
+wait_for_tmux_session() {
+  local target="$1"
+  local retries="${DEV_CONTAINER_TMUX_WAIT_RETRIES:-30}"
+  local delay="${DEV_CONTAINER_TMUX_WAIT_DELAY:-1}"
+  local attempt
+
+  for ((attempt = 0; attempt < retries; attempt++)); do
+    if docker exec --user "${CONTAINER_USER}" "${target}" tmux has-session -t "${PROJECT_NAME}" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep "${delay}"
+  done
+
+  return 1
 }
 
 # ---------------------------------------------------------------
@@ -135,6 +166,8 @@ cmd_up() {
   # Build mount flags
   local mount_flags
   mount_flags=$(build_mounts)
+  local locale_flags
+  locale_flags=$(locale_env_flags)
 
   # Docker mode specific flags
   local docker_flags=()
@@ -176,7 +209,7 @@ cmd_up() {
   esac
 
   # shellcheck disable=SC2086
-  docker run -it \
+  docker run -d \
     --name "${CONTAINER_NAME}" \
     --hostname "${PROJECT_NAME}" \
     --platform linux/amd64 \
@@ -184,10 +217,17 @@ cmd_up() {
     --label "${LABEL_WORKSPACE}" \
     --label "project=${PROJECT_NAME}" \
     --label "docker-mode=${DOCKER_MODE}" \
+    ${locale_flags} \
     -e "PROJECT_NAME=${PROJECT_NAME}" \
     "${docker_flags[@]}" \
     ${mount_flags} \
     "${IMAGE_NAME}"
+
+  if ! wait_for_tmux_session "${CONTAINER_NAME}"; then
+    echo "Warning: tmux session '${PROJECT_NAME}' is not ready yet. Falling back if needed."
+  fi
+
+  cmd_shell
 }
 
 cmd_down() {
@@ -242,8 +282,12 @@ cmd_shell() {
     exit 1
   fi
 
-  docker exec -it "${target}" tmux attach-session -t "${PROJECT_NAME}" 2>/dev/null \
-    || docker exec -it "${target}" bash
+  local locale_flags
+  locale_flags=$(locale_env_flags)
+
+  # shellcheck disable=SC2086
+  docker exec -it ${locale_flags} --user "${CONTAINER_USER}" "${target}" tmux attach-session -t "${PROJECT_NAME}" 2>/dev/null \
+    || docker exec -it ${locale_flags} --user "${CONTAINER_USER}" "${target}" bash
 }
 
 cmd_list() {
@@ -285,6 +329,7 @@ case "${1:-help}" in
     echo "  DOCKER_MODE          dind (default) or dood"
     echo "  DOCKER_HOST_SOCK     Docker socket path for dood (default: /var/run/docker.sock)"
     echo "  DOCKER_API_VERSION   Override Docker API version (auto-detected if unset)"
+    echo "  DEV_CONTAINER_USER   User for 'shell' command (default: ${CONTAINER_USER})"
     exit 1
     ;;
 esac
