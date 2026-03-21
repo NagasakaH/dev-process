@@ -14,7 +14,7 @@ meta:
   target_repo: "copilot-session-viewer"
   branch: "feature/viewer-container-local"
   created_at: "2026-03-21T23:09:11+09:00"
-  updated_at: "2026-03-22T01:28:05+09:00"
+  updated_at: "2026-03-22T01:31:35+09:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -452,3 +452,73 @@ plan:
       - docs/copilot-session-viewer/review-plan/round-03.md
   artifacts: "docs/copilot-session-viewer/plan/"
   completed_at: "2026-03-22T00:50:03+09:00"
+implement:
+  status: in_progress
+  started_at: "2026-03-22T01:31:35+09:00"
+  completed_tasks: 0
+  total_tasks: 12
+  tasks:
+    - id: "01"
+      name: \u30c6\u30b9\u30c8\u57fa\u76e4\u30bb\u30c3\u30c8\u30a2\u30c3\u30d7
+      estimate: 15min
+      deps: []
+    - id: "02"
+      name: standalone\u51fa\u529b+dockerignore
+      estimate: 10min
+      deps:
+        - "01"
+    - id: "03"
+      name: DISABLE_DOCKER_DETECTION+\u5358\u4f53\u30c6\u30b9\u30c8
+      estimate: 15min
+      deps:
+        - "01"
+    - id: "04"
+      name: sessions.ts\u5358\u4f53\u30c6\u30b9\u30c8
+      estimate: 15min
+      deps:
+        - "01"
+    - id: "05"
+      name: middleware.ts\u5358\u4f53\u30c6\u30b9\u30c8
+      estimate: 10min
+      deps:
+        - "01"
+    - id: "06"
+      name: .env.example
+      estimate: 5min
+      deps: []
+    - id: "07"
+      name: start-viewer.sh
+      estimate: 20min
+      deps: []
+    - id: "08"
+      name: cplt\u30e9\u30c3\u30d1\u30fc
+      estimate: 10min
+      deps: []
+    - id: "09"
+      name: devcontainer.json
+      estimate: 10min
+      deps: []
+    - id: "10"
+      name: Dockerfile+compose.yaml
+      estimate: 30min
+      deps:
+        - "02"
+        - "07"
+        - "08"
+        - "09"
+        - "06"
+    - id: "11"
+      name: Integration\u30c6\u30b9\u30c8
+      estimate: 20min
+      deps:
+        - "03"
+        - "04"
+        - "05"
+        - "10"
+    - id: "12"
+      name: E2E\u30c6\u30b9\u30c8
+      estimate: 30min
+      deps:
+        - "10"
+        - "11"
+  artifacts: "docs/copilot-session-viewer/implement/"
