@@ -44,8 +44,8 @@
    ARG BASE_IMAGE=copilot-session-viewer:base
    FROM ${BASE_IMAGE}
 
-   # Install tini for proper PID 1 zombie reaping
-   RUN apt-get update && apt-get install -y --no-install-recommends tini && rm -rf /var/lib/apt/lists/*
+   # Install tini for proper PID 1 zombie reaping, gosu for UID switching (used by start-viewer.sh)
+   RUN apt-get update && apt-get install -y --no-install-recommends tini gosu && rm -rf /var/lib/apt/lists/*
 
    # Build tmux 3.6a from source (upgrade from apt version)
    RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -169,7 +169,7 @@ docker compose config --quiet 2>&1 || echo "Expected: compose.yaml does not exis
 
 - [ ] `Dockerfile` が存在し、2層構成 (FROM base) になっている
 - [ ] `compose.yaml` が存在し、`docker compose config` が成功する
-- [ ] tini, tmux 3.6a ビルド、standalone コピーが Dockerfile に含まれる
+- [ ] tini, gosu, tmux 3.6a ビルド、standalone コピーが Dockerfile に含まれる
 - [ ] healthcheck が定義されている
 - [ ] Named volume `copilot-data` が定義されている
 - [ ] `DISABLE_DOCKER_DETECTION=true` が environment に含まれる

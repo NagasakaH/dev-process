@@ -60,7 +60,7 @@
    fi
 ```
 
-   > **NOTE (MPR-008)**: `su -l` は login shell を起動するため `PORT`, `NODE_ENV` 等の環境変数が消失する。`gosu` は環境変数を保持したまま UID 切り替えを行うため、コンテナ環境では `gosu` が推奨。Dockerfile で `apt-get install -y gosu` が必要。
+   > **NOTE (MPR-008)**: `su -l` は login shell を起動するため `PORT`, `NODE_ENV` 等の環境変数が消失する。`gosu` は環境変数を保持したまま UID 切り替えを行うため、コンテナ環境では `gosu` が推奨。`gosu` はアプリ層 Dockerfile (task10) で `apt-get install -y gosu` によりインストールされる。
 
    ```bash
    # === tmux セッション作成 ===

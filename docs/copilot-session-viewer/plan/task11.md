@@ -52,7 +52,7 @@
 
 3. **既存機能回帰テスト**: `src/lib/__tests__/regression.test.ts`
 
-   - `DISABLE_DOCKER_DETECTION` 未設定時にローカル Docker 検出が有効であること
+   - `DISABLE_DOCKER_DETECTION` 未設定時に `getActiveSessions()` パイプラインが Docker 検出を含むこと（パイプラインレベル）
    - Basic Auth 未設定時に認証がスキップされること
 
 ### 対象ファイル
@@ -109,14 +109,14 @@ describe("Environment Variable Integration", () => {
 
 // src/lib/__tests__/regression.test.ts
 describe("Regression Tests", () => {
-  it("should not break Docker detection when flag is not set", async () => {
+  it("should include Docker detection in getActiveSessions pipeline when flag is not set", async () => {
     vi.stubEnv("DISABLE_DOCKER_DETECTION", "");
     vi.resetModules();
     const childProcess = await import("child_process");
     const execSyncSpy = vi.spyOn(childProcess, "execSync").mockReturnValue(Buffer.from(""));
-    const { findDockerContainers } = await import("@/lib/terminal");
-    findDockerContainers();
-    // Docker detection should attempt to run (execSync called)
+    const { getActiveSessions } = await import("@/lib/terminal");
+    getActiveSessions();
+    // Pipeline-level: verify Docker detection is part of the session gathering pipeline
     expect(execSyncSpy).toHaveBeenCalled();
   });
 
