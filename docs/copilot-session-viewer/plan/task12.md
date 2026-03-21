@@ -54,12 +54,26 @@
 4. **テストセットアップ**: `e2e/global-setup.ts` (必須)
    - コンテナ起動 (`docker compose up -d --build`)
    - ヘルスチェック待機 (HTTP 200 をポーリング)
-   - テスト用 `.env` の存在確認
+   - テスト用 `.env` の存在確認（不在時は `.env.example` から自動コピー）
    ```typescript
    // e2e/global-setup.ts
    import { execSync } from "child_process";
+   import { existsSync, copyFileSync } from "fs";
+   import { resolve } from "path";
 
    export default async function globalSetup() {
+     // Ensure .env exists (auto-copy from .env.example if missing)
+     const envPath = resolve(__dirname, "../.env");
+     const envExamplePath = resolve(__dirname, "../.env.example");
+     if (!existsSync(envPath)) {
+       if (existsSync(envExamplePath)) {
+         copyFileSync(envExamplePath, envPath);
+         console.log("Copied .env.example → .env for E2E tests");
+       } else {
+         throw new Error(".env and .env.example not found. Cannot run E2E tests.");
+       }
+     }
+
      execSync("docker compose up -d --build", { stdio: "inherit" });
      // Wait for healthcheck
      const maxRetries = 30;
@@ -100,6 +114,7 @@
 | `submodules/copilot-session-viewer/e2e/container-startup.spec.ts` | 新規作成 |
 | `submodules/copilot-session-viewer/e2e/tmux-stability.spec.ts` | 新規作成 |
 | `submodules/copilot-session-viewer/e2e/auth.spec.ts` | 新規作成 |
+| `submodules/copilot-session-viewer/e2e/container-isolation.spec.ts` | 新規作成 |
 | `submodules/copilot-session-viewer/e2e/global-setup.ts` | 新規作成 (必須) |
 | `submodules/copilot-session-viewer/e2e/global-teardown.ts` | 新規作成 (必須) |
 
@@ -149,6 +164,16 @@ test.describe("Container Isolation (AC4)", () => {
     const inspectOutput = execSync("docker compose exec -T viewer df /home/node/.copilot").toString();
     // Named volume should show as overlay or similar, not the host filesystem path
     expect(inspectOutput).toBeDefined();
+  });
+});
+
+// e2e/container-startup.spec.ts (追加テスト)
+test.describe("Copilot CLI Availability (AC1)", () => {
+  test("E2E-11: cplt command should be available in container", async () => {
+    const { execSync } = require("child_process");
+    // Verify cplt wrapper script is installed and executable
+    const output = execSync("docker compose exec -T viewer which cplt").toString().trim();
+    expect(output).toContain("/usr/local/bin/cplt");
   });
 });
 
@@ -233,6 +258,7 @@ test.describe("Authentication (E2E-4, E2E-7)", () => {
 - [ ] E2E-8: PAT 有効性検証 (`gh auth status` 成功)
 - [ ] E2E-9: コンテナ内 `/home/node/.copilot` 存在・書き込み可能 (AC4)
 - [ ] E2E-10: コンテナ .copilot パスがホストから分離 (AC4)
+- [ ] E2E-11: `cplt` コマンドがコンテナ内で利用可能 (AC1)
 - [ ] `npm run test:e2e` が成功する (E2E-6 除く)
 
 ## コミット
