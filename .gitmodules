@@ -1,0 +1,3 @@
+[submodule "submodules/copilot-session-viewer"]
+	path = submodules/copilot-session-viewer
+	url = ssh://git@gitlab.com/nagasakatools/copilot-session-viewer.git
