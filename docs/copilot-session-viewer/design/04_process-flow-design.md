@@ -52,6 +52,8 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant User as User
+    participant DevC as devcontainer CLI
+    participant Host as Host Shell
     participant Compose as docker compose
     participant Tini as tini (PID 1)
     participant Script as start-viewer.sh
@@ -59,18 +61,29 @@ sequenceDiagram
     participant Next as Next.js Standalone
     participant Term as terminal.ts
 
-    Note over User,Term: 【修正後】コンテナ起動
+    Note over User,Term: 【修正後】コンテナ起動（2段階ビルド）
 
-    User->>Compose: docker compose up -d
-    Compose->>Tini: tini -- start-viewer
-    Tini->>Script: start-viewer.sh
+    rect rgb(240, 248, 255)
+        Note over User,Host: Step 1: ベースイメージビルド + Next.js ビルド
+        User->>DevC: devcontainer build --image-name copilot-session-viewer:base
+        DevC-->>User: copilot-session-viewer:base イメージ作成完了
+        User->>Host: npm ci && npm run build
+        Host-->>User: .next/standalone/ 生成完了
+    end
+
+    rect rgb(255, 248, 240)
+        Note over User,Term: Step 2: コンテナ起動
+        User->>Compose: docker compose up -d --build
+        Compose->>Tini: tini -- start-viewer
+        Tini->>Script: start-viewer.sh
+    end
 
     Note over Script: UID/GID sync (if root)
 
     Script->>Tmux: tmux new-session -d -s viewer
     Script->>Tmux: tmux new-window "viewer"
-    Script->>Tmux: send-keys "node server.js" (viewer window)
-    Tmux->>Next: node .next/standalone/server.js
+    Script->>Tmux: send-keys "cd /app && node server.js" (viewer window)
+    Tmux->>Next: node /app/server.js
     Script->>Tmux: tmux new-window "copilot"
     Script->>Tmux: tmux new-window "bash"
 
@@ -94,9 +107,9 @@ sequenceDiagram
 
 | 項目 | 修正前 | 修正後 | 理由 |
 |------|--------|--------|------|
-| 起動方法 | `npm run dev` | `docker compose up -d` | コンテナ化 |
+| 起動方法 | `npm run dev` | 2段階: `devcontainer build` + `npm run build` → `docker compose up -d --build` | コンテナ化（ベースイメージ事前ビルド必須） |
 | PID 1 | Node.js | tini | ゾンビプロセス回収 |
-| Next.js 実行 | `next dev` | `node server.js` (standalone) | プロダクション実行 |
+| Next.js 実行 | `next dev` | `cd /app && node server.js` (standalone) | プロダクション実行。WORKDIR /app に統一 |
 | tmux 管理 | ユーザー手動 | start-viewer.sh が自動起動 | self-contained |
 | Docker 検出 | 有効 | 無効 (`DISABLE_DOCKER_DETECTION=true`) | コンテナ内では不要 |
 | セッション検出 | ローカル + Docker | ローカルのみ | self-contained |
@@ -115,7 +128,7 @@ flowchart TD
     E -->|Yes| F[既存セッション使用]
     E -->|No| G[tmux new-session viewer]
     G --> H[Window 1: viewer]
-    H --> I["send-keys: HOSTNAME=0.0.0.0 PORT=3000<br/>node .next/standalone/server.js"]
+    H --> I["send-keys: HOSTNAME=0.0.0.0 PORT=3000<br/>cd /app && node server.js"]
     I --> J[Window 2: copilot]
     J --> K[Window 3: bash]
     K --> L[select-window viewer]
@@ -124,6 +137,9 @@ flowchart TD
     M --> N{"wait -n / sleep 60"}
     N --> M
 ```
+
+> **パス統一**: `start-viewer.sh` 内の Next.js 起動コマンドは `cd /app && node server.js` を使用。
+> Dockerfile で `WORKDIR /app` が設定されるため、`/app/server.js` がアプリケーションのエントリポイント。
 
 ---
 
@@ -307,3 +323,4 @@ sequenceDiagram
 |------|------------|----------|--------|
 | 2026-03-21 | 1.0 | 初版作成 | Copilot |
 | 2026-03-21 | 1.1 | ビルドフローを devcontainer ベース + アプリ層の2層構成に変更 | Copilot |
+| 2026-03-21 | 1.2 | MRD-001: 2段階起動手順（devcontainer build → docker compose up）に変更。MRD-003: パスを /app/server.js に統一 | Copilot |

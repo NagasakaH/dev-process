@@ -90,17 +90,24 @@ FROM copilot-session-viewer:base
 # ホストでビルド済み成果物を COPY するかは実装時に決定。
 # 以下は COPY パターン:
 
-COPY .next/standalone ./app/
-COPY .next/static ./app/.next/static
-COPY public ./app/public
+WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
+
+COPY .next/standalone/ ./
+COPY .next/static ./.next/static
+COPY public ./public
 COPY scripts/start-viewer.sh /usr/local/bin/start-viewer
 COPY scripts/cplt /usr/local/bin/cplt
+RUN chmod +x /usr/local/bin/start-viewer /usr/local/bin/cplt
+
+EXPOSE 3000
+USER node
 
 ENTRYPOINT ["tini", "--"]
 CMD ["start-viewer"]
 ```
 
-**理由**: ベースイメージに含まれないアプリ固有のファイル（Next.js ビルド成果物、エントリポイント）のみを追加。ベースイメージの再ビルド頻度を最小化。
+**理由**: ベースイメージに含まれないアプリ固有のファイル（Next.js ビルド成果物、エントリポイント）のみを追加。ベースイメージの再ビルド頻度を最小化。`WORKDIR /app` によりアプリケーションパスを統一し、`USER node` で非 root 実行を保証。
 
 ### 3.4 コンテナ内ツール
 
@@ -113,7 +120,65 @@ CMD ["start-viewer"]
 | curl | 推奨 | ヘルスチェック |
 | Copilot CLI | 必須 | セッション実行環境（ユーザーがインストール） |
 
-### 3.5 テストフレームワーク
+### 3.6 .dockerignore
+
+ビルドコンテキストから不要ファイルを除外し、イメージサイズ削減とセキュリティを確保する。
+
+```
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies (standalone build に含まれる)
+node_modules
+
+# Version control
+.git
+.gitignore
+
+# Test / Development
+e2e/
+docs/
+.devcontainer/
+tests/
+
+# Documentation
+*.md
+LICENSE
+
+# Editor / IDE
+.vscode/
+.idea/
+
+# Build intermediates (standalone 以外)
+.next/cache/
+```
+
+### 3.7 dev-process ツールセット比較表
+
+機能要件「Include a dev-process devcontainer-equivalent development toolset」への対応を明確化するため、dev-process ベースイメージと viewer ベースイメージのツール比較を示す。
+
+| ツール | dev-process | viewer | viewer での判断理由 |
+|--------|:-----------:|:------:|---------------------|
+| Node.js 22 | ✅ (feature) | ✅ (ベースイメージ) | Next.js 実行に必須 |
+| tmux 3.6a | ✅ (ソースビルド) | ✅ (ソースビルド) | Copilot CLI セッション管理に必須 |
+| tini | ✅ | ✅ | PID 1 ゾンビ回収に必須 |
+| git | ✅ (feature) | ✅ (feature) | セッション情報取得に推奨 |
+| GitHub CLI (gh) | ✅ (feature) | ✅ (feature) | 認証・API アクセスに推奨 |
+| Copilot CLI | ✅ (feature) | ✅ (feature) | セッション実行環境に必須 |
+| ripgrep | ✅ | ✅ (feature) | Copilot CLI が使用 |
+| curl | ✅ | ✅ (ベースイメージ) | ヘルスチェックに推奨 |
+| ps (procps) | ✅ | ✅ (ベースイメージ) | プロセス検出 (terminal.ts) に必須 |
+| Playwright deps | ❌ | ✅ (feature) | E2E テスト実行に推奨 |
+| .NET SDK | ✅ (ベースイメージ) | ❌ | viewer では不要 |
+| Python 3 | ✅ | ❌ | viewer では不要（better-sqlite3 ビルド時は検討） |
+| Docker CLI | ✅ | ❌ | コンテナ内では Docker 検出無効のため不要 |
+
+> **方針**: dev-process のコア開発ツール（tmux, tini, git, gh, Copilot CLI, ripgrep）を全て含め、
+> .NET / Python 等の viewer に不要な言語ランタイムは除外。Playwright 依存は E2E テスト用に追加。
+
+### 3.8 テストフレームワーク
 
 | 種別 | フレームワーク | 理由 |
 |------|--------------|------|
@@ -202,3 +267,4 @@ CMD ["start-viewer"]
 |------|------------|----------|--------|
 | 2026-03-21 | 1.0 | 初版作成 | Copilot |
 | 2026-03-21 | 1.1 | devcontainer ベースイメージ + アプリ層の2層構成に変更。案C を採用に変更 | Copilot |
+| 2026-03-21 | 1.2 | MRD-003: WORKDIR /app、パス統一。MRD-010: EXPOSE/ENV/USER 追加。MRD-011: .dockerignore 内容追加。MRD-012: ツール比較表追加 | Copilot |
