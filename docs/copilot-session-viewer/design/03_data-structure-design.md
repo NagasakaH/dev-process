@@ -158,16 +158,20 @@ PROJECT_NAME=viewer
 └── ...
 ```
 
-### 5.2 Dockerfile でのコピー
+### 5.2 Dockerfile（アプリ層）でのコピー
 
 ```dockerfile
+# FROM copilot-session-viewer:base
 # Standalone server
-COPY --from=builder /app/.next/standalone ./
+COPY .next/standalone ./app/
 # Static assets (standalone に含まれない)
-COPY --from=builder /app/.next/static ./.next/static
+COPY .next/static ./app/.next/static
 # Public assets
-COPY --from=builder /app/public ./public
+COPY public ./app/public
 ```
+
+> **NOTE**: ベースイメージ（Layer 1）には Node.js, tmux, git 等のランタイムが含まれる。
+> アプリ層（Layer 2）では Next.js ビルド成果物のみを追加する。
 
 ---
 
@@ -229,8 +233,10 @@ export default defineConfig({
 
 ```
 copilot-session-viewer/
-├── Dockerfile                          # NEW: マルチステージビルド
-├── compose.yaml                        # NEW: コンテナ起動設定
+├── .devcontainer/
+│   └── devcontainer.json               # NEW: ベースイメージ定義（features）
+├── Dockerfile                          # NEW: アプリ層（FROM copilot-session-viewer:base）
+├── compose.yaml                        # NEW: コンテナ起動設定（2層ビルド）
 ├── .dockerignore                       # NEW: ビルドコンテキスト除外
 ├── .env.example                        # NEW: 環境変数テンプレート
 ├── vitest.config.ts                    # NEW: Vitest 設定
@@ -261,3 +267,4 @@ copilot-session-viewer/
 | 日付 | バージョン | 変更内容 | 変更者 |
 |------|------------|----------|--------|
 | 2026-03-21 | 1.0 | 初版作成 | Copilot |
+| 2026-03-21 | 1.1 | 2層イメージ構成に合わせてディレクトリ構造・Dockerfile コピー手順を更新 | Copilot |

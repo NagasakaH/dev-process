@@ -238,29 +238,35 @@ stateDiagram-v2
 
 ```mermaid
 flowchart TD
-    subgraph Stage1["Stage 1: deps"]
-        A[FROM node:22-bookworm AS deps]
-        B[COPY package.json + package-lock.json]
-        C[npm ci]
+    subgraph Layer1["Layer 1: ベースイメージ (devcontainer)"]
+        A["devcontainer.json"]
+        B["mcr.microsoft.com/devcontainers/javascript-node:22"]
+        C["features: git, github-cli, copilot-cli,<br/>playwright, tmux-apt-get, ripgrep"]
+        D["devcontainer build<br/>→ copilot-session-viewer:base"]
+        A --> B --> C --> D
     end
 
-    subgraph Stage2["Stage 2: builder"]
-        D[FROM node:22-bookworm AS builder]
-        E[COPY --from=deps node_modules]
-        F[COPY source code]
-        G["next build (output: standalone)"]
+    subgraph Layer2["Layer 2: アプリ層 (Dockerfile)"]
+        E["FROM copilot-session-viewer:base"]
+        F["Install tini + tmux 3.6a ソースビルド"]
+        G["COPY Next.js standalone + static + public"]
+        H["COPY scripts/start-viewer.sh + cplt"]
+        I["ENTRYPOINT: tini -- start-viewer"]
+        E --> F --> G --> H --> I
     end
 
-    subgraph Stage3["Stage 3: runner"]
-        H[FROM node:22-bookworm-slim AS runner]
-        I[Install tini + tmux + procps]
-        J[COPY --from=builder standalone + static + public]
-        K[COPY scripts/start-viewer.sh + cplt]
-        L["ENTRYPOINT: tini -- start-viewer"]
+    subgraph HostBuild["ホスト側ビルド (事前実行)"]
+        J["npm ci"]
+        K["next build (output: standalone)"]
+        J --> K
     end
 
-    Stage1 --> Stage2 --> Stage3
+    Layer1 --> Layer2
+    HostBuild --> G
 ```
+
+> **NOTE**: Next.js の standalone ビルドはホスト側（またはCI）で事前に実行し、
+> アプリ層 Dockerfile では COPY のみ行う。ベースイメージの再ビルドは features 変更時のみ。
 
 ---
 
@@ -300,3 +306,4 @@ sequenceDiagram
 | 日付 | バージョン | 変更内容 | 変更者 |
 |------|------------|----------|--------|
 | 2026-03-21 | 1.0 | 初版作成 | Copilot |
+| 2026-03-21 | 1.1 | ビルドフローを devcontainer ベース + アプリ層の2層構成に変更 | Copilot |
