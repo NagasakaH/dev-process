@@ -14,7 +14,7 @@ meta:
   target_repo: "copilot-session-viewer"
   branch: "feature/viewer-container-local"
   created_at: "2026-03-21T23:09:11+09:00"
-  updated_at: "2026-03-22T02:38:11+09:00"
+  updated_at: "2026-03-22T02:45:13+09:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -562,3 +562,10 @@ code_review:
   completed_at: "2026-03-22T02:38:11+09:00"
   latest_verdict: 承認
   summary: Minor 4件修正済み。Critical/Major指摘なし(スコープ外再分類)。GPT+Claude並列レビュー。
+finishing:
+  status: in_progress
+  started_at: "2026-03-22T02:45:13+09:00"
+  method: merge_request
+  target_branch: main
+  source_branch: feature/viewer-container-local
+  mr_url: https://gitlab.com/nagasakatools/copilot-session-viewer/-/merge_requests/new?merge_request%5Bsource_branch%5D=feature%2Fviewer-container-local
