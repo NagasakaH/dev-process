@@ -148,6 +148,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        BASE_IMAGE: copilot-session-viewer:base
     ports:
       - "${PORT:-3000}:3000"
     volumes:
@@ -161,10 +163,26 @@ services:
     tty: true
     stdin_open: true
     init: false   # tini is baked into the image
+    depends_on:
+      base-build:
+        condition: service_completed_successfully
+
+  base-build:
+    image: copilot-session-viewer:base
+    build:
+      context: .devcontainer
+      dockerfile: devcontainer-build.Dockerfile
+    # ビルド専用サービス。実行はしない
+    command: ["true"]
+    profiles:
+      - build
 
 volumes:
   copilot-data:
 ```
+
+> **NOTE**: ベースイメージのビルドは `devcontainer build` CLI または compose の `base-build` サービスで行う。
+> 実運用では `devcontainer build --workspace-folder . --image-name copilot-session-viewer:base` を推奨。
 
 ### 3.2 ポートマッピング
 
@@ -180,51 +198,124 @@ volumes:
 
 ---
 
-## 4. Dockerfile インターフェース
+## 4. devcontainer.json インターフェース（Layer 1: ベースイメージ）
 
-### 4.1 ビルド引数
+### 4.1 `.devcontainer/devcontainer.json`
+
+```json
+{
+  "name": "Copilot Session Viewer Base",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/copilot-cli:1": {},
+    "ghcr.io/schlich/devcontainer-features/playwright:0": {},
+    "ghcr.io/devcontainers-extra/features/tmux-apt-get:1": {},
+    "ghcr.io/jungaretti/features/ripgrep:1": {}
+  }
+}
+```
+
+### 4.2 features 一覧と用途
+
+| Feature | 用途 | 必須/推奨 |
+|---------|------|----------|
+| `git:1` | セッション情報取得、リポジトリ操作 | 推奨 |
+| `github-cli:1` | GitHub 認証、API アクセス | 推奨 |
+| `copilot-cli:1` | Copilot CLI セッション実行環境 | 必須 |
+| `playwright:0` | E2E テスト実行時のブラウザ依存関係 | 推奨 |
+| `tmux-apt-get:1` | tmux 基本インストール（3.6a へのアップグレードはアプリ層で実施） | 必須 |
+| `ripgrep:1` | テキスト検索（Copilot CLI が使用） | 推奨 |
+
+### 4.3 ベースイメージビルドコマンド
+
+```bash
+# devcontainer CLI でベースイメージをビルド
+devcontainer build \
+  --workspace-folder . \
+  --image-name copilot-session-viewer:base
+
+# または npx 経由
+npx @devcontainers/cli build \
+  --workspace-folder . \
+  --image-name copilot-session-viewer:base
+```
+
+---
+
+## 5. Dockerfile インターフェース（Layer 2: アプリ層）
+
+### 5.1 ビルド引数
 
 | ARG | デフォルト | 説明 |
 |-----|----------|------|
-| `NODE_VERSION` | `22` | Node.js メジャーバージョン |
+| `BASE_IMAGE` | `copilot-session-viewer:base` | ベースイメージ名 |
 
-### 4.2 環境変数（ビルド時）
+### 5.2 環境変数（ビルド時）
 
 | ENV | 値 | 説明 |
 |-----|-----|------|
 | `NEXT_TELEMETRY_DISABLED` | `1` | Next.js テレメトリ無効化 |
 
-### 4.3 公開ポート
+### 5.3 公開ポート
 
 | EXPOSE | プロトコル | 用途 |
 |--------|-----------|------|
 | 3000 | TCP | Next.js サーバー |
 
-### 4.4 エントリポイント
+### 5.4 エントリポイント
 
 ```dockerfile
+ARG BASE_IMAGE=copilot-session-viewer:base
+FROM ${BASE_IMAGE}
+
+# Install tini for proper PID 1 zombie reaping
+RUN apt-get update && apt-get install -y --no-install-recommends tini && rm -rf /var/lib/apt/lists/*
+
+# Build tmux 3.6a from source (upgrade from apt version)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      libevent-dev ncurses-dev build-essential bison pkg-config \
+    && cd /tmp \
+    && curl -fsSL https://github.com/tmux/tmux/releases/download/3.6a/tmux-3.6a.tar.gz | tar xz \
+    && cd tmux-3.6a \
+    && ./configure && make -j$(nproc) && make install \
+    && cd / && rm -rf /tmp/tmux-3.6a \
+    && apt-get purge -y build-essential bison && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy Next.js standalone build artifacts
+COPY .next/standalone ./app/
+COPY .next/static ./app/.next/static
+COPY public ./app/public
+
+# Copy entrypoint and tools
+COPY scripts/start-viewer.sh /usr/local/bin/start-viewer
+COPY scripts/cplt /usr/local/bin/cplt
+RUN chmod +x /usr/local/bin/start-viewer /usr/local/bin/cplt
+
 ENTRYPOINT ["tini", "--"]
 CMD ["start-viewer"]
 ```
 
 ---
 
-## 5. 環境変数インターフェース (.env)
+## 6. 環境変数インターフェース (.env)
 
-### 5.1 必須変数
+### 6.1 必須変数
 
 | 変数名 | 説明 | 例 |
 |--------|------|-----|
 | `GITHUB_TOKEN` | GitHub Personal Access Token (Copilot CLI 認証) | `ghp_xxxx...` |
 
-### 5.2 任意変数（認証）
+### 6.2 任意変数（認証）
 
 | 変数名 | デフォルト | 説明 |
 |--------|----------|------|
 | `BASIC_AUTH_USER` | (空 = 認証無効) | Basic Auth ユーザー名 |
 | `BASIC_AUTH_PASS` | (空 = 認証無効) | Basic Auth パスワード |
 
-### 5.3 任意変数（コンテナ動作制御）
+### 6.3 任意変数（コンテナ動作制御）
 
 | 変数名 | デフォルト | 説明 |
 |--------|----------|------|
@@ -234,7 +325,7 @@ CMD ["start-viewer"]
 | `PROJECT_NAME` | `viewer` | tmux セッション名 |
 | `HOSTNAME` | `0.0.0.0` | Next.js バインドアドレス |
 
-### 5.4 .env.example
+### 6.4 .env.example
 
 ```bash
 # === Required ===
@@ -253,7 +344,7 @@ GITHUB_TOKEN=ghp_your_personal_access_token_here
 
 ---
 
-## 6. 既存 API ルート（変更不要）
+## 7. 既存 API ルート（変更不要）
 
 以下の既存 API はコンテナ内でもそのまま動作する。変更不要。
 
@@ -275,3 +366,4 @@ GITHUB_TOKEN=ghp_your_personal_access_token_here
 | 日付 | バージョン | 変更内容 | 変更者 |
 |------|------------|----------|--------|
 | 2026-03-21 | 1.0 | 初版作成 | Copilot |
+| 2026-03-21 | 1.1 | devcontainer.json 設計追加、Dockerfile を2層構成に変更、compose.yaml 更新 | Copilot |

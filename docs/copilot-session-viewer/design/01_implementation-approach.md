@@ -37,34 +37,72 @@ copilot-session-viewer を単一コンテナで自己完結動作させるため
   - viewer 側だけで完結してビルド・テスト可能
   - 将来の拡張（マルチコンテナ化等）にも柔軟
 
-### 案C: devcontainer.json ベース
+### 案C: devcontainer.json ベースイメージ + アプリ層 Dockerfile（採用に変更）
 
-- VS Code devcontainer として構築
-- **不採用理由**: ヘッドレスサーバーとして独立稼働する要件に合わない
+- `.devcontainer/devcontainer.json` + features でベースイメージ `copilot-session-viewer:base` をビルド
+- その上にアプリ層 `Dockerfile` で Next.js standalone ビルド成果物 + エントリポイントを追加
+- **採用に変更した理由**:
+  - dev-process で `nagasakah/dev-process:base` + `.devcontainer/Dockerfile` の2層構成が実績あり
+  - devcontainer features で Node.js, tmux, git, Copilot CLI, Playwright 依存等を宣言的にインストール可能
+  - ベースイメージの構成が devcontainer.json に集約され、メンテナンス性が向上
+  - ヘッドレスサーバーとしての独立稼働は、アプリ層 Dockerfile の ENTRYPOINT で実現可能
+- **補足**: VS Code devcontainer としては使用しない。devcontainer CLI (`devcontainer build`) でイメージビルドのみ利用
+
+> **決定変更の経緯**: 当初は案B（viewer 側に新規 Dockerfile を単一作成）を採用していたが、
+> dev-process の devcontainer ベースイメージパターンを流用する方針に変更。
+> これにより、ベースイメージの構成を devcontainer.json で宣言的に管理できる利点が得られる。
 
 ---
 
 ## 3. 技術選定
 
-### 3.1 ベースイメージ
+### 3.1 2層イメージ構成
+
+| レイヤー | 構成 | 役割 |
+|----------|------|------|
+| **Layer 1: ベースイメージ** | `.devcontainer/devcontainer.json` + features | OS + ランタイム + ツール群（Node.js, tmux, tini, git, Copilot CLI 等） |
+| **Layer 2: アプリ層** | `Dockerfile` (`FROM copilot-session-viewer:base`) | Next.js standalone ビルド成果物 + start-viewer.sh + cplt |
+
+#### dev-process との比較
+
+| 項目 | dev-process | copilot-session-viewer |
+|------|------------|------------------------|
+| ベースイメージ | `nagasakah/dev-process:base` | `copilot-session-viewer:base` |
+| devcontainer.json | `.devcontainer/devcontainer.json` | `.devcontainer/devcontainer.json`（viewer 専用） |
+| アプリ層 Dockerfile | `.devcontainer/Dockerfile`（tini, tmux 3.6a, cplt, start-tmux.sh） | `Dockerfile`（Next.js standalone, start-viewer.sh, cplt） |
+| ベースOS | `mcr.microsoft.com/devcontainers/dotnet:8.0` | `mcr.microsoft.com/devcontainers/javascript-node:22` |
+
+### 3.2 ベースイメージ（Layer 1）
 
 | 項目 | 選定 | 理由 |
 |------|------|------|
-| ベースイメージ | `node:22-bookworm` | Next.js 16 + React 19 の LTS サポート。Debian ベースで tmux ビルド・Playwright 依存を含めやすい |
-| PID 1 マネージャ | `tini` | ゾンビプロセス回収。dev-process で実績あり |
-| tmux | ソースビルド 3.6a | dev-process と同一バージョン |
+| ベースイメージ | `mcr.microsoft.com/devcontainers/javascript-node:22` | Node.js 22 プリインストール。devcontainer features と互換 |
+| PID 1 マネージャ | `tini` | ゾンビプロセス回収。アプリ層 Dockerfile でインストール |
+| tmux | devcontainer feature (`tmux-apt-get`) + ソースビルド 3.6a | dev-process と同一バージョン |
+| Copilot CLI | `ghcr.io/devcontainers/features/copilot-cli:1` | devcontainer feature で宣言的インストール |
 
-### 3.2 マルチステージビルド
+### 3.3 アプリ層ビルド（Layer 2）
 
 ```
-Stage 1: deps       -- npm ci (依存関係インストール)
-Stage 2: builder    -- next build (standalone ビルド)
-Stage 3: runner     -- tini + tmux + standalone + エントリポイント
+FROM copilot-session-viewer:base
+
+# マルチステージ的に Next.js をビルドするか、
+# ホストでビルド済み成果物を COPY するかは実装時に決定。
+# 以下は COPY パターン:
+
+COPY .next/standalone ./app/
+COPY .next/static ./app/.next/static
+COPY public ./app/public
+COPY scripts/start-viewer.sh /usr/local/bin/start-viewer
+COPY scripts/cplt /usr/local/bin/cplt
+
+ENTRYPOINT ["tini", "--"]
+CMD ["start-viewer"]
 ```
 
-**理由**: ビルドツールチェーン（TypeScript, webpack 等）を最終イメージに含めない。イメージサイズ削減。
+**理由**: ベースイメージに含まれないアプリ固有のファイル（Next.js ビルド成果物、エントリポイント）のみを追加。ベースイメージの再ビルド頻度を最小化。
 
-### 3.3 コンテナ内ツール
+### 3.4 コンテナ内ツール
 
 | ツール | 必須/任意 | 用途 |
 |--------|----------|------|
@@ -75,7 +113,7 @@ Stage 3: runner     -- tini + tmux + standalone + エントリポイント
 | curl | 推奨 | ヘルスチェック |
 | Copilot CLI | 必須 | セッション実行環境（ユーザーがインストール） |
 
-### 3.4 テストフレームワーク
+### 3.5 テストフレームワーク
 
 | 種別 | フレームワーク | 理由 |
 |------|--------------|------|
@@ -90,8 +128,9 @@ Stage 3: runner     -- tini + tmux + standalone + エントリポイント
 
 | ファイル | 目的 |
 |----------|------|
-| `Dockerfile` | マルチステージビルド定義 |
-| `compose.yaml` | コンテナ起動設定（ボリューム、環境変数、ポート） |
+| `.devcontainer/devcontainer.json` | ベースイメージ定義（features で Node.js, tmux, git, Copilot CLI 等をインストール） |
+| `Dockerfile` | アプリ層（`FROM copilot-session-viewer:base` + Next.js standalone + エントリポイント） |
+| `compose.yaml` | コンテナ起動設定（ベースイメージビルド + アプリ層ビルド、ボリューム、環境変数、ポート） |
 | `.dockerignore` | ビルドコンテキストから不要ファイルを除外 |
 | `scripts/start-viewer.sh` | コンテナエントリポイント（tmux + Next.js 起動） |
 | `scripts/cplt` | Copilot CLI ラッパー（dev-process 版を viewer 用に調整） |
@@ -129,6 +168,8 @@ Stage 3: runner     -- tini + tmux + standalone + エントリポイント
 
 | パターン | dev-process | viewer（新規） |
 |----------|------------|----------------|
+| ベースイメージ構成 | `devcontainer.json` + features → `nagasakah/dev-process:base` | `devcontainer.json` + features → `copilot-session-viewer:base` |
+| アプリ層 | `.devcontainer/Dockerfile` (tini, tmux 3.6a, start-tmux.sh, cplt) | `Dockerfile` (tini, tmux 3.6a, Next.js standalone, start-viewer.sh, cplt) |
 | PID 1 | tini | tini（同一） |
 | エントリポイント | start-tmux.sh | start-viewer.sh（カスタム） |
 | Copilot CLI ラッパー | cplt | cplt（微調整） |
@@ -148,9 +189,10 @@ Stage 3: runner     -- tini + tmux + standalone + エントリポイント
 | リスク | 対策 |
 |--------|------|
 | tmux 予期せぬ終了 | tini (PID 1) + start-viewer.sh のキープアライブループ |
-| better-sqlite3 ビルド失敗 | Dockerfile に build-essential + python3 含める |
-| Playwright イメージサイズ増加 | マルチステージビルドで開発ステージに分離 |
+| better-sqlite3 ビルド失敗 | ベースイメージに build-essential + python3 を含める（devcontainer feature で対応） |
+| Playwright イメージサイズ増加 | ベースイメージに Playwright deps を含めつつ、E2E テスト用とプロダクション用で分離を検討 |
 | Next.js 16 + Vitest 互換性 | lib モジュールから段階的に導入 |
+| devcontainer build の複雑化 | compose.yaml でベースイメージビルドを自動化 |
 
 ---
 
@@ -159,3 +201,4 @@ Stage 3: runner     -- tini + tmux + standalone + エントリポイント
 | 日付 | バージョン | 変更内容 | 変更者 |
 |------|------------|----------|--------|
 | 2026-03-21 | 1.0 | 初版作成 | Copilot |
+| 2026-03-21 | 1.1 | devcontainer ベースイメージ + アプリ層の2層構成に変更。案C を採用に変更 | Copilot |

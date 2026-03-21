@@ -41,7 +41,7 @@
 - [ ] `/api/sessions` レスポンスタイム: **目標 500ms 以内**（セッション 100 件以下）
 - [ ] `/api/active-sessions` レスポンスタイム: **目標 2 秒以内**（ローカル tmux スキャン）
 - [ ] コンテナメモリ使用量: **目標 512MB 以下**（idle 時）
-- [ ] Docker イメージサイズ: **目標 1GB 以下**（Playwright 含まない runner イメージ）
+- [ ] Docker イメージサイズ: **目標 1GB 以下**（Playwright 含まない、ベースイメージ + アプリ層合算）
 
 ### 2.3 セキュリティ検証
 
@@ -81,7 +81,13 @@ npm run lint
 ### 3.2 コンテナ回帰（手動）
 
 ```bash
-# ビルド＆起動
+# ベースイメージビルド
+devcontainer build --workspace-folder . --image-name copilot-session-viewer:base
+
+# Next.js ビルド（ホスト側）
+npm ci && npm run build
+
+# アプリ層ビルド＆起動
 docker compose up -d --build
 
 # ヘルスチェック
@@ -112,7 +118,7 @@ npm run test:e2e
 
 | 変更 | ロールバック方法 |
 |------|---------------|
-| `Dockerfile`, `compose.yaml` 等新規ファイル | 削除するだけ |
+| `.devcontainer/devcontainer.json`, `Dockerfile`, `compose.yaml` 等新規ファイル | 削除するだけ |
 | `next.config.ts` の `output: "standalone"` | 該当行を削除 |
 | `terminal.ts` の `DISABLE_DOCKER_DETECTION` | 該当行を削除（2行のみ） |
 | `package.json` の Vitest/Playwright 追加 | `devDependencies` から削除し `npm install` |
@@ -126,3 +132,4 @@ npm run test:e2e
 | 日付 | バージョン | 変更内容 | 変更者 |
 |------|------------|----------|--------|
 | 2026-03-21 | 1.0 | 初版作成 | Copilot |
+| 2026-03-21 | 1.1 | 2層ビルド構成に合わせてコンテナ回帰手順・ロールバック計画を更新 | Copilot |
