@@ -14,8 +14,7 @@ meta:
   target_repo: "copilot-session-viewer"
   branch: "feature/viewer-container-local"
   created_at: "2026-03-21T23:09:11+09:00"
-  updated_at: "2026-03-21T23:09:11+09:00"
-
+  updated_at: "2026-03-21T23:21:21+09:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -71,7 +70,6 @@ setup:
     create_design_document: true
     design_document_dir: "docs"
     submodules_dir: "submodules"
-
 # -----------------------------------------------------------------------------
 # brainstorming（対話完了後に記入）
 # -----------------------------------------------------------------------------
@@ -122,3 +120,19 @@ brainstorming:
         - "Unit テスト・Integration テスト・Playwright E2E テストが実行可能であること"
       environment: "Docker コンテナ内（compose.yaml で起動）"
   artifacts: "docs/copilot-session-viewer/brainstorming/"
+investigation:
+  status: completed
+  started_at: "2026-03-21T23:21:21+09:00"
+  summary: "Next.js 16 App Router + \\u30d5\\u30a1\\u30a4\\u30eb\\u30d9\\u30fc\\u30b9\\u30bb\\u30c3\\u30b7\\u30e7\\u30f3\\u30b9\\u30c8\\u30a2 (~/.copilot/) + child_process (tmux/docker) \\u306e3\\u5c64\\u69cb\\u6210\\u3002Docker\\u691c\\u51fa\\u30ed\\u30b8\\u30c3\\u30af\\u306f\\u74b0\\u5883\\u5909\\u6570\\u30d5\\u30e9\\u30b0\\u3067\\u7121\\u52b9\\u5316\\u53ef\\u80fd\\u3002better-sqlite3\\u306f\\u672a\\u4f7f\\u7528\\u4f9d\\u5b58\\u3002\\u30c6\\u30b9\\u30c8\\u57fa\\u76e4\\u306a\\u3057\\uff08Vitest\\u65b0\\u898f\\u5c0e\\u5165\\uff09\\u3002"
+  key_findings:
+    - Docker\u691c\u51fa\u30ed\u30b8\u30c3\u30af (findDockerContainers, findContainerCopilotSessions) \u306f terminal.ts L126-226 \u306b\u96c6\u7d04\u3002\u74b0\u5883\u5909\u6570\u30d5\u30e9\u30b0\u3067\u7a7a\u914d\u5217\u8fd4\u5374\u3059\u308b\u3060\u3051\u3067\u7121\u52b9\u5316\u53ef\u80fd
+    - $HOME/.copilot \u53c2\u7167\u306f sessions.ts \u3068 terminal.ts \u306e\u5b9a\u6570\u5b9a\u7fa9\u306e\u307f\u3002process.env.HOME \u4f9d\u5b58\u306e\u305f\u3081\u3001\u30b3\u30f3\u30c6\u30ca\u5185\u3067\u306f\u81ea\u52d5\u5206\u96e2\u3055\u308c\u308b
+    - start-copilot API \u306f\u5225\u30b3\u30f3\u30c6\u30ca\u7ba1\u7406\u7528\u30ed\u30b8\u30c3\u30af\u3002ENABLE_DEV_PROCESS=false \u3067\u5b8c\u5168\u7121\u52b9\u5316\u53ef\u80fd
+    - better-sqlite3 v12.8.0 \u306f\u4f9d\u5b58\u95a2\u4fc2\u306b\u542b\u307e\u308c\u308b\u304c\u3001\u30bd\u30fc\u30b9\u30b3\u30fc\u30c9\u4e0a\u3067\u4e00\u5207\u4f7f\u7528\u3055\u308c\u3066\u3044\u306a\u3044\uff08\u672a\u4f7f\u7528\u4f9d\u5b58\uff09
+    - dev-process \u306e Dockerfile \u30d1\u30bf\u30fc\u30f3 (tini + start-tmux.sh + cplt) \u304c\u30b3\u30f3\u30c6\u30ca\u8d77\u52d5\u306e\u53c2\u8003\u30e2\u30c7\u30eb\u3068\u3057\u3066\u76f4\u63a5\u6d41\u7528\u53ef\u80fd
+  risks:
+    - tmux \u30bb\u30c3\u30b7\u30e7\u30f3\u306e\u4e88\u671f\u305b\u306c\u7d42\u4e86\uff08\u5143\u3005\u306e\u8ab2\u984c\u3002tini + \u30ad\u30fc\u30d7\u30a2\u30e9\u30a4\u30d6\u30eb\u30fc\u30d7\u3067\u5bfe\u7b56\uff09
+    - Playwright E2E \u30c6\u30b9\u30c8\u306e\u30b3\u30f3\u30c6\u30ca\u5185\u5b9f\u884c\u306b\u8ffd\u52a0\u30b7\u30b9\u30c6\u30e0\u4f9d\u5b58\u95a2\u4fc2\u304c\u5fc5\u8981\uff08500MB+ \u30a4\u30e1\u30fc\u30b8\u5897\uff09
+    - Next.js 16 + Vitest \u306e\u4e92\u63db\u6027\uff08lib \u30e2\u30b8\u30e5\u30fc\u30eb\u306e\u5358\u4f53\u30c6\u30b9\u30c8\u304b\u3089\u6bb5\u968e\u7684\u306b\u5c0e\u5165\u3067\u56de\u907f\uff09
+  artifacts: "docs/copilot-session-viewer/investigation/"
+  completed_at: "2026-03-21T23:21:21+09:00"

@@ -115,17 +115,30 @@ host-integrated operation.
 
 ### 1.1 現状分析
 
-<!-- 調査結果は investigation/ を参照 -->
+Next.js 16 App Router + ファイルベースセッションストア (`~/.copilot/`) + child_process (tmux/docker) の3層構成。
+Docker 検出ロジックは環境変数フラグで無効化可能。better-sqlite3 は未使用依存。テスト基盤なし（Vitest 新規導入）。
+
+詳細は [investigation/](./copilot-session-viewer/investigation/) を参照。
 
 ### 1.2 関連コード・ファイル
 
 | ファイル | 役割 | 備考 |
 |----------|------|------|
-| | | |
+| `src/lib/terminal.ts` | ターミナル/Docker/tmux 制御 (866行) | Docker 検出ロジック L126-226 が無効化対象 |
+| `src/lib/sessions.ts` | セッションデータアクセス (751行) | `$HOME/.copilot/session-state/` を参照 |
+| `src/middleware.ts` | Basic Auth 認証 | `BASIC_AUTH_USER/PASS` で制御 |
+| `src/app/api/dev-process/start-copilot/route.ts` | Dev-process 管理 API (607行) | `ENABLE_DEV_PROCESS=false` で無効化 |
+| `next.config.ts` | Next.js 設定 | `output: "standalone"` 追加が必要 |
+| `package.json` | 依存関係 | better-sqlite3 未使用、Vitest/Playwright 追加予定 |
 
 ### 1.3 参考情報
 
-<!-- 詳細: investigation/ -->
+- [アーキテクチャ調査](./copilot-session-viewer/investigation/01_architecture.md)
+- [データ構造調査](./copilot-session-viewer/investigation/02_data-structure.md)
+- [依存関係調査](./copilot-session-viewer/investigation/03_dependencies.md)
+- [既存パターン調査](./copilot-session-viewer/investigation/04_existing-patterns.md)
+- [統合ポイント調査](./copilot-session-viewer/investigation/05_integration-points.md)
+- [リスク・制約分析](./copilot-session-viewer/investigation/06_risks-and-constraints.md)
 
 ---
 
