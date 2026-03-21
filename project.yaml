@@ -14,7 +14,7 @@ meta:
   target_repo: "copilot-session-viewer"
   branch: "feature/viewer-container-local"
   created_at: "2026-03-21T23:09:11+09:00"
-  updated_at: "2026-03-22T00:50:10+09:00"
+  updated_at: "2026-03-22T01:09:38+09:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -306,12 +306,13 @@ plan:
       deps: []
     - id: "10"
       name: Dockerfile+compose.yaml
-      estimate: 20min
+      estimate: 30min
       deps:
         - "02"
         - "07"
         - "08"
         - "09"
+        - "06"
     - id: "11"
       name: Integration\u30c6\u30b9\u30c8
       estimate: 20min
@@ -327,7 +328,78 @@ plan:
         - "10"
         - "11"
   review:
-    round: 0
-    status: pending
+    round: 1
+    status: conditional
+    latest_verdict: '条件付き承認: 7 Major + 5 Minor + 1 Info'
+    completed_at: "2026-03-22T01:09:38+09:00"
+    summary: 両レビュアー conditional。TDD RED具体化不足、依存関係欠落、AC検証不足等を指摘。
+    issues:
+      - id: MPR-001
+        severity: major
+        category: TDD
+        description: findDockerContainers未エクスポートでtask03/11テスト不成立
+        status: fixed
+      - id: MPR-002
+        severity: major
+        category: 依存関係
+        description: Task06→Task10依存関係欠落
+        status: fixed
+      - id: MPR-003
+        severity: major
+        category: TDD
+        description: TDD REDテストがプレースホルダー
+        status: fixed
+      - id: MPR-004
+        severity: major
+        category: TDD
+        description: Task12 global-setup.ts任意扱い
+        status: fixed
+      - id: MPR-005
+        severity: major
+        category: 受入基準
+        description: AC2 E2E-6 skipでtmux安定性検証不足
+        status: fixed
+      - id: MPR-006
+        severity: major
+        category: 受入基準
+        description: AC3 PAT有効性機能検証不足
+        status: fixed
+      - id: MPR-007
+        severity: major
+        category: 受入基準
+        description: AC4コンテナ間分離テスト不足
+        status: fixed
+      - id: MPR-008
+        severity: minor
+        category: タスク分割
+        description: start-viewer.sh su -l環境変数消失リスク
+        status: fixed
+      - id: MPR-009
+        severity: minor
+        category: タスク分割
+        description: Task11/Task03テスト重複
+        status: fixed
+      - id: MPR-010
+        severity: minor
+        category: 見積もり
+        description: Task10見積もり20分がタイト
+        status: fixed
+      - id: MPR-011
+        severity: minor
+        category: タスク分割
+        description: task01/02成果物・対象ファイル不一致
+        status: fixed
+      - id: MPR-012
+        severity: minor
+        category: 見積もり
+        description: 総見積もり楽観的バッファなし
+        status: fixed
+      - id: MPR-013
+        severity: info
+        category: タスク分割
+        description: テストファイル配置規約未明記
+        status: fixed
+    artifacts:
+      - docs/copilot-session-viewer/review-plan/round-01.md
   artifacts: "docs/copilot-session-viewer/plan/"
   completed_at: "2026-03-22T00:50:03+09:00"
