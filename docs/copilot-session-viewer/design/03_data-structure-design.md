@@ -57,6 +57,12 @@ $HOME/.copilot/                      # $HOME = /Users/username (macOS) or /home/
 | パス構築 | `process.env.HOME` 依存 | 同一（変更不要） | コンテナ内で自動分離 |
 | ロックファイル PID | ホスト PID | コンテナ内 PID | 衝突なし |
 
+> **investigation との差異に関する注記**: 調査結果（investigation）では `$HOME=/home/vscode` と記載されているが、
+> これは devcontainer のデフォルトユーザーが `vscode` である場合の値。本設計ではベースイメージ
+> `mcr.microsoft.com/devcontainers/javascript-node:22` のデフォルトユーザー `node` を使用するため、
+> `$HOME=/home/node` に統一する。compose.yaml のボリュームマウント先、スクリプト内のパス参照、
+> テスト期待値は全て `/home/node` を前提とする。
+
 ---
 
 ## 3. 既存型定義（変更不要）
@@ -162,16 +168,18 @@ PROJECT_NAME=viewer
 
 ```dockerfile
 # FROM copilot-session-viewer:base
+WORKDIR /app
 # Standalone server
-COPY .next/standalone ./app/
+COPY .next/standalone/ ./
 # Static assets (standalone に含まれない)
-COPY .next/static ./app/.next/static
+COPY .next/static ./.next/static
 # Public assets
-COPY public ./app/public
+COPY public ./public
 ```
 
 > **NOTE**: ベースイメージ（Layer 1）には Node.js, tmux, git 等のランタイムが含まれる。
-> アプリ層（Layer 2）では Next.js ビルド成果物のみを追加する。
+> アプリ層（Layer 2）では `WORKDIR /app` を設定し、Next.js ビルド成果物のみを追加する。
+> コンテナ内のアプリケーションパスは `/app` に統一される。
 
 ---
 
@@ -215,7 +223,7 @@ export default defineConfig({
     headless: true,
   },
   webServer: {
-    command: "node .next/standalone/server.js",
+    command: "node /app/server.js",
     port: Number(process.env.PORT) || 3000,
     reuseExistingServer: true,
     timeout: 120000,
@@ -268,3 +276,4 @@ copilot-session-viewer/
 |------|------------|----------|--------|
 | 2026-03-21 | 1.0 | 初版作成 | Copilot |
 | 2026-03-21 | 1.1 | 2層イメージ構成に合わせてディレクトリ構造・Dockerfile コピー手順を更新 | Copilot |
+| 2026-03-21 | 1.2 | MRD-005: $HOME パスを /home/node に統一、investigation 差異の注記追加。MRD-003: Dockerfile COPY パス・playwright.config.ts パス統一 | Copilot |

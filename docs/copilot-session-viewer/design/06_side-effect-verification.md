@@ -18,7 +18,7 @@
 | `terminal.ts` Docker 検出無効化 | 中 | 低 | UT-1,2 で検証。既存 Docker 検出パスが `DISABLE_DOCKER_DETECTION` 未設定時に正常動作することを確認 |
 | `next.config.ts` standalone 追加 | 中 | 低 | IT-2 で検証。`npm run dev` でのローカル開発が引き続き動作することを確認 |
 | `package.json` 新規依存追加 | 低 | 低 | `npm ci` 成功、`npm run build` 成功を確認 |
-| tmux セッション安定性 | 高 | 中 | E2E-3 で検証。30秒間のセッション維持を確認 |
+| tmux セッション安定性 | 高 | 中 | E2E-3, E2E-6 で検証。30秒間のセッション維持 + 5分間の耐久テスト（操作実行・再接続含む）を確認 |
 | Next.js standalone サーバー動作 | 中 | 低 | E2E-1 で検証。HTTP 応答確認 |
 
 ---
@@ -90,11 +90,14 @@ npm ci && npm run build
 # アプリ層ビルド＆起動
 docker compose up -d --build
 
-# ヘルスチェック
+# ヘルスチェック（healthcheck 設定済み: curl -f http://localhost:3000/api/sessions）
 curl -s http://localhost:3000/api/sessions | head -c 200
 
 # tmux 確認
 docker compose exec viewer tmux list-sessions
+
+# GITHUB_TOKEN 供給確認
+docker compose exec viewer printenv GITHUB_TOKEN | head -c 4
 
 # 停止
 docker compose down
@@ -133,3 +136,4 @@ npm run test:e2e
 |------|------------|----------|--------|
 | 2026-03-21 | 1.0 | 初版作成 | Copilot |
 | 2026-03-21 | 1.1 | 2層ビルド構成に合わせてコンテナ回帰手順・ロールバック計画を更新 | Copilot |
+| 2026-03-21 | 1.2 | 設計レビュー round-01 の修正に合わせて検証項目・手順を更新（healthcheck, GITHUB_TOKEN, tmux 耐久性） | Copilot |
