@@ -112,6 +112,10 @@ build_mounts() {
   echo "${mounts[@]}"
 }
 
+locale_env_flags() {
+  echo "-e LANG=C.UTF-8 -e LC_ALL=C.UTF-8"
+}
+
 wait_for_tmux_session() {
   local target="$1"
   local retries="${DEV_CONTAINER_TMUX_WAIT_RETRIES:-30}"
@@ -157,6 +161,8 @@ cmd_up() {
   # Build mount flags
   local mount_flags
   mount_flags=$(build_mounts)
+  local locale_flags
+  locale_flags=$(locale_env_flags)
 
   # Docker mode specific flags
   local docker_flags=()
@@ -206,6 +212,7 @@ cmd_up() {
     --label "${LABEL_WORKSPACE}" \
     --label "project=${PROJECT_NAME}" \
     --label "docker-mode=${DOCKER_MODE}" \
+    ${locale_flags} \
     -e "PROJECT_NAME=${PROJECT_NAME}" \
     "${docker_flags[@]}" \
     ${mount_flags} \
@@ -270,8 +277,12 @@ cmd_shell() {
     exit 1
   fi
 
-  docker exec -it --user "${CONTAINER_USER}" "${target}" tmux attach-session -t "${PROJECT_NAME}" 2>/dev/null \
-    || docker exec -it --user "${CONTAINER_USER}" "${target}" bash
+  local locale_flags
+  locale_flags=$(locale_env_flags)
+
+  # shellcheck disable=SC2086
+  docker exec -it ${locale_flags} --user "${CONTAINER_USER}" "${target}" tmux attach-session -t "${PROJECT_NAME}" 2>/dev/null \
+    || docker exec -it ${locale_flags} --user "${CONTAINER_USER}" "${target}" bash
 }
 
 cmd_list() {

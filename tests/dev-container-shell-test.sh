@@ -110,7 +110,7 @@ test_shell_uses_vscode_for_tmux() {
   run_shell_command "${log_file}"
   log_output="$(cat "${log_file}")"
 
-  assert_contains "${log_output}" "exec -it --user vscode dev-process-test tmux attach-session -t dev-process" \
+  assert_contains "${log_output}" "exec -it -e LANG=C.UTF-8 -e LC_ALL=C.UTF-8 --user vscode dev-process-test tmux attach-session -t dev-process" \
     "shell should try tmux as the vscode user" || status=1
 
   rm -rf "${temp_dir}"
@@ -126,9 +126,9 @@ test_shell_falls_back_to_vscode_bash() {
 
   run_shell_command "${log_file}" 1
   log_output="$(cat "${log_file}")"
-  bash_execs="$(grep -c "exec -it --user vscode dev-process-test bash" "${log_file}" || true)"
+  bash_execs="$(grep -c "exec -it -e LANG=C.UTF-8 -e LC_ALL=C.UTF-8 --user vscode dev-process-test bash" "${log_file}" || true)"
 
-  assert_contains "${log_output}" "exec -it --user vscode dev-process-test tmux attach-session -t dev-process" \
+  assert_contains "${log_output}" "exec -it -e LANG=C.UTF-8 -e LC_ALL=C.UTF-8 --user vscode dev-process-test tmux attach-session -t dev-process" \
     "shell should still try tmux first as the vscode user" || status=1
   assert_equal "1" "${bash_execs}" "shell should fall back to a vscode bash session" || status=1
 

@@ -146,12 +146,16 @@ test_up_runs_container_detached_then_enters_tmux() {
     "up should start the container detached" || status=1
   assert_not_contains "${log_output}" "run -it --name" \
     "up should not keep container lifetime tied to docker run tty" || status=1
-  assert_contains "${log_output}" "exec -it --user vscode" \
+  assert_contains "${log_output}" "exec -it -e LANG=C.UTF-8 -e LC_ALL=C.UTF-8 --user vscode" \
     "up should enter the running container via docker exec" || status=1
   assert_contains "${log_output}" "tmux attach-session -t dev-process" \
     "up should attach to the tmux session after the container starts" || status=1
   assert_contains "${log_output}" ".devcontainer/scripts/start-tmux.sh:/usr/local/bin/start-tmux:ro" \
     "up should mount the local start-tmux script so the latest lifecycle fix is used without rebuilding the image" || status=1
+  assert_contains "${log_output}" "-e LANG=C.UTF-8" \
+    "up should set a UTF-8 locale for the container" || status=1
+  assert_contains "${log_output}" "-e LC_ALL=C.UTF-8" \
+    "up should set LC_ALL to UTF-8 for the container" || status=1
 
   rm -rf "${temp_dir}"
   return "${status}"
@@ -169,16 +173,20 @@ test_up_falls_back_to_bash_if_tmux_entry_fails() {
 
   assert_contains "${log_output}" "run -d --name" \
     "up should still start detached when tmux entry fails" || status=1
-  assert_contains "${log_output}" "exec -it --user vscode" \
+  assert_contains "${log_output}" "exec -it -e LANG=C.UTF-8 -e LC_ALL=C.UTF-8 --user vscode" \
     "up should try entering the running container" || status=1
   assert_contains "${log_output}" "tmux attach-session -t dev-process" \
     "up should try tmux before falling back" || status=1
-  assert_contains "${log_output}" "exec -it --user vscode" \
+  assert_contains "${log_output}" "exec -it -e LANG=C.UTF-8 -e LC_ALL=C.UTF-8 --user vscode" \
     "up should use docker exec for the fallback shell too" || status=1
   assert_contains "${log_output}" "bash" \
     "up should fall back to a bash shell when tmux entry fails" || status=1
   assert_contains "${log_output}" ".devcontainer/scripts/start-tmux.sh:/usr/local/bin/start-tmux:ro" \
     "up should still mount the local start-tmux script when tmux entry fails" || status=1
+  assert_contains "${log_output}" "-e LANG=C.UTF-8" \
+    "up should keep the UTF-8 locale env when tmux entry fails" || status=1
+  assert_contains "${log_output}" "-e LC_ALL=C.UTF-8" \
+    "up should keep LC_ALL set to UTF-8 when tmux entry fails" || status=1
 
   rm -rf "${temp_dir}"
   return "${status}"
