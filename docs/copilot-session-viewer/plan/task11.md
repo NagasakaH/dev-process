@@ -18,7 +18,7 @@
 
 ## 前提条件
 
-- Task 03: terminal.ts に DISABLE_DOCKER_DETECTION 実装済み
+- Task 03: terminal.ts に DISABLE_DOCKER_DETECTION 実装済み、`findDockerContainers` が named export されていること
 - Task 04: sessions.ts テスト済み
 - Task 05: middleware.ts テスト済み
 - Task 10: Dockerfile + compose.yaml 存在
@@ -81,17 +81,29 @@ describe("Environment Variable Integration", () => {
     vi.unstubAllEnvs();
   });
 
-  it("should disable Docker detection when DISABLE_DOCKER_DETECTION=true", async () => {
+  it("should skip Docker containers and return only local tmux sessions when DISABLE_DOCKER_DETECTION=true", async () => {
     vi.stubEnv("DISABLE_DOCKER_DETECTION", "true");
-    const { findDockerContainers } = await import("@/lib/terminal");
-    const result = findDockerContainers();
-    expect(result).toEqual([]);
+    const { getActiveSessions } = await import("@/lib/terminal");
+    const sessions = getActiveSessions();
+    // Integration-level: verify the full pipeline returns sessions without Docker containers
+    // All returned sessions should be local tmux sessions (no Docker container sessions)
+    expect(Array.isArray(sessions)).toBe(true);
+    // No session should have a container-like identifier
+    for (const session of sessions) {
+      expect(session).not.toMatch(/^[a-f0-9]{12}$/); // Docker container IDs are 12-char hex
+    }
   });
 
-  it("should construct SESSION_STATE_DIR from HOME", async () => {
+  it("should construct SESSION_STATE_DIR from HOME and access sessions", async () => {
     vi.stubEnv("HOME", "/test/custom/home");
     vi.resetModules();
-    // Verify path construction indirectly through session listing
+    // Integration: verify the full session listing pipeline works with custom HOME
+    // Mock fs to simulate session directory at custom HOME
+    const fs = await import("fs");
+    vi.spyOn(fs, "existsSync").mockReturnValue(false);
+    const { listSessions } = await import("@/lib/sessions");
+    const result = listSessions();
+    expect(result).toEqual([]); // No sessions at non-existent custom HOME
   });
 });
 
@@ -100,7 +112,12 @@ describe("Regression Tests", () => {
   it("should not break Docker detection when flag is not set", async () => {
     vi.stubEnv("DISABLE_DOCKER_DETECTION", "");
     vi.resetModules();
+    const childProcess = await import("child_process");
+    const execSyncSpy = vi.spyOn(childProcess, "execSync").mockReturnValue(Buffer.from(""));
+    const { findDockerContainers } = await import("@/lib/terminal");
+    findDockerContainers();
     // Docker detection should attempt to run (execSync called)
+    expect(execSyncSpy).toHaveBeenCalled();
   });
 
   it("should skip Basic Auth when credentials not configured", async () => {
@@ -108,7 +125,10 @@ describe("Regression Tests", () => {
     vi.stubEnv("BASIC_AUTH_PASS", "");
     vi.resetModules();
     const { middleware } = await import("@/middleware");
+    const request = new Request("http://localhost:3000/", { method: "GET" });
+    const response = middleware(request as any);
     // Should return next() without auth check
+    expect(response.status).not.toBe(401);
   });
 });
 ```

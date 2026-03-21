@@ -7,7 +7,7 @@
 | チケットID | viewer-container-local |
 | タスク名 | container |
 | 総タスク数 | 12 |
-| 見積合計 | 約3.5時間 |
+| 見積合計 | 約3.5時間 (バッファ込み ~4.5時間 ※MPR-012: 環境問題・コンフリクト解決等で ~20% 増の想定) |
 | 作成日 | 2026-03-22 |
 
 ---
@@ -25,7 +25,7 @@
 | 07 | start-viewer.sh エントリポイントスクリプト | 20min | Phase 3 | P3-A | なし |
 | 08 | cplt ラッパースクリプト | 10min | Phase 3 | P3-A | なし |
 | 09 | devcontainer.json ベースイメージ定義 | 10min | Phase 3 | P3-B | なし |
-| 10 | Dockerfile アプリ層 + compose.yaml | 20min | Phase 3 | — | 02, 07, 08, 09 |
+| 10 | Dockerfile アプリ層 + compose.yaml | 30min | Phase 3 | — | 02, 06, 07, 08, 09 |
 | 11 | Integration テスト (tmux 検出 + .env 読み込み) | 20min | Phase 4 | — | 03, 04, 05, 10 |
 | 12 | E2E テスト (Playwright コンテナフロー) | 30min | Phase 5 | — | 10, 11 |
 
@@ -53,6 +53,7 @@ graph TD
     T01 --> T04
     T01 --> T05
 
+    T06 --> T10
     T02 --> T10
     T07 --> T10
     T08 --> T10
@@ -80,7 +81,7 @@ graph TD
 ### Phase 3: コンテナ構成ファイル (部分並列)
 - **P3-A**: **07**, **08** — 並列実行可能
 - **P3-B**: **09** — P3-A と並列実行可能
-- **10** — 02, 07, 08, 09 完了待ち (順次)
+- **10** — 02, 06, 07, 08, 09 完了待ち (順次)
 
 ### Phase 4: Integration テスト (順次)
 - **11** — Phase 2 + Task 10 完了待ち

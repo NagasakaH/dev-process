@@ -6,9 +6,9 @@
 |------|------|
 | ID | 10 |
 | タスク名 | Dockerfile アプリ層 + compose.yaml |
-| 前提タスク | 02, 07, 08, 09 |
+| 前提タスク | 02, 06, 07, 08, 09 |
 | 並列実行 | 不可（統合タスク） |
-| 見積時間 | 20分 |
+| 見積時間 | 30分 |
 
 ## 作業環境
 
@@ -19,6 +19,7 @@
 ## 前提条件
 
 - Task 02: `next.config.ts` に standalone 出力、`.dockerignore` 存在
+- Task 06: `.env.example` が存在（compose.yaml の `env_file` 参照の前提）
 - Task 07: `scripts/start-viewer.sh` が存在
 - Task 08: `scripts/cplt` が存在
 - Task 09: `.devcontainer/devcontainer.json` が存在

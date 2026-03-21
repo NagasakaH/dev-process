@@ -55,10 +55,14 @@
      if [ -n "${LOCAL_GID:-}" ] && [ "$(id -g node)" != "$LOCAL_GID" ]; then
        groupmod -g "$LOCAL_GID" node 2>/dev/null || true
      fi
-     # node ユーザーで再実行
-     exec su -l node -c "$0"
+     # node ユーザーで再実行 (gosu で環境変数を保持)
+     exec gosu node "$0"
    fi
+```
 
+   > **NOTE (MPR-008)**: `su -l` は login shell を起動するため `PORT`, `NODE_ENV` 等の環境変数が消失する。`gosu` は環境変数を保持したまま UID 切り替えを行うため、コンテナ環境では `gosu` が推奨。Dockerfile で `apt-get install -y gosu` が必要。
+
+   ```bash
    # === tmux セッション作成 ===
    if tmux has-session -t "$PROJECT_NAME" 2>/dev/null; then
      echo "tmux session '$PROJECT_NAME' already exists, reusing."
