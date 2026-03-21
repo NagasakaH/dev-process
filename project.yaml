@@ -14,7 +14,7 @@ meta:
   target_repo: "copilot-session-viewer"
   branch: "feature/viewer-container-local"
   created_at: "2026-03-21T23:09:11+09:00"
-  updated_at: "2026-03-21T15:10:44+09:00"
+  updated_at: "2026-03-22T00:32:15+09:00"
 # -----------------------------------------------------------------------------
 # setup（setup.yaml から引き継ぎ — 読み取り専用）
 # -----------------------------------------------------------------------------
@@ -148,11 +148,11 @@ design:
     - Named volume copilot-data でセッションデータ永続化
     - Vitest (unit/integration) + Playwright (E2E) テスト基盤
   review:
-    round: 2
-    status: conditional
-    latest_verdict: 条件付き承認
-    completed_at: "2026-03-21T15:27:40+09:00"
-    summary: Round 1全12件resolved。新規Minor 2件+Info 1件。パス残存・named volume権限・セクション番号修正。
+    round: 3
+    status: approved
+    latest_verdict: '承認: 両レビュアー承認。全15件の指摘が解決済み。'
+    completed_at: "2026-03-22T00:32:15+09:00"
+    summary: Round 3で両レビュアー（GPT-5.3-Codex, Claude Opus 4.6）が承認。Round 1の12件（Major 5, Minor 7）+ Round 2の3件（Minor 2, Info 1）= 全15件が解決済み。
     issues:
       - id: MRD-001
         severity: major
@@ -238,19 +238,23 @@ design:
         severity: minor
         category: 実装可能性 — パス不整合の残存
         description: セクション1.2にnode .next/standalone/server.jsの旧パス表記が残存
-        status: open
+        status: resolved
+        resolved_in_round: 3
       - id: MRD-R2-001
         severity: minor
         category: 技術的妥当性 — named volume 権限
         description: USER node下でnamed volumeマウント先/home/node/.copilotが未作成
-        status: open
+        status: resolved
+        resolved_in_round: 3
       - id: MRD-R2-002
         severity: info
         category: ドキュメント — セクション番号
         description: 01_implementation-approach.mdのセクション3.xに欠番あり（3.4→3.6）
-        status: open
+        status: resolved
+        resolved_in_round: 3
     artifacts:
       - docs/copilot-session-viewer/review-design/round-01.md
       - docs/copilot-session-viewer/review-design/round-02.md
+      - docs/copilot-session-viewer/review-design/round-03.md
   artifacts: "docs/copilot-session-viewer/design/"
   completed_at: "2026-03-21T23:35:28+09:00"
