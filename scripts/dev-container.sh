@@ -84,6 +84,11 @@ build_mounts() {
   # Workspace (always)
   mounts+=(-v "${WORKSPACE_DIR}:/workspaces/${PROJECT_NAME}")
 
+  # Worktree storage — persistent across container recreations
+  local worktree_dir="${WORKSPACE_DIR}-worktrees"
+  mkdir -p "${worktree_dir}"
+  mounts+=(-v "${worktree_dir}:/workspaces/worktrees")
+
   # Use the workspace copy of start-tmux so lifecycle fixes take effect without rebuilding the image
   if [ -f "${WORKSPACE_DIR}/.devcontainer/scripts/start-tmux.sh" ]; then
     mounts+=(-v "${WORKSPACE_DIR}/.devcontainer/scripts/start-tmux.sh:/usr/local/bin/start-tmux:ro")
