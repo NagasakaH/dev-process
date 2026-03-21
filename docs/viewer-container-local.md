@@ -148,7 +148,12 @@ Docker 検出ロジックは環境変数フラグで無効化可能。better-sql
 
 ### 2.1 設計方針
 
-<!-- 詳細: design/01_implementation-approach.md -->
+ハイブリッドアプローチを採用。copilot-session-viewer リポジトリに Dockerfile + compose.yaml を新規作成し、
+1コンテナに Next.js (standalone) + tmux + Copilot CLI を同居させる。dev-process の tini + start-tmux.sh +
+cplt パターンを参考に、viewer 専用のエントリポイント（start-viewer.sh）を構築する。
+ローカル（非コンテナ）動作は既存のまま維持する。
+
+詳細は [design/01_implementation-approach.md](./copilot-session-viewer/design/01_implementation-approach.md) を参照。
 
 ### 2.2 変更箇所
 
@@ -156,27 +161,46 @@ Docker 検出ロジックは環境変数フラグで無効化可能。better-sql
 
 | ファイル | 目的 |
 |----------|------|
-| | |
+| `Dockerfile` | マルチステージビルド（deps→builder→runner） |
+| `compose.yaml` | コンテナ起動設定（ボリューム、環境変数、ポート） |
+| `.dockerignore` | ビルドコンテキストから不要ファイルを除外 |
+| `scripts/start-viewer.sh` | エントリポイント（tmux + Next.js 起動） |
+| `scripts/cplt` | Copilot CLI ラッパー（dev-process から流用） |
+| `.env.example` | 環境変数テンプレート |
+| `vitest.config.ts` | Vitest 設定 |
+| `playwright.config.ts` | Playwright 設定 |
+| `src/lib/__tests__/terminal.test.ts` | terminal.ts 単体テスト |
+| `src/lib/__tests__/sessions.test.ts` | sessions.ts 単体テスト |
+| `e2e/container-startup.spec.ts` | E2E テスト |
 
 #### 修正ファイル
 
 | ファイル | 変更内容 |
 |----------|----------|
-| | |
+| `next.config.ts` | `output: "standalone"` 追加 |
+| `src/lib/terminal.ts` | `DISABLE_DOCKER_DETECTION` 環境変数フラグ追加（2行） |
+| `package.json` | Vitest / Playwright / テストスクリプト追加 |
 
 #### 削除ファイル
 
 | ファイル | 理由 |
 |----------|------|
-| | |
+| なし | 既存機能を維持 |
 
 ### 2.3 インターフェース設計
 
-<!-- 詳細: design/02_interface-api-design.md -->
+terminal.ts に `DISABLE_DOCKER_DETECTION` 環境変数フラグを追加し、Docker 検出を無効化可能にする。
+既存 API ルートはすべて変更不要（コンテナ内でそのまま動作）。
+
+詳細は [design/02_interface-api-design.md](./copilot-session-viewer/design/02_interface-api-design.md) を参照。
 
 ### 2.4 データ構造
 
-<!-- 詳細: design/03_data-structure-design.md -->
+既存のデータ構造（TypeScript 型定義、ファイルシステム構造）に変更なし。
+`$HOME/.copilot` パスは `process.env.HOME` 依存のため、コンテナ内で自動分離される。
+Named volume `copilot-data` でセッションデータを永続化する。
+
+詳細は [design/03_data-structure-design.md](./copilot-session-viewer/design/03_data-structure-design.md) を参照。
 
 ---
 
@@ -210,13 +234,26 @@ Docker 検出ロジックは環境変数フラグで無効化可能。better-sql
 
 ### 4.1 テスト対象
 
+- Unit: terminal.ts (Docker 検出無効化)、sessions.ts (パース処理)、middleware.ts (認証)
+- Integration: Next.js standalone ビルド、Vitest 設定動作
+- E2E: コンテナ起動 → viewer → tmux → 認証
+
 ### 4.2 テストケース
 
 | No | テスト内容 | 期待結果 | 結果 |
 |----|------------|----------|------|
-| 1 | | | ⬜ |
+| UT-1 | DISABLE_DOCKER_DETECTION=true で Docker 検出無効化 | 空配列返却 | ⬜ |
+| UT-5 | セッションディレクトリ空時 | 空配列返却 | ⬜ |
+| UT-9 | Basic Auth 未設定時 | 認証スキップ | ⬜ |
+| E2E-1 | コンテナ起動→HTTP応答 | 200 OK | ⬜ |
+| E2E-2 | tmux セッション存在確認 | viewer セッション存在 | ⬜ |
+
+詳細は [design/05_test-plan.md](./copilot-session-viewer/design/05_test-plan.md) を参照。
 
 ### 4.3 テスト環境
+
+- Unit/Integration: Vitest (Node.js)
+- E2E: Playwright (Chromium headless, コンテナ内実行)
 
 ---
 
@@ -226,13 +263,24 @@ Docker 検出ロジックは環境変数フラグで無効化可能。better-sql
 
 ### 5.1 影響範囲
 
+- terminal.ts Docker 検出無効化（環境変数未設定時は既存動作維持）
+- next.config.ts standalone 追加（ローカル開発に影響なし）
+- package.json 新規依存追加
+
 ### 5.2 リスク分析
 
 | リスク | 影響度 | 発生可能性 | 対策 |
 |--------|--------|------------|------|
-| | | | |
+| tmux セッション予期せぬ終了 | 高 | 中 | tini + キープアライブループ |
+| better-sqlite3 ビルド失敗 | 低 | 中 | Dockerfile に build-essential 含める |
+| Playwright イメージサイズ増加 | 中 | 中 | マルチステージビルドで分離 |
+| Next.js 16 + Vitest 互換性 | 中 | 低 | lib モジュールから段階的導入 |
+
+詳細は [design/06_side-effect-verification.md](./copilot-session-viewer/design/06_side-effect-verification.md) を参照。
 
 ### 5.3 ロールバック計画
+
+全変更は新規ファイル追加または最小限の既存ファイル修正。ロールバックは該当行/ファイル削除で容易。
 
 ---
 
@@ -246,10 +294,41 @@ Docker 検出ロジックは環境変数フラグで無効化可能。better-sql
 
 ### 6.2 承認
 
-- [ ] 設計レビュー完了
-- [ ] 実装レビュー完了
-- [ ] テスト完了
-- [ ] 弊害検証完了
+#### 完了条件
+
+##### 実装レビュー完了
+- [ ] コード品質確認
+  - [ ] コーディング規約準拠
+  - [ ] 可読性・保守性確認
+  - [ ] 重複コード排除確認
+- [ ] 設計方針の遵守確認
+  - [ ] 設計書との整合性確認
+  - [ ] アーキテクチャ準拠確認
+- [ ] セキュリティレビュー完了
+  - [ ] .env がイメージに含まれない確認
+  - [ ] GITHUB_TOKEN がログ出力されない確認
+  - [ ] Basic Auth 動作確認
+
+##### テスト完了
+- [ ] テスト計画に記載のテスト実行完了
+  - [ ] 単体テスト完了（Vitest: terminal.ts, sessions.ts, middleware.ts）
+  - [ ] 結合テスト完了（standalone ビルド、設定互換性）
+  - [ ] E2E テスト完了（Playwright: コンテナ起動、tmux、認証）
+- [ ] テストカバレッジ確認
+  - [ ] 目標カバレッジ達成（lib: 60%+, middleware: 80%+）
+  - [ ] 未カバー箇所の妥当性確認
+
+##### 弊害検証完了
+- [ ] 回帰テスト完了
+  - [ ] ローカル開発（npm run dev）正常動作
+  - [ ] npm run build エラーなし
+  - [ ] npm run lint 新規エラーなし
+  - [ ] Docker 検出が DISABLE_DOCKER_DETECTION 未設定時に動作
+- [ ] パフォーマンス検証確認
+  - [ ] コンテナ起動→HTTP応答: 30秒以内
+  - [ ] API レスポンスタイム: 500ms 以内
+  - [ ] メモリ使用量: 512MB 以下
+- [ ] 弊害検証結果レポート作成
 
 ---
 
