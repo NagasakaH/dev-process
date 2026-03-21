@@ -1,0 +1,124 @@
+# =============================================================================
+# project.yaml — プロジェクトコンテキストファイル（全プロセスの SSOT）
+# =============================================================================
+# brainstorming プロセスが setup.yaml を基に初期生成。
+# 以降の各プロセスが自セクションを追記し、コミットする。
+
+# -----------------------------------------------------------------------------
+# メタ情報
+# -----------------------------------------------------------------------------
+meta:
+  version: "1.0"
+  ticket_id: "viewer-container-local"
+  task_name: "container"
+  target_repo: "copilot-session-viewer"
+  branch: "feature/viewer-container-local"
+  created_at: "2026-03-21T23:09:11+09:00"
+  updated_at: "2026-03-21T23:09:11+09:00"
+
+# -----------------------------------------------------------------------------
+# setup（setup.yaml から引き継ぎ — 読み取り専用）
+# -----------------------------------------------------------------------------
+setup:
+  description:
+    overview: |
+      Adapt copilot-session-viewer so it can operate fully inside its own container.
+      The container should provide the Copilot CLI execution environment, session viewer,
+      and tmux together, while keeping session management local to the container rather
+      than depending on host-side Copilot coordination.
+    purpose: |
+      Establish a stable, self-contained runtime that can be operated on another Linux
+      machine without depending on host integration.
+    background: |
+      The current approach manages another container from a dev-process container, but
+      tmux exits unexpectedly for an unknown reason. As an intermediate step, the goal
+      is to make the target project run in a self-contained local/container-only mode.
+    requirements:
+      functional:
+        - "Start the Copilot CLI execution environment, session viewer, and tmux together inside the container."
+        - "Manage sessions only in the local/container environment rather than coordinating with host-side Copilot."
+        - "Isolate $HOME/.copilot on a per-container basis."
+        - "Inject the required PAT and related auth settings via .env."
+        - "Include a dev-process devcontainer-equivalent development toolset in the container."
+        - "Prepare Playwright-based E2E test support in addition to unit and integration tests."
+      non_functional:
+        - "Keep existing project functionality largely unchanged except for the session-management/runtime boundary."
+        - "Prioritize stable container startup and tmux session persistence."
+        - "Prefer host-independent local/container-only operation."
+    acceptance_criteria:
+      - "Starting the container makes the Copilot CLI execution environment, session viewer, and tmux available."
+      - "tmux sessions remain stable instead of exiting unexpectedly during normal use."
+      - "Authentication-related settings can be supplied from .env, including the required PAT."
+      - "$HOME/.copilot is isolated per container."
+      - "Unit tests, integration tests, and Playwright E2E tests can be executed."
+    scope:
+      - "Containerize the existing copilot-session-viewer project so it runs self-contained in a single/local container."
+      - "Keep the current feature set largely intact while changing runtime/session-management behavior to local/container-only."
+      - "Enable in-container Playwright E2E execution after container startup."
+    out_of_scope:
+      - "Large-scale functional redesign of the existing viewer behavior."
+      - "Maintaining host-side Copilot/session-management compatibility as a primary goal for this task."
+    notes: |
+      E2E tests should run inside the container after startup by using Playwright.
+      The target repository already contains dev-process as a submodule, so no
+      separate related repository is required in this setup.
+  related_repositories: []
+  target_repositories:
+    - name: "copilot-session-viewer"
+      url: "ssh://git@gitlab.com/nagasakatools/copilot-session-viewer.git"
+      base_branch: "main"
+  options:
+    create_design_document: true
+    design_document_dir: "docs"
+    submodules_dir: "submodules"
+
+# -----------------------------------------------------------------------------
+# brainstorming（対話完了後に記入）
+# -----------------------------------------------------------------------------
+brainstorming:
+  status: "completed"
+  started_at: "2026-03-21T23:09:11+09:00"
+  completed_at: "2026-03-21T23:09:11+09:00"
+  summary: |
+    コンテナ化方針としてハイブリッドアプローチを採用。1コンテナに Next.js (viewer) +
+    tmux + Copilot CLI を同居させる。セッション検出はローカル専用モードとし、Docker
+    検出ロジックを環境変数で無効化可能にする。テスト基盤は Vitest + Playwright を
+    新規導入し、unit/integration/e2e の全レイヤーをカバーする。
+  decisions:
+    - question: "コンテナ化のアーキテクチャはどうするか？"
+      decision: "ハイブリッドアプローチを採用。copilot-session-viewer リポジトリに Dockerfile + compose.yaml を新規作成し、1コンテナに Next.js + tmux + Copilot CLI を同居させる。dev-process の start-tmux.sh / tini / cplt パターンを参考にする。"
+    - question: "セッション検出のロジックをどう変更するか？"
+      decision: "ローカル専用モードを導入。Docker 検出ロジック（docker ps, docker exec）を環境変数やフラグで無効化可能にする。ローカル tmux 検出は常に有効とし、コンテナ内でもホスト直接起動でも動作する。"
+    - question: "テストフレームワークは何を使うか？"
+      decision: "Unit/Integration は Vitest を新規導入（既存テスト基盤なし）。E2E は Playwright をコンテナ内で実行する。"
+    - question: "認証・設定の管理方法は？"
+      decision: ".env から PAT + BASIC_AUTH 等を注入する。$HOME/.copilot はコンテナ内で自動分離される（process.env.HOME 依存の既存パターンで自然に分離）。"
+    - question: "compose.yaml のファイル名は？"
+      decision: "compose.yaml を使用する（docker-compose.yml ではなく、Docker Compose V2 の標準命名に従う）。"
+  refined_requirements:
+    - "Docker 検出ロジック（docker ps, docker exec）を環境変数またはフラグで無効化可能にする"
+    - "compose.yaml（Docker Compose V2 標準）を使用し、docker-compose.yml は使わない"
+    - "Vitest を unit/integration テストフレームワークとして新規導入する"
+    - "Playwright E2E テストをコンテナ内で実行可能にする"
+    - "dev-process の start-tmux.sh / tini / cplt パターンをコンテナ起動スクリプトの参考にする"
+  test_strategy:
+    scope:
+      - "unit"
+      - "integration"
+      - "e2e"
+    unit:
+      framework: "Vitest"
+      target: "セッション検出ロジック、環境変数による Docker 検出無効化、認証設定注入などの個別コンポーネント"
+    integration:
+      framework: "Vitest"
+      target: "ローカル tmux 検出とセッション管理の統合動作、.env からの設定読み込みパイプライン"
+    e2e:
+      method: "Playwright をコンテナ内で実行。コンテナ起動 → viewer 起動 → tmux 確認 → 認証確認のフローを検証"
+      criteria:
+        - "コンテナ起動で Copilot CLI 実行環境・session viewer・tmux が利用可能になること"
+        - "tmux セッションが通常使用時に予期せず終了しないこと"
+        - ".env から PAT を含む認証設定を供給できること"
+        - "$HOME/.copilot がコンテナごとに分離されていること"
+        - "Unit テスト・Integration テスト・Playwright E2E テストが実行可能であること"
+      environment: "Docker コンテナ内（compose.yaml で起動）"
+  artifacts: "docs/copilot-session-viewer/brainstorming/"
