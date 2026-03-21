@@ -49,22 +49,21 @@ if [ "$(id -u)" = "0" ] && id "$RUN_USER" &>/dev/null; then
   exec su -l "$RUN_USER" -c "PROJECT_NAME='${PROJECT_NAME}' LC_ALL=C.UTF-8 LANG=C.UTF-8 $0 $*"
 fi
 
-# Check if session already exists
-if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
-	echo "Session '$SESSION_NAME' already exists. Attaching..."
-	tmux attach-session -t "$SESSION_NAME"
-	exit 0
+if ! tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+	# Create new session with first window
+	tmux new-session -d -s "$SESSION_NAME" -n "editor" -c "$WORKSPACE_DIR"
+
+	# Create second window (Copilot CLI)
+	tmux new-window -t "$SESSION_NAME" -n "copilot" -c "$WORKSPACE_DIR"
+
+	# Create third window (Bash)
+	tmux new-window -t "$SESSION_NAME" -n "bash" -c "$WORKSPACE_DIR"
+
+	# Select first window by name for future shell attachments
+	tmux select-window -t "$SESSION_NAME:editor"
+else
+	echo "Session '$SESSION_NAME' already exists."
 fi
 
-# Create new session with first window
-tmux new-session -d -s "$SESSION_NAME" -n "editor" -c "$WORKSPACE_DIR"
-
-# Create second window (Copilot CLI)
-tmux new-window -t "$SESSION_NAME" -n "copilot" -c "$WORKSPACE_DIR"
-
-# Create third window (Bash)
-tmux new-window -t "$SESSION_NAME" -n "bash" -c "$WORKSPACE_DIR"
-
-# Select first window by name and attach
-tmux select-window -t "$SESSION_NAME:editor"
-tmux attach-session -t "$SESSION_NAME"
+# Keep the container alive independently from interactive tmux clients.
+exec tail -f /dev/null
