@@ -1,5 +1,8 @@
 FROM --platform=linux/amd64 nagasakah/dev-process:base
 
+# Install tini for proper PID 1 zombie reaping
+RUN apt-get update && apt-get install -y --no-install-recommends tini && rm -rf /var/lib/apt/lists/*
+
 # Install pip tools
 RUN pip install jsonschema pyyaml
 # RHEL でdindが動かない問題を修正
@@ -22,4 +25,4 @@ COPY scripts/start-tmux.sh /usr/local/bin/start-tmux
 RUN chmod +x /usr/local/bin/cplt /usr/local/bin/start-tmux \
     && chown -R vscode:vscode /home/vscode/.tmux.conf /home/vscode/.config/tmux
 ENTRYPOINT ["/usr/local/share/docker-init.sh"]
-CMD ["start-tmux"]
+CMD ["tini", "--", "start-tmux"]

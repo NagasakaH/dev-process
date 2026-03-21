@@ -66,4 +66,8 @@ else
 fi
 
 # Keep the container alive independently from interactive tmux clients.
-exec tail -f /dev/null
+# Reap zombie children periodically (defense-in-depth alongside tini)
+while true; do
+  wait -n 2>/dev/null || true
+  sleep 60
+done
