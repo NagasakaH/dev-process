@@ -101,12 +101,31 @@ describe("listSessions", () => {
 
 describe("getSessionDetail", () => {
   it("UT-7: should parse events.jsonl correctly", async () => {
-    // Test events.jsonl parsing
-  });
+      vi.spyOn(fs, "readdirSync").mockReturnValue(["session-abc"] as any);
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+      vi.spyOn(fs, "readFileSync").mockReturnValue(mockEventsJsonl);
+      vi.spyOn(fs, "statSync").mockReturnValue({ mtime: new Date() } as any);
 
-  it("UT-8: should skip broken JSONL lines without error", async () => {
-    // Test with malformed JSON mixed in
-  });
+      const { getSessionDetail } = await import("@/lib/sessions");
+      const result = getSessionDetail("session-abc");
+      expect(result).toBeDefined();
+      expect(result?.events?.length).toBeGreaterThanOrEqual(2);
+      expect(result?.events?.[0]?.type).toBe("session.init");
+    });
+
+    it("UT-8: should skip broken JSONL lines without error", async () => {
+      const brokenJsonl = '{"type":"session.init","id":"evt-1"}\nINVALID_JSON\n{"type":"user.message","id":"evt-2"}';
+      vi.spyOn(fs, "readdirSync").mockReturnValue(["session-abc"] as any);
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+      vi.spyOn(fs, "readFileSync").mockReturnValue(brokenJsonl);
+      vi.spyOn(fs, "statSync").mockReturnValue({ mtime: new Date() } as any);
+
+      const { getSessionDetail } = await import("@/lib/sessions");
+      const result = getSessionDetail("session-abc");
+      // Should not throw, and should parse valid lines
+      expect(result).toBeDefined();
+      expect(result?.events?.length).toBe(2); // only valid lines parsed
+    });
 });
 ```
 

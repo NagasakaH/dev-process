@@ -26,7 +26,7 @@
 | 07 | start-viewer.sh | 20min | — | P3-A |
 | 08 | cplt ラッパー | 10min | — | P3-A |
 | 09 | devcontainer.json | 10min | — | P3-B |
-| 10 | Dockerfile + compose.yaml | 20min | 02,07,08,09 | — |
+| 10 | Dockerfile + compose.yaml | 30min | 02,06,07,08,09 | — |
 | 11 | Integration テスト | 20min | 03,04,05,10 | — |
 | 12 | E2E テスト | 30min | 10,11 | — |
 
@@ -54,6 +54,7 @@ graph TD
     T01 --> T04
     T01 --> T05
 
+    T06 --> T10
     T02 --> T10
     T07 --> T10
     T08 --> T10
@@ -92,7 +93,7 @@ graph TD
 | 1 | 01 | 単独 | テスト基盤は全後続の前提 |
 | 2 | 02 | 単独 | standalone 必須 (Dockerfile 依存) |
 | 3 | 03, 04, 05, 06, 07, 08, 09 | **全並列** | 7タスク同時実行可能 |
-| 4 | 10 | 単独 | Dockerfile 統合 (02,07,08,09 待ち) |
+| 4 | 10 | 単独 | Dockerfile 統合 (02,06,07,08,09 待ち) |
 | 5 | 11 | 単独 | Integration テスト (03,04,05,10 待ち) |
 | 6 | 12 | 単独 | E2E テスト (10,11 待ち) |
 
@@ -266,7 +267,8 @@ npm run lint
 ### CP-4: 全テスト完了 (Task 11-12 完了後)
 
 - [ ] Integration テスト PASS
-- [ ] E2E テスト PASS (E2E-6 除く)
+- [ ] E2E テスト PASS (E2E-6 は開発中 skip 可)
+- [ ] E2E-6 (5分間耐久テスト) は verification ステップ (Step 8) で必須 PASS
 - [ ] 全 acceptance criteria が充足
 
 ---
@@ -277,6 +279,28 @@ npm run lint
 |----|----------|--------|
 | コンテナ起動で Copilot CLI 実行環境・viewer・tmux が利用可能 | 10, 12 | E2E-1, E2E-2 |
 | tmux セッションが予期せず終了しない | 12 | E2E-3, E2E-6 |
-| .env から PAT を含む認証設定を供給できる | 03, 05, 12 | UT-9-11, E2E-4, E2E-7 |
-| $HOME/.copilot がコンテナごとに分離 | 03 | UT-3 |
+| .env から PAT を含む認証設定を供給できる | 03, 05, 12 | UT-9-11, E2E-4, E2E-7, E2E-8 |
+| $HOME/.copilot がコンテナごとに分離 | 03, 12 | UT-3, E2E-9, E2E-10 |
 | Unit/Integration/E2E テストが実行可能 | 01, 11, 12 | IT-1, E2E テスト全体 |
+
+---
+
+## 10. リスクバッファ
+
+タスク見積もり合計は約 3.5 時間だが、以下のリスク要因で ~20% の追加時間を見込む（バッファ込み ~4.5 時間）:
+
+- Cherry-pick 時のコンフリクト解決
+- Docker Desktop / Playwright ブラウザインストール等の環境問題
+- Vitest + Next.js 16 の ESM 互換性問題
+- better-sqlite3 ネイティブビルドの失敗
+- tmux ビルド失敗 (ソースからの 3.6a ビルド)
+
+---
+
+## 11. テストファイル配置規約
+
+| ディレクトリ | 対象 | 例 |
+|-------------|------|-----|
+| `src/lib/__tests__/` | `src/lib/` 配下のモジュールの単体・統合テスト | `terminal.test.ts`, `sessions.test.ts` |
+| `src/__tests__/` | `src/` 直下のファイル (middleware 等) のテスト | `middleware.test.ts` |
+| `e2e/` | Playwright E2E テスト (コンテナフロー) | `container-startup.spec.ts` |

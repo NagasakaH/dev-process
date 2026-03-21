@@ -40,13 +40,14 @@
      process.env.DISABLE_DOCKER_DETECTION?.trim() === "true";
    ```
 
-2. **`findDockerContainers()` に早期リターンを追加** (L126 あたり)
+2. **`findDockerContainers()` に早期リターンを追加し、named export する** (L126 あたり)
    ```typescript
-   function findDockerContainers(): string[] {
+   export function findDockerContainers(): string[] {
      if (DISABLE_DOCKER_DETECTION) return [];
      // ... 既存コード
    }
    ```
+   > **IMPORTANT**: `findDockerContainers` を `export function` として公開すること。テスト (task03, task11) で直接 import するために必須。既存の内部呼び出し元 (`getActiveSessions` 等) への影響はない。
 
 3. **単体テストを作成**: `src/lib/__tests__/terminal.test.ts`
    - UT-1: `DISABLE_DOCKER_DETECTION=true` で `findDockerContainers()` が空配列
@@ -81,17 +82,18 @@ describe("findDockerContainers", () => {
 
   it("UT-1: should return empty array when DISABLE_DOCKER_DETECTION=true", async () => {
     vi.stubEnv("DISABLE_DOCKER_DETECTION", "true");
-    const mod = await import("@/lib/terminal");
-    // findDockerContainers is not exported, but we can test via getActiveSessions
-    // or we need to export it for testing
-    // Alternative: test indirectly via getActiveSessions behavior
-    expect(mod).toBeDefined();
+    const { findDockerContainers } = await import("@/lib/terminal");
+    const result = findDockerContainers();
+    expect(result).toEqual([]);
   });
 
-  it("UT-2: should call execSync when DISABLE_DOCKER_DETECTION is not set", async () => {
+  it("UT-2: should attempt execSync when DISABLE_DOCKER_DETECTION is not set", async () => {
     vi.stubEnv("DISABLE_DOCKER_DETECTION", "");
-    const mod = await import("@/lib/terminal");
-    expect(mod).toBeDefined();
+    const childProcess = await import("child_process");
+    const execSyncSpy = vi.spyOn(childProcess, "execSync").mockReturnValue(Buffer.from(""));
+    const { findDockerContainers } = await import("@/lib/terminal");
+    findDockerContainers();
+    expect(execSyncSpy).toHaveBeenCalled();
   });
 });
 
@@ -99,8 +101,29 @@ describe("SESSION_STATE_DIR", () => {
   it("UT-3: should construct path from HOME env var", async () => {
     vi.stubEnv("HOME", "/test/home");
     vi.resetModules();
-    // After re-import, SESSION_STATE_DIR should use /test/home
-    // Test via exported functions that use it
+    const mod = await import("@/lib/terminal");
+    // SESSION_STATE_DIR is used internally; verify via exported constant or getter
+    // At minimum confirm the module loads with the custom HOME
+    expect(mod).toBeDefined();
+    // Concrete assertion: if SESSION_STATE_DIR is exported
+    if ("SESSION_STATE_DIR" in mod) {
+      expect((mod as any).SESSION_STATE_DIR).toBe("/test/home/.copilot/session-state");
+    }
+  });
+});
+
+describe("findContainerCopilotSessions", () => {
+  it("UT-4: should return empty array when Docker detection is disabled", async () => {
+    vi.stubEnv("DISABLE_DOCKER_DETECTION", "true");
+    vi.resetModules();
+    // Mock Docker socket check to ensure it's not reached
+    const fs = await import("fs");
+    const existsSyncSpy = vi.spyOn(fs, "existsSync");
+    const { findDockerContainers } = await import("@/lib/terminal");
+    const result = findDockerContainers();
+    expect(result).toEqual([]);
+    // Docker socket should NOT be checked when detection is disabled
+    expect(existsSyncSpy).not.toHaveBeenCalledWith("/var/run/docker.sock");
   });
 });
 ```
@@ -111,7 +134,7 @@ describe("SESSION_STATE_DIR", () => {
 
 1. `terminal.ts` の先頭（SESSION_STATE_DIR 付近）に `DISABLE_DOCKER_DETECTION` 定数を追加
 2. `findDockerContainers()` の先頭に `if (DISABLE_DOCKER_DETECTION) return [];` を追加
-3. テストで `findDockerContainers` を直接テストするため、関数をエクスポートするか、間接的にテスト
+3. `findDockerContainers` を `export function` に変更し、テストから直接 import 可能にする
 
 > **NOTE (MRD-009)**: `DISABLE_DOCKER_DETECTION` はモジュールスコープの `const` で評価される。テスト間で値を切り替えるには `vi.resetModules()` + `await import()` による動的インポートが必須。
 

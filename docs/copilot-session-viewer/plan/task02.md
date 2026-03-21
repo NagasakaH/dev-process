@@ -92,6 +92,7 @@ Next.js のビルド出力を standalone モードに変更し、コンテナ内
 |---------|------|
 | `submodules/copilot-session-viewer/next.config.ts` | 修正 |
 | `submodules/copilot-session-viewer/.dockerignore` | 新規作成 |
+| `submodules/copilot-session-viewer/src/lib/__tests__/standalone-build.test.ts` | 新規作成 |
 
 ## TDD アプローチ
 

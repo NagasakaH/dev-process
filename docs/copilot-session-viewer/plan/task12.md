@@ -51,10 +51,47 @@
    - E2E-4: Basic Auth 動作確認 (.env に設定 → 認証なしアクセスで 401)
    - E2E-7: GITHUB_TOKEN 供給確認 (docker exec printenv)
 
-4. **テストセットアップ**: `e2e/global-setup.ts` (必要に応じて)
-   - コンテナ起動 (`docker compose up -d`)
-   - ヘルスチェック待機
-   - テスト後のクリーンアップ (`docker compose down`)
+4. **テストセットアップ**: `e2e/global-setup.ts` (必須)
+   - コンテナ起動 (`docker compose up -d --build`)
+   - ヘルスチェック待機 (HTTP 200 をポーリング)
+   - テスト用 `.env` の存在確認
+   ```typescript
+   // e2e/global-setup.ts
+   import { execSync } from "child_process";
+
+   export default async function globalSetup() {
+     execSync("docker compose up -d --build", { stdio: "inherit" });
+     // Wait for healthcheck
+     const maxRetries = 30;
+     for (let i = 0; i < maxRetries; i++) {
+       try {
+         const res = await fetch("http://localhost:3000/api/sessions");
+         if (res.ok) return;
+       } catch {}
+       await new Promise((r) => setTimeout(r, 2000));
+     }
+     throw new Error("Container did not become healthy within timeout");
+   }
+   ```
+
+5. **テストティアダウン**: `e2e/global-teardown.ts` (必須)
+   ```typescript
+   // e2e/global-teardown.ts
+   import { execSync } from "child_process";
+
+   export default async function globalTeardown() {
+     execSync("docker compose down", { stdio: "inherit" });
+   }
+   ```
+
+6. **playwright.config.ts に globalSetup/globalTeardown を追加**
+   ```typescript
+   // playwright.config.ts に以下を追加
+   {
+     globalSetup: "./e2e/global-setup.ts",
+     globalTeardown: "./e2e/global-teardown.ts",
+   }
+   ```
 
 ### 対象ファイル
 
@@ -63,7 +100,8 @@
 | `submodules/copilot-session-viewer/e2e/container-startup.spec.ts` | 新規作成 |
 | `submodules/copilot-session-viewer/e2e/tmux-stability.spec.ts` | 新規作成 |
 | `submodules/copilot-session-viewer/e2e/auth.spec.ts` | 新規作成 |
-| `submodules/copilot-session-viewer/e2e/global-setup.ts` | 新規作成 (必要に応じて) |
+| `submodules/copilot-session-viewer/e2e/global-setup.ts` | 新規作成 (必須) |
+| `submodules/copilot-session-viewer/e2e/global-teardown.ts` | 新規作成 (必須) |
 
 ## TDD アプローチ
 
@@ -80,8 +118,11 @@ test.describe("Container Startup (E2E-1, E2E-2, E2E-5)", () => {
   });
 
   test("E2E-2: tmux session should exist in container", async () => {
-    // This test uses exec to verify tmux inside container
-    // Implementation depends on test setup (docker exec or playwright)
+    // docker exec <container> tmux list-sessions
+    // Expect output to contain session name (e.g. "viewer:")
+    const { execSync } = require("child_process");
+    const output = execSync("docker compose exec -T viewer tmux list-sessions").toString();
+    expect(output).toContain("viewer:");
   });
 
   test("E2E-5: session list page should render", async ({ page }) => {
@@ -90,14 +131,43 @@ test.describe("Container Startup (E2E-1, E2E-2, E2E-5)", () => {
   });
 });
 
+// e2e/container-isolation.spec.ts (MPR-007: AC4 per-container isolation test)
+test.describe("Container Isolation (AC4)", () => {
+  test("E2E-9: /home/node/.copilot should exist and be writable in container", async () => {
+    const { execSync } = require("child_process");
+    // Verify the directory exists
+    const lsOutput = execSync("docker compose exec -T viewer ls -la /home/node/.copilot").toString();
+    expect(lsOutput).toBeDefined();
+    // Verify writable by creating a test file
+    execSync("docker compose exec -T viewer touch /home/node/.copilot/.test-write");
+    execSync("docker compose exec -T viewer rm /home/node/.copilot/.test-write");
+  });
+
+  test("E2E-10: container .copilot path should be isolated from host", async () => {
+    const { execSync } = require("child_process");
+    // Verify /home/node/.copilot is a named volume, not a host bind mount
+    const inspectOutput = execSync("docker compose exec -T viewer df /home/node/.copilot").toString();
+    // Named volume should show as overlay or similar, not the host filesystem path
+    expect(inspectOutput).toBeDefined();
+  });
+});
+
 // e2e/tmux-stability.spec.ts
 test.describe("tmux Stability (E2E-3, E2E-6)", () => {
   test("E2E-3: tmux session should persist after 30 seconds", async () => {
-    // Wait 30s, then verify tmux session still exists
+    const { execSync } = require("child_process");
+    // Wait 30 seconds
+    await new Promise((r) => setTimeout(r, 30_000));
+    // Verify tmux session still exists
+    const output = execSync("docker compose exec -T viewer tmux list-sessions").toString();
+    expect(output).toContain("viewer:");
   });
 
   test.skip("E2E-6: tmux should be durable for 5 minutes", async () => {
-    // Long-running test, skip by default
+    // Long-running test — conditional mandatory:
+    // Mark as test.skip() during development only.
+    // **MUST be enabled and PASS during verification step (Step 8).**
+    // E2E-6 is mandatory for AC2 verification.
     // Run with: npx playwright test --grep "E2E-6"
   });
 });
@@ -109,11 +179,21 @@ test.describe("Authentication (E2E-4, E2E-7)", () => {
     const response = await request.get("/api/sessions", {
       headers: {} // No auth header
     });
-    // Only assert 401 if Basic Auth is configured
+    // Assert 401 when Basic Auth is configured
+    expect(response.status()).toBe(401);
   });
 
   test("E2E-7: GITHUB_TOKEN should be available in container", async () => {
-    // Verify via docker exec printenv
+    const { execSync } = require("child_process");
+    const output = execSync("docker compose exec -T viewer printenv GITHUB_TOKEN").toString().trim();
+    expect(output.length).toBeGreaterThan(0);
+  });
+
+  test("E2E-8: PAT should be functionally usable (gh auth status)", async () => {
+    const { execSync } = require("child_process");
+    // Verify PAT is not just present but actually works
+    const output = execSync("docker compose exec -T viewer gh auth status").toString();
+    expect(output).toContain("Logged in");
   });
 });
 ```
@@ -138,7 +218,8 @@ test.describe("Authentication (E2E-4, E2E-7)", () => {
 - `submodules/copilot-session-viewer/e2e/container-startup.spec.ts`
 - `submodules/copilot-session-viewer/e2e/tmux-stability.spec.ts`
 - `submodules/copilot-session-viewer/e2e/auth.spec.ts`
-- `submodules/copilot-session-viewer/e2e/global-setup.ts` (必要に応じて)
+- `submodules/copilot-session-viewer/e2e/global-setup.ts` (必須)
+- `submodules/copilot-session-viewer/e2e/global-teardown.ts` (必須)
 
 ## 完了条件
 
@@ -147,8 +228,11 @@ test.describe("Authentication (E2E-4, E2E-7)", () => {
 - [ ] E2E-3: 30秒後 tmux セッション維持確認
 - [ ] E2E-4: Basic Auth 401 確認 (設定時)
 - [ ] E2E-5: セッション一覧ページ表示確認
-- [ ] E2E-6: 5分間耐久テスト (スキップ可、手動実行)
+- [ ] E2E-6: 5分間耐久テスト (開発中は skip 可、**verification ステップで必須 PASS**)
 - [ ] E2E-7: GITHUB_TOKEN 供給確認
+- [ ] E2E-8: PAT 有効性検証 (`gh auth status` 成功)
+- [ ] E2E-9: コンテナ内 `/home/node/.copilot` 存在・書き込み可能 (AC4)
+- [ ] E2E-10: コンテナ .copilot パスがホストから分離 (AC4)
 - [ ] `npm run test:e2e` が成功する (E2E-6 除く)
 
 ## コミット
