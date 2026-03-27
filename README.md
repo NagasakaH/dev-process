@@ -111,10 +111,10 @@ flowchart LR
 
 | カテゴリ | スキル |
 |---------|--------|
-| **ワークフロー** | brainstorming, investigation, design, plan, implement, verification, finishing-branch, init-work-branch |
+| **ワークフロー** | brainstorming, investigation, design, plan, implement, verification, finishing-branch, init-work-branch, submodule-overview |
 | **レビュー** | review-design, review-plan, code-review, code-review-fix |
 | **品質ルール** | test-driven-development, systematic-debugging, verification-before-completion |
-| **ユーティリティ** | commit, commit-multi-repo, submodule-overview, writing-skills |
+| **ユーティリティ** | commit, commit-multi-repo, writing-skills, gitlab-api, terraform, aws-knowledge, aws-documentation |
 
 ### プロジェクト固有スキル
 

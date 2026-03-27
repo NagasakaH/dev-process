@@ -29,6 +29,10 @@ generic_skills:
   - test-driven-development
   - verification-before-completion
   - writing-skills
+  - gitlab-api
+  - terraform
+  - aws-knowledge
+  - aws-documentation
 
 # ---------------------------------------------------------------------------
 # プロジェクト固有スキル
@@ -58,8 +62,8 @@ workflow_sections:
 
   overview:
     description: "サブモジュール概要"
-    prompt: null
-    notes: "submodule-overview スキルが直接出力"
+    prompt: submodule-overview
+    notes: "条件付き実行（サブモジュール存在時のみ）"
 
   investigation:
     description: "調査結果"
