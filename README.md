@@ -1,16 +1,42 @@
 # Development Process Skills
 
-Claude向けの開発プロセス用スキル集とエージェント構成をまとめたリポジトリです。
+Claude/Copilot向けの開発プロセス用スキル集とエージェント構成をまとめたリポジトリです。
 
 ## このリポジトリの目的
 
-1. **ワークフローとスキルの整備**: AIエージェントによる開発プロセスを10ステップワークフローとして体系化し、各ステップに対応するスキル・品質ルール・レビュー機構を一元管理します
-2. **修正対象リポジトリと独立した中間ドキュメント管理**: サブモジュールを活用し、設計・調査・計画・レビュー等の中間成果物を本リポジトリ側で管理します。修正対象のリポジトリには実装コードのみが反映され、開発プロセスの成果物が混入しません
+1. **汎用スキルの整備**: AIエージェントによる開発プロセスを体系化した汎用スキル群を提供します。各スキルはプロジェクト非依存で、単体でも利用可能です
+2. **ワークフロー統合**: 10ステップワークフローとして汎用スキルを組み合わせ、project.yaml による進捗管理を行います
+3. **修正対象リポジトリと独立した中間ドキュメント管理**: サブモジュールを活用し、設計・調査・計画・レビュー等の中間成果物を本リポジトリ側で管理します
+
+---
+
+## アーキテクチャ
+
+3層構造でスキルとワークフローを分離しています:
+
+```
+┌─────────────────────────────────────────┐
+│  dev-workflow エージェント               │  ← オーケストレーター
+├─────────────────────────────────────────┤
+│  prompts/workflow/*.md                   │  ← project.yaml 連携手順
+│  project-state スキル                    │  ← 状態管理（読み書き）
+├─────────────────────────────────────────┤
+│  汎用スキル (.claude/skills/)            │  ← プロジェクト非依存
+│  investigation, design, plan, etc.       │
+└─────────────────────────────────────────┘
+```
+
+| レイヤー | 場所 | 役割 |
+|---------|------|------|
+| **汎用スキル** | `.claude/skills/*/SKILL.md` | コア機能（調査、設計、計画等）。project.yaml に依存しない |
+| **ワークフロープロンプト** | `prompts/workflow/*.md` | 各ステップの project.yaml 連携手順（コンテキスト取得→スキル実行→結果書き戻し） |
+| **project-state スキル** | `.claude/skills/project-state/` | project.yaml/setup.yaml の読み書きを一元管理 |
 
 ---
 
 ## 主な特徴
 
+- **プロジェクト非依存の汎用スキル**: 各スキルは単体で利用可能。project.yaml なしでも動作
 - **10ステップワークフロー**: 初期化 → ブレスト → 調査 → 設計 → 計画 → 実装 → 検証 → レビューの体系的プロセス
 - **dev-workflow エージェント**: ワークフローを自律実行し、setup.yaml作成〜finishing-branchまで1プロンプトで完走
 - **品質スキル統合**: TDD、検証、デバッグ、コードレビューの組み込み
@@ -48,10 +74,10 @@ flowchart LR
 
 | ステップ              | 説明                                                           |
 | --------------------- | -------------------------------------------------------------- |
-| 1. init-work-branch   | setup.yaml を読み込み feature ブランチ・サブモジュールを初期化 |
+| 1. init-work-branch   | 入力情報を基に feature ブランチ・サブモジュールを初期化        |
 | 2. submodule-overview | サブモジュールの技術スタック・API・依存関係を分析              |
-| 3. brainstorming      | ユーザー対話で要件探索、**project.yaml（SSOT）を生成**         |
-| 👤 3a. brainstorming_review | project.yaml生成後の人間レビュー（差し戻しあり）          |
+| 3. brainstorming      | ユーザー対話で要件探索、テスト戦略確定                         |
+| 👤 3a. brainstorming_review | brainstorming結果の人間レビュー（差し戻しあり）           |
 | 4. investigation      | アーキテクチャ・データ構造・依存関係の詳細調査                 |
 | 5. design             | API・データ構造・処理フローの詳細設計                          |
 | 5a. review-design     | 設計の妥当性レビュー（差し戻しあり）                           |
@@ -69,9 +95,11 @@ flowchart LR
 
 ---
 
-## project.yaml — SSOT
+## project.yaml — ワークフロー状態管理
 
-全プロセスの **Single Source of Truth** として機能するYAMLファイルです。`brainstorming` で生成され、以降の全プロセスが参照・更新します。
+ワークフロー利用時の進捗管理ファイルです。`brainstorming` ステップで生成され、以降のステップで `project-state` スキル経由で更新されます。
+
+> **注意**: 各汎用スキル自体は project.yaml に依存しません。project.yaml との連携は `prompts/workflow/*.md` と `project-state` スキルが担当します。
 
 📄 設計方針・セクション構成・ワークフロー図 → [docs/project-yaml.md](docs/project-yaml.md)
 
@@ -79,11 +107,23 @@ flowchart LR
 
 ## スキル一覧
 
-| カテゴリ             | スキル例                                                                                      |
-| -------------------- | --------------------------------------------------------------------------------------------- |
-| **ワークフロー補助** | issue-to-setup-yaml, commit, commit-multi-repo, skill-usage-protocol, finishing-branch        |
-| **品質ルール**       | test-driven-development, systematic-debugging, verification-before-completion, writing-skills |
-| **レビュー**         | review-design, review-plan, code-review, code-review-fix                                      |
+### 汎用スキル（プロジェクト非依存）
+
+| カテゴリ | スキル |
+|---------|--------|
+| **ワークフロー** | brainstorming, investigation, design, plan, implement, verification, finishing-branch, init-work-branch |
+| **レビュー** | review-design, review-plan, code-review, code-review-fix |
+| **品質ルール** | test-driven-development, systematic-debugging, verification-before-completion |
+| **ユーティリティ** | commit, commit-multi-repo, submodule-overview, writing-skills |
+
+### プロジェクト固有スキル
+
+| スキル | 説明 |
+|--------|------|
+| project-state | project.yaml/setup.yaml の状態管理を一元化 |
+| create-setup-yaml | 対話的に setup.yaml を作成 |
+| issue-to-setup-yaml | GitHub Issue から setup.yaml を生成 |
+| skill-usage-protocol | スキル利用プロトコル |
 
 📄 全スキルの詳細一覧 → [docs/skills.md](docs/skills.md)
 
