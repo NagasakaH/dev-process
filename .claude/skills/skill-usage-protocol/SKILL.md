@@ -115,7 +115,7 @@ finishing-branch
 ### project.yaml について
 
 `project.yaml` はワークフローの進捗管理ファイルです。
-project.yaml の読み書きは `project-state` スキルと `prompts/workflow/*.md` が担当します。
+project.yaml の読み書きは `project-state` スキルが担当し、その利用手順を `prompts/workflow/*.md` が定義します。
 各汎用スキル自体は project.yaml に依存しません。
 
 **ワークフロー利用時の流れ**:
