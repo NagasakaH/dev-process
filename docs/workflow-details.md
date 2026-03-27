@@ -2,6 +2,8 @@
 
 各ステップのインプット、成果物、説明を詳述します。ワークフロー全体の概要は [README.md](../README.md) を参照してください。
 
+> **アーキテクチャ**: 各スキルは汎用的で project.yaml を直接参照しません。dev-workflow エージェントが `prompts/workflow/*.md` を読み込み、`project-state` スキルで project.yaml からコンテキストを抽出した上で、汎用スキルに渡します。各ステップの project.yaml 更新も `project-state` スキル経由で行われます。
+
 ---
 
 ## 1. init-work-branch（作業ブランチ初期化）
@@ -30,7 +32,7 @@
 
 **インプット:**
 
-- `project.yaml`（存在する場合）
+- `project.yaml`（`project-state` スキル経由、存在する場合）
 - `submodules/{repo_name}/`: サブモジュールディレクトリ
 - `submodules/{repo_name}/README.md`: プロジェクト概要
 - `submodules/{repo_name}/CLAUDE.md`: Claude向けコンテキスト（任意）
@@ -39,7 +41,7 @@
 **成果物:**
 
 - `submodules/{name}.md`: サブモジュール概要ドキュメント
-- `project.yaml` の `overview` セクション更新
+- `project.yaml` の `overview` セクション更新（`project-state` スキル経由）
 
 **説明:**
 
@@ -58,16 +60,16 @@
 
 **成果物:**
 
-- **`project.yaml`**: 全プロセスの SSOT（`meta`, `setup`, `brainstorming` セクション）
+- **`project.yaml`**: 全プロセスの SSOT（`meta`, `setup`, `brainstorming` セクション）— `project-state` スキル経由で生成
 - `docs/{repo}/brainstorming/*.md`: ブレインストーミング詳細ドキュメント
 
 **説明:**
 
-`setup.yaml` を基に `project.yaml` を生成する唯一のプロセスです。ユーザーとの対話により要件の明確化・妥当性評価を行い、機能要件・非機能要件の具体化、技術的制約の確認を実施します。2〜3つのアプローチを提案しトレードオフを説明した上で設計方針を決定し、結果を `project.yaml` の `brainstorming` セクションに記録します。
+`prompts/workflow/brainstorming.md` の手順に従い、`project-state` スキル経由で `setup.yaml` を基に `project.yaml` を生成する唯一のプロセスです。ユーザーとの対話により要件の明確化・妥当性評価を行い、機能要件・非機能要件の具体化、技術的制約の確認を実施します。2〜3つのアプローチを提案しトレードオフを説明した上で設計方針を決定し、結果を `project.yaml` の `brainstorming` セクションに記録します。
 
 **テスト戦略の確認（必須）:** テスト範囲（単体テスト/結合テスト/E2Eテスト）を `ask_user` ツールでユーザーに確認し、`test_strategy` として `project.yaml` に記録します。この戦略は以降の design（テスト計画）、plan（E2Eタスク生成）、implement（テスト実行）、verification（acceptance_criteria照合）の全工程で参照されます。
 
-> **Important**: `brainstorming` 以降の全プロセス（investigation, design, plan, implement 等）は `project.yaml` を SSOT として参照・更新します。`setup.yaml` は直接参照しません。
+> **Important**: `brainstorming` 以降の全プロセス（investigation, design, plan, implement 等）は `project-state` スキル経由で `project.yaml` を SSOT として参照・更新します。各スキルは汎用的であり、`project.yaml` を直接参照しません。`setup.yaml` も直接参照しません。
 
 ---
 
@@ -100,7 +102,7 @@
 
 **インプット:**
 
-- `project.yaml`（SSOT — `setup.description.background` を背景情報として参照）
+- `project.yaml`（`project-state` スキル経由 — `setup.description.background` を背景情報として取得）
 - `submodules/{target_repo}/`: 調査対象リポジトリ
 
 **成果物:**
@@ -111,7 +113,7 @@
 - `docs/{target_repo}/investigation/04_existing-patterns.md`: 既存パターン調査
 - `docs/{target_repo}/investigation/05_integration-points.md`: 統合ポイント調査
 - `docs/{target_repo}/investigation/06_risks-and-constraints.md`: リスク・制約分析
-- `project.yaml` の `investigation` セクション更新
+- `project.yaml` の `investigation` セクション更新（`project-state` スキル経由）
 
 **説明:**
 
@@ -126,7 +128,7 @@
 
 **インプット:**
 
-- `project.yaml`（SSOT — `setup.description.requirements` を設計要件として参照）
+- `project.yaml`（`project-state` スキル経由 — `setup.description.requirements` を設計要件として取得）
 - `docs/{target_repo}/investigation/`: 調査結果
 
 **成果物:**
@@ -137,7 +139,7 @@
 - `docs/{target_repo}/design/04_process-flow-design.md`: 処理フロー設計
 - `docs/{target_repo}/design/05_test-plan.md`: テスト計画
 - `docs/{target_repo}/design/06_side-effect-verification.md`: 弊害検証計画
-- `project.yaml` の `design` セクション更新
+- `project.yaml` の `design` セクション更新（`project-state` スキル経由）
 
 **説明:**
 
@@ -185,7 +187,7 @@
 
 **インプット:**
 
-- `project.yaml`（SSOT — `setup.acceptance_criteria` を完了条件基準として参照）
+- `project.yaml`（`project-state` スキル経由 — `setup.acceptance_criteria` を完了条件基準として取得）
 - `docs/{target_repo}/design/`: 詳細設計結果
 
 **成果物:**
@@ -193,7 +195,7 @@
 - `docs/{target_repo}/plan/task-list.md`: タスク一覧と依存関係
 - `docs/{target_repo}/plan/task01.md`, `task02-01.md`, ...: 各タスク用プロンプト
 - `docs/{target_repo}/plan/parent-agent-prompt.md`: 親エージェント統合管理プロンプト
-- `project.yaml` の `plan` セクション更新
+- `project.yaml` の `plan` セクション更新（`project-state` スキル経由）
 
 **説明:**
 
@@ -215,7 +217,7 @@
 
 **インプット:**
 
-- `project.yaml`（SSOT — `plan.tasks` からタスク一覧取得、`plan.review.status = approved` が前提）
+- `project.yaml`（`project-state` スキル経由 — `plan.tasks` からタスク一覧取得、`plan.review.status = approved` が前提）
 - `docs/{target_repo}/plan/`: タスク計画（task-list.md, task0X.md, parent-agent-prompt.md）
 
 **成果物:**
@@ -224,7 +226,7 @@
 - 実装コード（サブモジュール内）
 - テストコード（サブモジュール内）
 - コミット履歴（各タスク完了時）
-- `project.yaml` の `implement` セクション更新
+- `project.yaml` の `implement` セクション更新（`project-state` スキル経由）
 
 **説明:**
 
@@ -240,13 +242,13 @@
 
 **インプット:**
 
-- `project.yaml`（SSOT — `implement.status = completed` が前提）
+- `project.yaml`（`project-state` スキル経由 — `implement.status = completed` が前提）
 - `submodules/{target_repo}/`: 実装済みコード
 
 **成果物:**
 
 - `docs/{target_repo}/verification/results.md`: 検証結果レポート
-- `project.yaml` の `verification` セクション更新
+- `project.yaml` の `verification` セクション更新（`project-state` スキル経由）
 
 **説明:**
 
@@ -261,14 +263,14 @@
 
 **インプット:**
 
-- `project.yaml`（SSOT — `verification.status = completed` が前提）
+- `project.yaml`（`project-state` スキル経由 — `verification.status = completed` が前提）
 - コミット範囲（BASE_SHA..HEAD_SHA）
 - `docs/{target_repo}/design/`: 設計成果物（設計準拠性チェック用）
 
 **成果物:**
 
 - `docs/{target_repo}/code-review/round-01.md`（以降 round-02.md, ...）: レビュー結果
-- `project.yaml` の `code_review` セクション更新（チェックリスト結果・指摘・ラウンド）
+- `project.yaml` の `code_review` セクション更新（`project-state` スキル経由 — チェックリスト結果・指摘・ラウンド）
 
 **説明:**
 
@@ -284,13 +286,13 @@
 
 **インプット:**
 
-- `project.yaml`（SSOT — `code_review.issues` から未解決指摘を取得）
+- `project.yaml`（`project-state` スキル経由 — `code_review.issues` から未解決指摘を取得）
 - `docs/{target_repo}/code-review/round-{NN}.md`: レビュー結果
 
 **成果物:**
 
 - 修正コード・コミット
-- `project.yaml` の `code_review.issues` 更新（fixed / disputed）
+- `project.yaml` の `code_review.issues` 更新（`project-state` スキル経由 — fixed / disputed）
 
 **説明:**
 
@@ -304,12 +306,12 @@
 
 **インプット:**
 
-- `project.yaml`（SSOT — `code_review.status = approved` が前提）
+- `project.yaml`（`project-state` スキル経由 — `code_review.status = approved` が前提）
 
 **成果物:**
 
 - マージ / PR / ブランチ保持 / 破棄
-- `project.yaml` の `finishing` セクション更新
+- `project.yaml` の `finishing` セクション更新（`project-state` スキル経由）
 
 **説明:**
 
