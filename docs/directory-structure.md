@@ -29,6 +29,20 @@ project/
 │       └── code-review/                # コードレビュー結果
 │           ├── round-01.md
 │           └── round-02.md
+├── prompts/
+│   └── workflow/                        # ワークフロープロンプト（汎用スキルとproject.yamlの橋渡し）
+│       ├── init-work-branch.md
+│       ├── brainstorming.md
+│       ├── investigation.md
+│       ├── design.md
+│       ├── review-design.md
+│       ├── plan.md
+│       ├── review-plan.md
+│       ├── implement.md
+│       ├── verification.md
+│       ├── code-review.md
+│       ├── code-review-fix.md
+│       └── finishing-branch.md
 └── submodules/
     ├── {repo_name}/                    # サブモジュール
     └── {repo_name}.md                  # サブモジュール概要
@@ -93,6 +107,9 @@ graph TD
     HOOK_SS[hooks/session-start.sh]:::hook
     HOOKS_JSON[.claude/hooks.json]:::hook
 
+    %% ── プロジェクト状態管理スキル ──
+    S_PSTATE[project-state]:::workflow
+
     %% ── 設定・データファイル ──
     F_PY[project.yaml<br/>SSOT]:::data
     F_SY[setup.yaml]:::config
@@ -100,8 +117,10 @@ graph TD
     F_SCHEMA[project.schema.yaml]:::config
     F_REG[_registry.yaml]:::config
     F_AGENTS[AGENTS.md]:::config
+    F_PROMPTS[prompts/workflow/*.md]:::config
 
-    %% ═══ エージェント → スキル ═══
+    %% ═══ エージェント → プロンプト → スキル ═══
+    AGENT -->|プロンプト読込| F_PROMPTS
     AGENT -->|ステップ実行| S_INIT
     AGENT -->|ステップ実行| S_OVER
     AGENT -->|ステップ実行| S_BRAIN
@@ -115,35 +134,17 @@ graph TD
     AGENT -->|ステップ実行| S_CR
     AGENT -->|ステップ実行| S_CRF
     AGENT -->|ステップ実行| S_FIN
-    AGENT -.->|参照| SC_HELPER
+    AGENT -->|ステップ実行| S_PSTATE
     AGENT -.->|参照| F_REG
 
-    %% ═══ スキル → project-yaml-helper.sh ═══
-    S_INV -->|init-section / update| SC_HELPER
-    S_DES -->|init-section / update| SC_HELPER
-    S_BRAIN -->|update| SC_HELPER
-    S_VER -->|init-section / update| SC_HELPER
-    S_CR -->|init-section| SC_HELPER
-    S_FIN -->|init-section| SC_HELPER
-
-    %% ═══ スキル → project.yaml（yq 読み書き） ═══
-    S_BRAIN -->|生成| F_PY
-    S_INV -->|読み書き| F_PY
-    S_DES -->|読み書き| F_PY
-    S_RD -->|読み書き| F_PY
-    S_PLAN -->|読み書き| F_PY
-    S_RP -->|読み書き| F_PY
-    S_IMPL -->|読み書き| F_PY
-    S_VER -->|読み書き| F_PY
-    S_CR -->|読み書き| F_PY
-    S_CRF -->|読み書き| F_PY
-    S_FIN -->|読み書き| F_PY
+    %% ═══ project-state スキル → project.yaml / helper ═══
+    S_PSTATE -->|読み書き| F_PY
+    S_PSTATE -->|使用| SC_HELPER
 
     %% ═══ setup.yaml 関連 ═══
     S_ISSUE -->|生成| F_SY
     S_SETUP -->|生成| F_SY
-    S_INIT -->|読み込み| F_SY
-    S_BRAIN -->|読み込み| F_SY
+    F_PROMPTS -.->|setup.yaml参照指示| S_PSTATE
 
     %% ═══ スクリプト間の依存 ═══
     SC_HELPER -->|validate サブコマンド| SC_VALID
@@ -175,4 +176,4 @@ graph TD
 | 🔵 水色     | スクリプト         | project.yaml 操作ヘルパー        |
 | 🟠 オレンジ | フック             | セッション開始時の自動注入       |
 | 🟢 緑       | データファイル     | project.yaml（SSOT）             |
-| ⬜ グレー   | 設定ファイル       | スキーマ・レジストリ・前提条件   |
+| ⬜ グレー   | 設定ファイル       | スキーマ・レジストリ・前提条件・ワークフロープロンプト |

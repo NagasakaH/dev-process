@@ -6,8 +6,8 @@
 
 ## 概要
 
-- **生成**: `brainstorming` スキルが `setup.yaml` を基に初期生成
-- **更新**: 各プロセスが完了時に自セクションを追記
+- **生成**: `brainstorming` ワークフロー（`prompts/workflow/brainstorming.md`）が `project-state` スキル経由で `setup.yaml` を基に初期生成
+- **更新**: 各ワークフローステップが `project-state` スキル経由で完了時に自セクションを追記
 - **参照**: 以降の全プロセスがこのファイルを入力として使用
 
 ---
