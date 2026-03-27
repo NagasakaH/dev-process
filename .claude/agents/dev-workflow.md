@@ -38,6 +38,52 @@ description: |
 
 ---
 
+## スキルアーキテクチャ（レイヤー構造）
+
+本プロジェクトは以下の3層アーキテクチャでワークフローを実行する：
+
+```
+┌─────────────────────────────────────────────────────┐
+│  dev-workflow エージェント（オーケストレーター）      │
+│  - ワークフロー制御、setup.yaml/project.yaml 編集    │
+└───────────┬──────────────────────────────┬──────────┘
+            │                              │
+┌───────────▼──────────┐  ┌───────────────▼──────────┐
+│ prompts/workflow/*.md │  │ project-state スキル      │
+│ ワークフロープロンプト │  │ project.yaml/setup.yaml  │
+│ (project.yaml連携定義)│  │ の読み書き一元管理        │
+└───────────┬──────────┘  └──────────────────────────┘
+            │
+┌───────────▼──────────┐
+│ 汎用スキル (SKILL.md) │
+│ investigation, design │
+│ plan, implement 等    │
+│ ※ project.yaml 非依存 │
+└──────────────────────┘
+```
+
+### 各レイヤーの役割
+
+| レイヤー | パス | 役割 |
+|---------|------|------|
+| **汎用スキル** | `.claude/skills/*/SKILL.md` | project.yaml に依存しない汎用的な作業実行。入力を受け取り成果物を出力する |
+| **project-state スキル** | `.claude/skills/project-state/SKILL.md` | project.yaml / setup.yaml の状態読み取り・セクション更新・前提条件チェック |
+| **ワークフロープロンプト** | `prompts/workflow/{step}.md` | 汎用スキルと project.yaml の橋渡し。コンテキスト抽出→スキル実行→結果書き戻しの手順を定義 |
+
+### 各ステップの実行パターン（重要）
+
+**全てのワークフローステップは以下の手順で実行すること：**
+
+1. **ワークフロープロンプトの読み込み**: `prompts/workflow/{step}.md` を読み、手順を把握
+2. **前提条件チェック**: プロンプトに記載の前提条件を `project-state` スキル（`scripts/project-yaml-helper.sh`）で確認
+3. **コンテキスト抽出**: プロンプトに記載のコンテキスト取得手順で project.yaml から必要な情報を抽出
+4. **汎用スキル実行**: 抽出したコンテキストを入力として、汎用スキルをサブエージェント経由で実行
+5. **結果書き戻し**: プロンプトに記載の完了後の状態更新手順で、`project-state` スキル経由で project.yaml を更新
+
+⚠️ **ワークフロープロンプトが存在しないステップ**（Step 0, Step 0.5, Step 2: submodule-overview）は従来通りの手順で実行する。
+
+---
+
 ## サブエージェント委譲モデル
 
 このエージェントは **オーケストレーター** として機能し、自身では setup.yaml / project.yaml の編集とワークフロー制御のみを行う。全ての実作業はサブエージェントに委譲する。
@@ -340,7 +386,11 @@ ask_user を使用して以下を確認:
 
 ### Step 1: init-work-branch（作業ブランチ初期化）
 
-`init-work-branch` スキルをサブエージェント経由で実行。
+📋 **まず `prompts/workflow/init-work-branch.md` を読み、手順を把握すること。**
+
+1. **コンテキスト抽出**: ワークフロープロンプトに従い setup.yaml から ticket_id, target_repos, base_branch を取得
+2. **スキル実行**: `init-work-branch` スキルをサブエージェント経由で実行（抽出したコンテキストを渡す）
+3. **状態管理**: このステップでは project.yaml はまだ存在しない（brainstorming で生成される）
 
 ```
 task ツール:
@@ -372,6 +422,8 @@ task ツール:
 
 ⚡ **このエージェントが直接実行**（ユーザー対話が必須のため、2フェーズ方式）
 
+📋 **まず `prompts/workflow/brainstorming.md` を読み、手順を把握すること。**
+
 **Phase 1**: サブエージェントにコンテキスト収集を委譲
 
 ```
@@ -398,13 +450,20 @@ task ツール:
 
 ⚠️ **テスト戦略の記録**: Step 0.5 で確認したテストスコープを project.yaml の `brainstorming.test_strategy` セクションに必ず記録すること。対象リポジトリのテスト方法（テストフレームワーク、E2E実行手順等）を調査し、具体的なテスト実行方法を把握する。
 
+⚠️ **project.yaml 生成・状態更新**: ワークフロープロンプトの「完了後の状態更新」に従い、`project-state` スキル（`scripts/project-yaml-helper.sh`）で project.yaml を更新すること。
+
 **完了条件**: project.yaml が生成・コミットされ、`brainstorming.test_strategy` が記録されていること
 
 ---
 
 ### Step 4: investigation（詳細調査）
 
-`investigation` スキルをサブエージェント経由で実行。
+📋 **まず `prompts/workflow/investigation.md` を読み、手順を把握すること。**
+
+1. **前提条件チェック**: ワークフロープロンプトに従い `project-state` スキルで前提条件を確認（brainstorming.status=completed, brainstorming_review=approved）
+2. **コンテキスト抽出**: ワークフロープロンプトに従い project.yaml から TICKET_ID, TARGET_REPO, BACKGROUND, REQUIREMENTS, TEST_STRATEGY 等を抽出
+3. **スキル実行**: `investigation` スキルをサブエージェント経由で実行（抽出したコンテキストを渡す）
+4. **結果書き戻し**: ワークフロープロンプトの「完了後の状態更新」に従い、`project-state` スキルで project.yaml を更新
 
 ```
 task ツール:
@@ -419,7 +478,12 @@ task ツール:
 
 ### Step 5: design（詳細設計）
 
-`design` スキルをサブエージェント経由で実行。
+📋 **まず `prompts/workflow/design.md` を読み、手順を把握すること。**
+
+1. **前提条件チェック**: ワークフロープロンプトに従い `project-state` スキルで前提条件を確認（investigation.status=completed）
+2. **コンテキスト抽出**: ワークフロープロンプトに従い project.yaml から TICKET_ID, TARGET_REPO, REQUIREMENTS, ACCEPTANCE_CRITERIA, INVESTIGATION_ARTIFACTS, TEST_STRATEGY を抽出
+3. **スキル実行**: `design` スキルをサブエージェント経由で実行（抽出したコンテキストを渡す）
+4. **結果書き戻し**: ワークフロープロンプトの「完了後の状態更新」に従い、`project-state` スキルで project.yaml を更新
 
 ```
 task ツール:
@@ -433,6 +497,11 @@ task ツール:
 ---
 
 ### Step 5a: review-design（設計レビュー）
+
+📋 **まず `prompts/workflow/review-design.md` を読み、手順を把握すること。**
+
+1. **前提条件チェック**: ワークフロープロンプトに従い `project-state` スキルで前提条件を確認（design.status=completed）
+2. **コンテキスト抽出**: ワークフロープロンプトに従い project.yaml から TICKET_ID, TARGET_REPO, REQUIREMENTS, ACCEPTANCE_CRITERIA, DESIGN_ARTIFACTS, DESIGN_SUMMARY を抽出
 
 `review-design` スキルを **3フェーズ並列実行**（競合防止パターン）。
 
@@ -458,13 +527,16 @@ task ツール 2 (mode: "background"):
 # → 判定マージ + 指摘マージ（上記の「レビュー系スキル」セクション参照）
 
 # Phase 3: 更新・コミット（1つのサブエージェントに委譲）
+# ワークフロープロンプトの「完了後の状態更新」に従い project-state スキルで更新
 task ツール 3:
   agent_type: "general-purpose"
   model: "claude-opus-4.6"
   prompt: |
     統合済みレビュー結果に基づき、review-design の更新フェーズを実行。
+    prompts/workflow/review-design.md の「完了後の状態更新」手順に従い、
     docs/{target_repo}/review-design/ にドキュメント生成、
-    project.yaml 更新、git commit を行ってください。
+    project-state スキル（project-yaml-helper.sh）で project.yaml 更新、
+    git commit を行ってください。
 ```
 
 **レビュー結果の処理**:
@@ -477,7 +549,12 @@ task ツール 3:
 
 ### Step 6: plan（タスク計画）
 
-`plan` スキルをサブエージェント経由で実行。
+📋 **まず `prompts/workflow/plan.md` を読み、手順を把握すること。**
+
+1. **前提条件チェック**: ワークフロープロンプトに従い `project-state` スキルで前提条件を確認（design.status=completed, design.review.status=approved, design_review=approved）
+2. **コンテキスト抽出**: ワークフロープロンプトに従い project.yaml から TICKET_ID, TARGET_REPO, ACCEPTANCE_CRITERIA, DESIGN_ARTIFACTS, TEST_STRATEGY を抽出
+3. **スキル実行**: `plan` スキルをサブエージェント経由で実行（抽出したコンテキストを渡す）
+4. **結果書き戻し**: ワークフロープロンプトの「完了後の状態更新」に従い、`project-state` スキルで project.yaml を更新
 
 ```
 task ツール:
@@ -491,6 +568,11 @@ task ツール:
 ---
 
 ### Step 6a: review-plan（計画レビュー）
+
+📋 **まず `prompts/workflow/review-plan.md` を読み、手順を把握すること。**
+
+1. **前提条件チェック**: ワークフロープロンプトに従い `project-state` スキルで前提条件を確認（plan.status=completed）
+2. **コンテキスト抽出**: ワークフロープロンプトに従い project.yaml から TICKET_ID, TARGET_REPO, ACCEPTANCE_CRITERIA, PLAN_ARTIFACTS, DESIGN_ARTIFACTS を抽出
 
 `review-plan` スキルを **3フェーズ並列実行**（競合防止パターン）。
 
@@ -516,13 +598,16 @@ task ツール 2 (mode: "background"):
 # → 判定マージ + 指摘マージ（上記の「レビュー系スキル」セクション参照）
 
 # Phase 3: 更新・コミット（1つのサブエージェントに委譲）
+# ワークフロープロンプトの「完了後の状態更新」に従い project-state スキルで更新
 task ツール 3:
   agent_type: "general-purpose"
   model: "claude-opus-4.6"
   prompt: |
     統合済みレビュー結果に基づき、review-plan の更新フェーズを実行。
+    prompts/workflow/review-plan.md の「完了後の状態更新」手順に従い、
     docs/{target_repo}/review-plan/ にドキュメント生成、
-    project.yaml 更新、git commit を行ってください。
+    project-state スキル（project-yaml-helper.sh）で project.yaml 更新、
+    git commit を行ってください。
 ```
 
 **レビュー結果の処理**:
@@ -534,7 +619,12 @@ task ツール 3:
 
 ### Step 7: implement（実装）
 
-`implement` スキルをサブエージェント経由で実行。
+📋 **まず `prompts/workflow/implement.md` を読み、手順を把握すること。**
+
+1. **前提条件チェック**: ワークフロープロンプトに従い `project-state` スキルで前提条件を確認（plan.status=completed, plan.review.status=approved）
+2. **コンテキスト抽出**: ワークフロープロンプトに従い project.yaml から TICKET_ID, TARGET_REPO, PLAN_ARTIFACTS, DESIGN_ARTIFACTS, TEST_STRATEGY を抽出
+3. **スキル実行**: `implement` スキルをサブエージェント経由で実行（抽出したコンテキストを渡す）
+4. **結果書き戻し**: ワークフロープロンプトの「完了後の状態更新」に従い、`project-state` スキルで project.yaml を更新
 
 ```
 task ツール:
@@ -551,7 +641,12 @@ task ツール:
 
 ### Step 8: verification（検証）
 
-`verification` スキルをサブエージェント経由で実行。
+📋 **まず `prompts/workflow/verification.md` を読み、手順を把握すること。**
+
+1. **前提条件チェック**: ワークフロープロンプトに従い `project-state` スキルで前提条件を確認（implement.status=completed）
+2. **コンテキスト抽出**: ワークフロープロンプトに従い project.yaml から TICKET_ID, TARGET_REPO, TEST_STRATEGY, ACCEPTANCE_CRITERIA を抽出
+3. **スキル実行**: `verification` スキルをサブエージェント経由で実行（抽出したコンテキストを渡す）
+4. **結果書き戻し**: ワークフロープロンプトの「完了後の状態更新」に従い、`project-state` スキルで project.yaml を更新
 
 ```
 task ツール:
@@ -571,6 +666,11 @@ task ツール:
 ---
 
 ### Step 9: code-review（コードレビュー）
+
+📋 **まず `prompts/workflow/code-review.md` を読み、手順を把握すること。**
+
+1. **前提条件チェック**: ワークフロープロンプトに従い `project-state` スキルで前提条件を確認（verification.status=completed）
+2. **コンテキスト抽出**: ワークフロープロンプトに従い project.yaml から TICKET_ID, TARGET_REPO, DESIGN_ARTIFACTS, VERIFICATION_STATUS を抽出
 
 `code-review` スキルを **3フェーズ並列実行**（競合防止パターン）。
 
@@ -599,13 +699,16 @@ task ツール 2 (mode: "background"):
 #   （上記の「レビュー系スキル」セクション参照）
 
 # Phase 3: 更新・コミット（1つのサブエージェントに委譲）
+# ワークフロープロンプトの「完了後の状態更新」に従い project-state スキルで更新
 task ツール 3:
   agent_type: "general-purpose"
   model: "claude-opus-4.6"
   prompt: |
     統合済みレビュー結果に基づき、code-review の更新フェーズを実行。
+    prompts/workflow/code-review.md の「完了後の状態更新」手順に従い、
     docs/{target_repo}/code-review/round-NN.md にラウンドレポート生成、
-    project.yaml 更新、git commit を行ってください。
+    project-state スキル（project-yaml-helper.sh）で project.yaml 更新、
+    git commit を行ってください。
 ```
 
 **レビュー結果の処理**:
@@ -617,7 +720,12 @@ task ツール 3:
 
 ### Step 9a: code-review-fix（レビュー指摘修正）
 
-`code-review-fix` スキルをサブエージェント経由で実行。
+📋 **まず `prompts/workflow/code-review-fix.md` を読み、手順を把握すること。**
+
+1. **前提条件チェック**: ワークフロープロンプトに従い code_review.status が conditional / rejected であることを確認
+2. **コンテキスト抽出**: ワークフロープロンプトに従い project.yaml から TICKET_ID, TARGET_REPO, CURRENT_ROUND、未解決の指摘事項を抽出
+3. **スキル実行**: `code-review-fix` スキルをサブエージェント経由で実行（抽出したコンテキストを渡す）
+4. **結果書き戻し**: ワークフロープロンプトの「完了後の状態更新」に従い、`project-state` スキルで project.yaml の指摘ステータスを更新
 
 ```
 task ツール:
@@ -633,6 +741,11 @@ task ツール:
 ### Step 10: finishing-branch（完了処理）
 
 ⚡ **このエージェントが直接実行**（ユーザーに選択肢を提示する対話が必須のため、2フェーズ方式）
+
+📋 **まず `prompts/workflow/finishing-branch.md` を読み、手順を把握すること。**
+
+1. **前提条件チェック**: ワークフロープロンプトに従い `project-state` スキルで前提条件を確認（code_review.status=approved）
+2. **コンテキスト抽出**: ワークフロープロンプトに従い project.yaml から TICKET_ID, TARGET_REPO を抽出
 
 **Phase 1**: サブエージェントに状態確認を委譲
 
@@ -651,6 +764,8 @@ task ツール:
 ```
 
 **Phase 2**: サブエージェントの結果を使ってユーザーに4つの選択肢を提示し、選択に応じた処理を実行
+
+⚠️ **状態更新**: ワークフロープロンプトの「完了後の状態更新」に従い、`project-state` スキル（`scripts/project-yaml-helper.sh`）で project.yaml を更新すること。
 
 **完了条件**: マージ/PR/ブランチ処理完了、project.yaml 更新
 
@@ -748,5 +863,7 @@ scripts/generate-metrics.sh project.yaml で詳細を確認できます
 - [AGENTS.md](AGENTS.md) — 運用ルール
 - [README.md](README.md) — 10ステップワークフロー詳細
 - [skill-usage-protocol](.claude/skills/skill-usage-protocol/SKILL.md) — スキル使用プロトコル
+- [project-state スキル](.claude/skills/project-state/SKILL.md) — project.yaml/setup.yaml 状態管理
+- [ワークフロープロンプト](prompts/workflow/) — 各ステップの project.yaml 連携手順
 - [project-yaml-helper.sh](scripts/project-yaml-helper.sh) — project.yaml ヘルパー
 - [_registry.yaml](.claude/skills/_registry.yaml) — スキルレジストリ

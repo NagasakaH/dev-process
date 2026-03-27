@@ -1,56 +1,39 @@
 ---
 name: init-work-branch
-description: 作業ブランチ初期化スキル。セットアップYAMLを入力として、featureブランチ作成、サブモジュール追加、設計ドキュメント生成を行う。「作業ブランチを初期化」「init-work-branch」「開発セットアップ」「featureブランチを作成」などのフレーズで発動。
+description: 作業ブランチ初期化スキル。チケットID・タスク名・対象リポジトリ情報を入力として、featureブランチ作成、サブモジュール追加、設計ドキュメント生成を行う。「作業ブランチを初期化」「init-work-branch」「開発セットアップ」「featureブランチを作成」などのフレーズで発動。
 ---
 
 # 作業ブランチ初期化スキル
 
-セットアップYAMLファイルを入力として、開発に必要な環境を自動構築します。
+チケットID・タスク名・対象リポジトリ情報を入力として、開発に必要な環境を自動構築します。
 
 > **設計原則**: 
 > - `git clone` + `git submodule init && git submodule update` だけで同等の開発環境が再現できること
-> - **setup.yaml が Single Source of Truth (SSOT)** - 全ての基本情報は setup.yaml に集約
 
-## ユーザー向け手順
+## 入力情報
 
-### 1. テンプレートの準備
+このスキルの実行には以下の情報が必要です。ユーザーから直接受け取るか、呼び出し元が提供してください。
 
-プロジェクトルートに配置されている `setup-template.yaml` をコピーして編集します：
+### 必須入力
+- **ticket_id** - チケットID（ブランチ名・ドキュメント名に使用）
+- **task_name** - タスク名
+- **target_repositories** - 修正対象リポジトリ（少なくとも1つ）
+  - 各リポジトリに `name`, `url`, `base_branch`（デフォルト: main）を含む
 
-```bash
-# テンプレートをコピー
-cp setup-template.yaml setup.yaml
+### オプション入力
+- **description** - タスクの説明（階層化構造を推奨）
+  - overview, purpose, background, requirements（functional / non_functional）, acceptance_criteria, scope, out_of_scope, notes
+- **related_repositories** - 参照用リポジトリ一覧（読み取り専用のサブモジュール）
+- **base_branch** - 親リポジトリの元ブランチ（デフォルト: 現在のブランチ）
+- **submodules_dir** - サブモジュール配置ディレクトリ（デフォルト: `submodules`）
+- **design_document_dir** - 設計ドキュメント配置ディレクトリ（デフォルト: `docs`）
 
-# 内容を編集
-# - task_name: タスク名を設定
-# - ticket_id: チケットIDを設定
-# - description: 階層化された説明を記述
-#   - overview: 概要
-#   - purpose: 目的
-#   - background: 背景
-#   - requirements: 要件（機能/非機能）
-#   - acceptance_criteria: 受け入れ条件
-#   - scope: 対象範囲
-#   - out_of_scope: 対象外
-#   - notes: 補足
-# - target_repositories: 修正対象リポジトリを設定
-# - related_repositories: 参照用リポジトリを設定（任意）
-```
-
-### 2. スキルの実行
-
-YAMLファイルの準備が完了したら、このスキル（init-work-branch）を実行してください：
-
-```
-init-work-branch を実行して setup.yaml で初期化
-```
-
-### 3. 成果物
+## 成果物
 
 スキル実行後、以下が自動生成されます：
 - `feature/{ticket_id}` ブランチ
 - サブモジュール（submodules/配下）
-- 設計ドキュメント（docs/{ticket_id}.md）- **setup.yaml の description から動的に埋め込み**
+- 設計ドキュメント（docs/{ticket_id}.md）- 入力された description から動的に埋め込み
 
 ---
 
@@ -58,34 +41,16 @@ init-work-branch を実行して setup.yaml で初期化
 
 1. **ブランチ管理** - チケットIDに基づいたfeatureブランチを作成
 2. **依存リポジトリ管理** - 関連・修正対象リポジトリをサブモジュールとして追加
-3. **ドキュメント準備** - setup.yaml の description を基に設計ドキュメントを生成
-
-## 入力ファイル
-
-セットアップYAMLファイルのパスをユーザーから取得してください。
-
-**テンプレート配置場所:**
-- プロジェクトルート: `/setup-template.yaml`（ユーザー用コピー元）
-- スキル内参照: `/.claude/skills/init-work-branch/references/setup-template.yaml`
+3. **ドキュメント準備** - 入力された description を基に設計ドキュメントを生成
 
 ## 処理フロー
 
-### 1. YAMLファイルのバリデーション
+### 1. 入力のバリデーション
 
-```bash
-# YAMLファイルの存在確認
-test -f "{yaml_path}" || echo "ファイルが見つかりません: {yaml_path}"
-```
-
-以下の必須フィールドを確認：
+以下の必須入力を確認：
 - `ticket_id` - チケットID（必須）
 - `task_name` - タスク名（必須）
 - `target_repositories` - 修正対象リポジトリ（少なくとも1つ必須）
-
-オプションフィールド：
-- `description` - タスクの説明（階層化構造）
-- `related_repositories` - 関連リポジトリ一覧
-- `options` - オプション設定
 
 ### 2. 現在のブランチからfeatureブランチを作成
 
@@ -104,7 +69,7 @@ echo "ブランチ作成完了: $FEATURE_BRANCH (元ブランチ: $CURRENT_BRANC
 
 ```bash
 # サブモジュールディレクトリを作成（デフォルト: submodules）
-SUBMODULES_DIR="{options.submodules_dir:-submodules}"
+SUBMODULES_DIR="${submodules_dir:-submodules}"
 mkdir -p "$SUBMODULES_DIR"
 ```
 
@@ -150,45 +115,44 @@ cd -
 echo "サブモジュール追加完了: $SUBMODULES_DIR/$REPO_NAME (ブランチ: $FEATURE_BRANCH)"
 ```
 
-### 6. 設計変更ドキュメントの作成（setup.yaml から動的埋め込み）
+### 6. 設計変更ドキュメントの作成
 
-設計ドキュメントテンプレートを使用し、**setup.yaml の description から各セクションを動的に埋め込み**：
+設計ドキュメントテンプレートを使用し、入力された description から各セクションを動的に埋め込み：
 
 ```bash
-DOCS_DIR="{options.design_document_dir:-docs}"
+DOCS_DIR="${design_document_dir:-docs}"
 mkdir -p "$DOCS_DIR"
 
 TEMPLATE_PATH="/.claude/skills/init-work-branch/references/design-document-template.md"
 OUTPUT_PATH="$DOCS_DIR/{ticket_id}.md"
 ```
 
-**置換対象プレースホルダー（SSOT対応）:**
+**置換対象プレースホルダー:**
 
-| プレースホルダー                  | 置換内容                                                            |
-| --------------------------------- | ------------------------------------------------------------------- |
-| `{{TICKET_ID}}`                   | setup.yaml の ticket_id                                             |
-| `{{TASK_NAME}}`                   | setup.yaml の task_name                                             |
-| `{{CREATED_DATE}}`                | 現在日付（YYYY-MM-DD形式）                                          |
-| `{{AUTHOR}}`                      | git の user.name                                                    |
-| `{{DESCRIPTION_OVERVIEW}}`        | setup.yaml の description.overview                                  |
-| `{{DESCRIPTION_PURPOSE}}`         | setup.yaml の description.purpose                                   |
-| `{{DESCRIPTION_BACKGROUND}}`      | setup.yaml の description.background                                |
-| `{{REQUIREMENTS_FUNCTIONAL}}`     | setup.yaml の description.requirements.functional（リスト形式）     |
-| `{{REQUIREMENTS_NON_FUNCTIONAL}}` | setup.yaml の description.requirements.non_functional（リスト形式） |
-| `{{DESCRIPTION_SCOPE}}`           | setup.yaml の description.scope（リスト形式）                       |
-| `{{DESCRIPTION_OUT_OF_SCOPE}}`    | setup.yaml の description.out_of_scope（リスト形式）                |
-| `{{ACCEPTANCE_CRITERIA}}`         | setup.yaml の description.acceptance_criteria（リスト形式）         |
-| `{{DESCRIPTION_NOTES}}`           | setup.yaml の description.notes                                     |
+| プレースホルダー                  | 置換内容                                            |
+| --------------------------------- | --------------------------------------------------- |
+| `{{TICKET_ID}}`                   | 入力の ticket_id                                    |
+| `{{TASK_NAME}}`                   | 入力の task_name                                    |
+| `{{CREATED_DATE}}`                | 現在日付（YYYY-MM-DD形式）                           |
+| `{{AUTHOR}}`                      | git の user.name                                    |
+| `{{DESCRIPTION_OVERVIEW}}`        | description.overview                                |
+| `{{DESCRIPTION_PURPOSE}}`         | description.purpose                                 |
+| `{{DESCRIPTION_BACKGROUND}}`      | description.background                              |
+| `{{REQUIREMENTS_FUNCTIONAL}}`     | description.requirements.functional（リスト形式）    |
+| `{{REQUIREMENTS_NON_FUNCTIONAL}}` | description.requirements.non_functional（リスト形式）|
+| `{{DESCRIPTION_SCOPE}}`           | description.scope（リスト形式）                      |
+| `{{DESCRIPTION_OUT_OF_SCOPE}}`    | description.out_of_scope（リスト形式）               |
+| `{{ACCEPTANCE_CRITERIA}}`         | description.acceptance_criteria（リスト形式）        |
+| `{{DESCRIPTION_NOTES}}`           | description.notes                                   |
 
 **リスト形式の変換例:**
 
 ```yaml
-# setup.yaml
-description:
-  requirements:
-    functional:
-      - "ユーザーが○○を実行できること"
-      - "結果が△△形式で出力されること"
+# 入力例
+requirements:
+  functional:
+    - "ユーザーが○○を実行できること"
+    - "結果が△△形式で出力されること"
 ```
 
 ↓ 変換後
@@ -230,8 +194,8 @@ git commit -m "feat: {ticket_id} 開発環境を初期化
 ### 作成されたドキュメント
 - docs/{ticket_id}.md
 
-### SSOT情報
-setup.yaml の description から以下のセクションが埋め込まれました:
+### 埋め込み済みセクション
+入力された description から以下のセクションが埋め込まれました:
 - 概要 (overview)
 - 目的 (purpose)
 - 背景 (background)
@@ -248,47 +212,18 @@ git submodule init && git submodule update
 
 ### 次のステップ
 1. `docs/{ticket_id}.md` を開いて内容を確認
-2. investigation スキルで調査を実施（setup.yaml の description.background を参照）
-3. design スキルで設計を実施（setup.yaml の description.requirements を参照）
+2. investigation スキルで調査を実施
+3. design スキルで設計を実施
 ```
 
 ## エラーハンドリング
 
-### YAMLパースエラー
+### 必須入力不足
 ```
-エラー: YAMLファイルのパースに失敗しました
-ファイル: {yaml_path}
-原因: {error_message}
+エラー: 必須入力が不足しています
+不足項目: {missing_fields}
 
-setup-template.yaml を参考に修正してください。
-```
-
-### 必須フィールド不足
-```
-エラー: 必須フィールドが不足しています
-不足フィールド: {missing_fields}
-
-YAMLファイルを修正してください。
-```
-
-### description の旧形式検出
-```
-警告: description が旧形式（文字列）で記載されています。
-新形式（階層化）への移行を推奨します。
-
-旧形式:
-  description: |
-    説明文...
-
-新形式:
-  description:
-    overview: |
-      概要...
-    purpose: |
-      目的...
-    ...
-
-旧形式の場合は overview として処理を続行します。
+ticket_id, task_name, target_repositories を指定してください。
 ```
 
 ### サブモジュール追加失敗
@@ -304,20 +239,18 @@ YAMLファイルを修正してください。
 
 - 既存のfeatureブランチがある場合は確認を求める
 - サブモジュールが既に存在する場合はスキップして処理を続行
-- YAMLファイルのパスは絶対パスまたは相対パスで指定可能
 - git設定（user.name, user.email）が必要
-- **description が旧形式（文字列）の場合は overview として処理**
+- description が文字列で渡された場合は overview として処理
 - **Worktree安全確認**: `/tmp/` 配下にworktreeを作成する場合、`.gitignore` に `/tmp/` パターンが含まれていることを確認し、worktreeディレクトリがリポジトリにコミットされないようにする
 
 ## 参照ファイル
 
-- テンプレートYAML: `/setup-template.yaml`（プロジェクトルート）
 - 設計ドキュメントテンプレート: `/.claude/skills/init-work-branch/references/design-document-template.md`
 
 ## 典型的なワークフロー
 
 ```
-[YAML読み込み] --> YAMLをパースしてバリデーション
+[入力受け取り] --> 必須入力（ticket_id, task_name, target_repositories）をバリデーション
         |
 [ブランチ作成] --> feature/{ticket_id} ブランチを作成
         |
@@ -325,7 +258,7 @@ YAMLファイルを修正してください。
         |
 [修正対象追加] --> target_repositories をサブモジュールとして追加、featureブランチ作成
         |
-[ドキュメント生成] --> setup.yaml の description から動的埋め込みで {ticket_id}.md を作成
+[ドキュメント生成] --> description から動的埋め込みで {ticket_id}.md を作成
         |
 [初期コミット] --> 変更をコミット
         |

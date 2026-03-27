@@ -47,6 +47,8 @@ digraph skill_flow {
 
 ## Available Skills
 
+### 汎用スキル（プロジェクト非依存）
+
 ```
 .claude/skills/
 ├── brainstorming/               # 要件探索・デザイン
@@ -54,23 +56,48 @@ digraph skill_flow {
 ├── code-review-fix/             # コードレビュー指摘の修正対応
 ├── commit/                      # コミットメッセージ生成
 ├── commit-multi-repo/           # マルチリポジトリコミット
-├── create-setup-yaml/           # 対話的にsetup.yamlを作成
 ├── design/                      # 設計
 ├── finishing-branch/            # ブランチ完了管理
 ├── implement/                   # 実装
 ├── init-work-branch/            # 作業ブランチ初期化
 ├── investigation/               # 詳細調査
-├── issue-to-setup-yaml/         # Issue → setup.yaml
 ├── plan/                        # 計画
 ├── review-design/               # 設計レビュー
 ├── review-plan/                 # 計画レビュー
-├── skill-usage-protocol/        # このスキル
 ├── submodule-overview/          # サブモジュール概要
 ├── systematic-debugging/        # 体系的デバッグ
 ├── test-driven-development/     # TDD
 ├── verification/                # 検証（テスト・ビルド・リント実行確認）
 ├── verification-before-completion/  # 完了前検証（汎用品質ルール）
 └── writing-skills/              # スキル作成ガイド
+```
+
+### プロジェクト固有スキル（ワークフロー状態管理）
+
+```
+.claude/skills/
+├── project-state/               # project.yaml/setup.yaml 状態管理
+├── create-setup-yaml/           # 対話的にsetup.yamlを作成
+├── issue-to-setup-yaml/         # Issue → setup.yaml
+└── skill-usage-protocol/        # このスキル
+```
+
+### ワークフロープロンプト（project.yaml連携手順）
+
+```
+prompts/workflow/
+├── init-work-branch.md          # ブランチ初期化 + setup.yaml連携
+├── brainstorming.md             # 要件探索 + project.yaml生成
+├── investigation.md             # 調査 + project.yaml更新
+├── design.md                    # 設計 + project.yaml更新
+├── review-design.md             # 設計レビュー + project.yaml更新
+├── plan.md                      # 計画 + project.yaml更新
+├── review-plan.md               # 計画レビュー + project.yaml更新
+├── implement.md                 # 実装 + project.yaml更新
+├── verification.md              # 検証 + project.yaml更新
+├── code-review.md               # コードレビュー + project.yaml更新
+├── code-review-fix.md           # レビュー修正 + project.yaml更新
+└── finishing-branch.md          # ブランチ完了 + project.yaml更新
 ```
 
 ## Development Flow
@@ -83,49 +110,19 @@ verification → code-review → [code-review-fix → code-review]* →
 finishing-branch
 ```
 
-## Project Context
+## Project Context (ワークフロー利用時)
 
 ### project.yaml について
 
-`project.yaml` はプロジェクトの進捗管理のためのSSOT（Single Source of Truth）です。
+`project.yaml` はワークフローの進捗管理ファイルです。
+project.yaml の読み書きは `project-state` スキルと `prompts/workflow/*.md` が担当します。
+各汎用スキル自体は project.yaml に依存しません。
 
-**存在する場合は必ず最初に読み込んでください**。各スキルは対応するセクションを更新します。
-
-```yaml
-# project.yaml の主要セクション
-setup:           # setup.yamlの内容（初期設定）
-brainstorming:   # 要件探索結果
-overview:        # サブモジュール概要
-investigation:   # 調査フェーズの結果
-design:          # 設計フェーズの結果（design.review含む）
-plan:            # 計画フェーズの結果（plan.review含む）
-implement:       # 実装進捗
-verification:    # 検証結果（テスト・ビルド・リント）
-code_review:     # コードレビュー進捗・指摘・修正
-finishing:       # 完了アクション
-```
-
-### スキルとproject.yamlセクションの対応
-
-| スキル               | 更新セクション                   |
-| -------------------- | -------------------------------- |
-| `brainstorming`      | `meta`, `setup`, `brainstorming` |
-| `submodule-overview` | `overview`                       |
-| `investigation`      | `investigation`                  |
-| `design`             | `design`                         |
-| `review-design`      | `design.review`                  |
-| `plan`               | `plan`                           |
-| `review-plan`        | `plan.review`                    |
-| `implement`          | `implement`                      |
-| `verification`       | `verification`                   |
-| `code-review`        | `code_review`                    |
-| `code-review-fix`    | `code_review`（修正記録）        |
-| `finishing-branch`   | `finishing`                      |
-
-### ワークフロー
-
-1. **project.yamlが存在する場合**: 現在のステータスを確認し、適切なフェーズから継続
-2. **存在しない場合**: `setup.yaml` から開始し、必要に応じて `project.yaml` を生成
+**ワークフロー利用時の流れ**:
+1. `prompts/workflow/{step}.md` からコンテキスト取得手順を確認
+2. `project-state` スキルで project.yaml から必要情報を抽出
+3. 汎用スキルを実行（入力はコンテキストとして渡す）
+4. `project-state` スキルで結果を project.yaml に書き戻し
 
 ### setup.yaml
 

@@ -10,19 +10,31 @@
 
 本リポジトリ固有の運用ルールを示す（詳細はREADME.mdを参照）。
 
-## 最重要ルール
+## スキル構成
 
-このプロジェクトはsetup.yamlを元にproject.yamlを生成、その後の作業状況を全てproject.yamlで管理します
+本プロジェクトのスキルは以下の3層構造:
+
+1. **汎用スキル** (`.claude/skills/`): プロジェクト非依存の汎用スキル
+2. **プロジェクト固有スキル** (`project-state`, `create-setup-yaml`, `issue-to-setup-yaml`): project.yaml/setup.yaml 管理
+3. **ワークフロープロンプト** (`prompts/workflow/*.md`): 汎用スキル実行前後の project.yaml 連携手順
+
+## ワークフロー利用時のルール
 
 project.yamlの直接参照は禁止、代わりにscripts/project-yaml-helper.shを使用してください
 
-**ワークフロー遵守の絶対強制**: どのようなタスク（E2Eテスト追加、バグ修正、リファクタリング等）であっても例外なく setup.yaml → project.yaml のワークフロープロセスに従うこと。dev-workflow エージェントを選択している＝ワークフロープロセスで作業してほしいということである
+**ワークフロー遵守の絶対強制**: dev-workflow エージェントを選択している場合は setup.yaml → project.yaml のワークフロープロセスに従うこと
+
+各ワークフローステップの手順:
+1. `prompts/workflow/{step}.md` を参照しコンテキスト取得手順を確認
+2. `project-state` スキルで project.yaml から情報を抽出
+3. 汎用スキルを実行
+4. `project-state` スキルで結果を project.yaml に書き戻し
 
 ## 10ステップワークフロー
 
 1. **init-work-branch** - ブランチ・サブモジュール・設計ドキュメント初期化
 2. **submodule-overview** - サブモジュール概要作成
-3. **brainstorming** - 要件探索・テスト戦略確認・project.yaml 生成（全プロセスのSSOT）
+3. **brainstorming** - 要件探索・テスト戦略確認・project.yaml 生成
    - 👤 **brainstorming_review** - project.yaml生成後の人間チェックポイント
 4. **investigation** - 詳細調査（UML図含む）
 5. **design** (+review-design) - 詳細設計（API、データ構造、処理フロー、テスト計画）
