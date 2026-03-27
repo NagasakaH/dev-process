@@ -72,6 +72,24 @@ sections:
     writer: finishing-branch
     readers: []
 
+  human_checkpoints:
+    description: "人間チェックポイント管理（brainstorming後・設計完了後・PR発行後）"
+    writer: dev-workflow
+    readers: [investigation, plan, finishing-branch]
+    sub_sections:
+      brainstorming_review:
+        description: "brainstorming後の人間レビュー"
+        writer: dev-workflow
+        readers: [investigation]
+      design_review:
+        description: "設計レビュー完了後の人間レビュー"
+        writer: dev-workflow
+        readers: [plan]
+      pr_review:
+        description: "PR発行後の人間レビュー"
+        writer: dev-workflow
+        readers: []
+
   _metrics:
     description: "自動生成メトリクス"
     writer: scripts/generate-metrics.sh

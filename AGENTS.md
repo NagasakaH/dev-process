@@ -23,13 +23,24 @@ project.yamlの直接参照は禁止、代わりにscripts/project-yaml-helper.s
 1. **init-work-branch** - ブランチ・サブモジュール・設計ドキュメント初期化
 2. **submodule-overview** - サブモジュール概要作成
 3. **brainstorming** - 要件探索・テスト戦略確認・project.yaml 生成（全プロセスのSSOT）
+   - 👤 **brainstorming_review** - project.yaml生成後の人間チェックポイント
 4. **investigation** - 詳細調査（UML図含む）
 5. **design** (+review-design) - 詳細設計（API、データ構造、処理フロー、テスト計画）
+   - 👤 **design_review** - 設計レビュー完了後の人間チェックポイント
 6. **plan** (+review-plan) - タスク分割・プロンプト生成（E2Eタスク含む）
 7. **implement** - 実装実行（並列化対応、定義されたテストの実行確認）
 8. **verification** - テスト・ビルド・リント実行確認 + E2Eテスト + acceptance_criteria照合
 9. **code-review** (+code-review-fix) - チェックリストベース実装レビュー
 10. **finishing-branch** - マージ/PR/クリーンアップ
+    - 👤 **pr_review** - PR発行後の人間チェックポイント
+
+## 人間チェックポイント
+
+ワークフロー中の3箇所で人間の承認・差し戻しが発生する。差し戻し時は指摘内容と対応履歴が `human_checkpoints` セクションで管理される。
+
+- `checkpoint` コマンドで承認・差し戻しを記録
+- `resolve-checkpoint` コマンドで差し戻し対応完了を記録
+- 詳細は [docs/project-yaml.md](docs/project-yaml.md) を参照
 
 ## 品質ルール
 
