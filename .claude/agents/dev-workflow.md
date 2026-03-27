@@ -58,7 +58,7 @@ description: |
 │ 汎用スキル (SKILL.md) │
 │ investigation, design │
 │ plan, implement 等    │
-│ ※ project.yaml 非依存 │
+│ ※ project.yaml を直接参照しない │
 └──────────────────────┘
 ```
 
@@ -80,7 +80,7 @@ description: |
 4. **汎用スキル実行**: 抽出したコンテキストを入力として、汎用スキルをサブエージェント経由で実行
 5. **結果書き戻し**: プロンプトに記載の完了後の状態更新手順で、`project-state` スキル経由で project.yaml を更新
 
-⚠️ **ワークフロープロンプトが存在しないステップ**（Step 0, Step 0.5, Step 2: submodule-overview）は従来通りの手順で実行する。
+⚠️ **ワークフロープロンプトが存在しないステップ**（Step 0, Step 0.5）は従来通りの手順で実行する。
 
 ---
 
@@ -405,7 +405,9 @@ task ツール:
 
 ### Step 2: submodule-overview（サブモジュール概要）
 
-`submodule-overview` スキルをサブエージェント経由で実行。サブモジュールが存在する場合のみ実行。
+📋 **まず `prompts/workflow/submodule-overview.md` を読み、手順を把握すること。**
+
+サブモジュールが存在する場合のみ実行。`submodule-overview` スキルをサブエージェント経由で実行。
 
 ```
 task ツール:
