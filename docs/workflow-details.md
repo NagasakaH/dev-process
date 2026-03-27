@@ -71,6 +71,31 @@
 
 ---
 
+## 3a. 👤 人間チェックポイント: brainstorming_review
+
+**タイミング:** brainstorming で project.yaml が生成された直後
+
+**確認内容:**
+
+- 要件定義の妥当性（機能要件・非機能要件の網羅性）
+- テスト戦略の適切性
+- 設計方針・アプローチの妥当性
+
+**差し戻し時の動作:**
+
+1. `human_checkpoints.brainstorming_review.status` を `revision_requested` に設定
+2. 指摘内容（`feedback`）と差し戻し先（`rollback_to`）を記録
+3. 影響セクション（差し戻し先以降）の現在状態を `revision_history` に自動スナップショット
+4. brainstorming を再実行し、指摘を反映
+5. 対応完了後、`resolve-checkpoint` で解決を記録
+6. 再レビューで `checkpoint` コマンドを再実行
+
+**前提条件への影響:**
+
+- `investigation` は `human_checkpoints.brainstorming_review.status = approved` が前提条件
+
+---
+
 ## 4. investigation（詳細調査）
 
 **インプット:**
@@ -127,6 +152,32 @@
 ## 5a. review-design（設計レビュー）
 
 設計結果の妥当性をレビューします。指摘がある場合は design に差し戻し、再設計後に再レビューを実施します。
+
+---
+
+## 5b. 👤 人間チェックポイント: design_review
+
+**タイミング:** review-design が承認（`design.review.status = approved`）された直後
+
+**確認内容:**
+
+- 設計全体の妥当性・実現可能性
+- API設計・データ構造設計の適切性
+- テスト計画の十分性
+- 実装に進んでよいかの最終判断
+
+**差し戻し時の動作:**
+
+1. `human_checkpoints.design_review.status` を `revision_requested` に設定
+2. 指摘内容（`feedback`）と差し戻し先（`rollback_to`: design または investigation）を記録
+3. 影響セクション（差し戻し先以降）の現在状態を `revision_history` に自動スナップショット
+4. 指定されたフェーズから再実行し、指摘を反映
+5. 対応完了後、`resolve-checkpoint` で解決を記録
+6. 再レビューで `checkpoint` コマンドを再実行
+
+**前提条件への影響:**
+
+- `plan` は `human_checkpoints.design_review.status = approved` が前提条件
 
 ---
 
@@ -264,3 +315,30 @@
 
 - テスト検証後、4つの選択肢を提示（ローカルマージ / PR作成 / ブランチ保持 / 破棄）
 - 選択されたワークフローを実行し、worktreeクリーンアップを実施
+
+---
+
+## 10a. 👤 人間チェックポイント: pr_review
+
+**タイミング:** finishing-branch で PR を作成（`finishing.action = pr`）した直後
+
+**確認内容:**
+
+- 実装コードの最終確認
+- テスト網羅性の確認
+- ドキュメント・コミット履歴の確認
+- マージ可否の最終判断
+
+**差し戻し時の動作:**
+
+1. `human_checkpoints.pr_review.status` を `revision_requested` に設定
+2. 指摘内容（`feedback`）と差し戻し先（`rollback_to`: implement, design 等）を記録
+3. 影響セクション（差し戻し先以降）の現在状態を `revision_history` に自動スナップショット
+4. 指定されたフェーズから再実行し、指摘を反映
+5. 再度 verification → code-review → finishing-branch の流れを実行
+6. 対応完了後、`resolve-checkpoint` で解決を記録
+7. 再レビューで `checkpoint` コマンドを再実行
+
+**前提条件への影響:**
+
+- プロジェクト完了（`pr-completion`）は `human_checkpoints.pr_review.status = approved` が前提条件
