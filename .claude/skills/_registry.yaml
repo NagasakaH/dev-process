@@ -1,110 +1,108 @@
 # =============================================================================
-# スキルレジストリ — セクション ⇔ スキル の対応表
+# スキルレジストリ — スキル分類と管理
 # =============================================================================
-# project.yaml の各セクションを管理するスキルの登録情報。
-# 新しいスキル追加時はここに登録する。
+# スキルの分類と、ワークフロー利用時のセクション対応を管理する。
+# project.yaml のセクション管理は project-state スキルと
+# prompts/workflow/*.md が担当する。
 # =============================================================================
 
-sections:
+# ---------------------------------------------------------------------------
+# 汎用スキル（プロジェクト非依存）
+# ---------------------------------------------------------------------------
+generic_skills:
+  - brainstorming
+  - investigation
+  - design
+  - review-design
+  - plan
+  - review-plan
+  - implement
+  - verification
+  - code-review
+  - code-review-fix
+  - finishing-branch
+  - init-work-branch
+  - submodule-overview
+  - commit
+  - commit-multi-repo
+  - systematic-debugging
+  - test-driven-development
+  - verification-before-completion
+  - writing-skills
+
+# ---------------------------------------------------------------------------
+# プロジェクト固有スキル
+# ---------------------------------------------------------------------------
+project_skills:
+  - project-state       # project.yaml/setup.yaml 状態管理
+  - create-setup-yaml   # 対話的にsetup.yamlを作成
+  - issue-to-setup-yaml # Issue → setup.yaml
+  - skill-usage-protocol
+
+# ---------------------------------------------------------------------------
+# ワークフロー利用時のセクション対応（prompts/workflow/*.md が橋渡し）
+# ---------------------------------------------------------------------------
+workflow_sections:
   meta:
     description: "プロジェクトメタ情報"
-    writer: brainstorming
-    readers: [all]
-    notes: "brainstorming が初期生成。各スキルが updated_at を更新"
+    prompt: brainstorming
+    notes: "brainstorming プロンプトが初期生成"
 
   setup:
     description: "setup.yaml からの引き継ぎ（読み取り専用）"
-    writer: brainstorming
-    readers: [investigation, design, review-design, plan, review-plan]
-    notes: "brainstorming が setup.yaml から変換・配置"
+    prompt: brainstorming
 
   brainstorming:
     description: "ブレインストーミング結果"
-    writer: brainstorming
-    readers: [investigation, design]
+    prompt: brainstorming
 
   overview:
     description: "サブモジュール概要"
-    writer: submodule-overview
-    readers: [investigation, design]
+    prompt: null
+    notes: "submodule-overview スキルが直接出力"
 
   investigation:
     description: "調査結果"
-    writer: investigation
-    readers: [design]
+    prompt: investigation
 
   design:
     description: "設計結果"
-    writer: design
-    readers: [review-design, plan]
+    prompt: design
     sub_sections:
       review:
-        writer: review-design
-        readers: [plan, implement]
+        prompt: review-design
 
   plan:
     description: "タスク計画"
-    writer: plan
-    readers: [review-plan, implement]
+    prompt: plan
     sub_sections:
       review:
-        writer: review-plan
-        readers: [implement]
+        prompt: review-plan
 
   implement:
     description: "実装状況"
-    writer: implement
-    readers: [verification]
+    prompt: implement
 
   verification:
     description: "検証結果"
-    writer: verification
-    readers: [code-review]
+    prompt: verification
 
   code_review:
     description: "コードレビュー結果"
-    writer: code-review
-    readers: [code-review-fix, finishing-branch]
-    notes: "code-review-fix が issues の status を更新"
+    prompt: code-review
+    notes: "code-review-fix プロンプトが issues の status を更新"
 
   finishing:
     description: "ブランチ完了情報"
-    writer: finishing-branch
-    readers: []
+    prompt: finishing-branch
 
   human_checkpoints:
-    description: "人間チェックポイント管理（brainstorming後・設計完了後・PR発行後）"
-    writer: dev-workflow
-    readers: [investigation, plan, finishing-branch]
-    sub_sections:
-      brainstorming_review:
-        description: "brainstorming後の人間レビュー"
-        writer: dev-workflow
-        readers: [investigation]
-      design_review:
-        description: "設計レビュー完了後の人間レビュー"
-        writer: dev-workflow
-        readers: [plan]
-      pr_review:
-        description: "PR発行後の人間レビュー"
-        writer: dev-workflow
-        readers: []
-
-  _metrics:
-    description: "自動生成メトリクス"
-    writer: scripts/generate-metrics.sh
-    readers: []
-    notes: "手動またはCI経由で生成"
+    description: "人間チェックポイント管理"
+    prompt: null
+    notes: "project-state スキルの checkpoint コマンドで管理"
 
 # =============================================================================
 # プラグイン規約
 # =============================================================================
 # カスタム/実験的セクションには x- プレフィックスを使用する。
-# 例: x-performance-benchmark, x-deployment-staging
-#
-# プラグインセクションの登録:
-#   x-<name>:
-#     description: "説明"
-#     writer: <スキル名またはスクリプトパス>
-#     readers: [参照するスキル]
 # =============================================================================

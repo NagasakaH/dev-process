@@ -5,6 +5,6 @@ Placeholder: implementation instructions for review skill agent. The agent shoul
 3. Check editorconfig compliance using editorconfig-checker if available.
 4. Search for hardcoded secrets (trufflehog or simple regexes).
 5. Run language-specific pattern checks and simple security heuristics.
-6. Produce docs/{target_repo}/review/round-XX.md with findings and project.yaml updates under code_review.rounds.
+6. Produce docs/{target_repo}/review/round-XX.md with findings.
 
 This file is a placeholder and should be replaced by an agent implementation file when ready.

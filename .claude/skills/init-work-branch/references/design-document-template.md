@@ -2,8 +2,8 @@
 
 <!-- 
 ================================================================================
-このドキュメントは setup.yaml を Single Source of Truth (SSOT) として参照します。
-基本情報は setup.yaml の description フィールドから動的に埋め込まれます。
+このドキュメントはタスク初期化時に自動生成されます。
+基本情報は入力パラメータから動的に埋め込まれます。
 ================================================================================
 -->
 
@@ -21,21 +21,21 @@
 
 ## 概要
 
-<!-- setup.yaml の description.overview から埋め込み -->
+<!-- 入力: description.overview から埋め込み -->
 {{DESCRIPTION_OVERVIEW}}
 
 ---
 
 ## 目的
 
-<!-- setup.yaml の description.purpose から埋め込み -->
+<!-- 入力: description.purpose から埋め込み -->
 {{DESCRIPTION_PURPOSE}}
 
 ---
 
 ## 背景
 
-<!-- setup.yaml の description.background から埋め込み -->
+<!-- 入力: description.background から埋め込み -->
 {{DESCRIPTION_BACKGROUND}}
 
 ---
@@ -44,12 +44,12 @@
 
 ### 機能要件
 
-<!-- setup.yaml の description.requirements.functional から埋め込み -->
+<!-- 入力: requirements.functional から埋め込み -->
 {{REQUIREMENTS_FUNCTIONAL}}
 
 ### 非機能要件
 
-<!-- setup.yaml の description.requirements.non_functional から埋め込み -->
+<!-- 入力: requirements.non_functional から埋め込み -->
 {{REQUIREMENTS_NON_FUNCTIONAL}}
 
 ---
@@ -58,26 +58,26 @@
 
 ### 対象範囲
 
-<!-- setup.yaml の description.scope から埋め込み -->
+<!-- 入力: description.scope から埋め込み -->
 {{DESCRIPTION_SCOPE}}
 
 ### 対象外
 
-<!-- setup.yaml の description.out_of_scope から埋め込み -->
+<!-- 入力: description.out_of_scope から埋め込み -->
 {{DESCRIPTION_OUT_OF_SCOPE}}
 
 ---
 
 ## 受け入れ条件
 
-<!-- setup.yaml の description.acceptance_criteria から埋め込み -->
+<!-- 入力: acceptance_criteria から埋め込み -->
 {{ACCEPTANCE_CRITERIA}}
 
 ---
 
 ## 補足情報
 
-<!-- setup.yaml の description.notes から埋め込み -->
+<!-- 入力: description.notes から埋め込み -->
 {{DESCRIPTION_NOTES}}
 
 ---
