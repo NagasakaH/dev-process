@@ -64,6 +64,10 @@
 | UT-18 | 差分検出 | 前回と異なる出力の場合に送信する | ws.send が OutputMessage で呼ばれる | 中 |
 | UT-19 | 接続数制限 | 同一 pane に MAX_CONNECTIONS_PER_PANE 超の接続で拒否 | CONNECTION_LIMIT エラー | 中 |
 | UT-20 | SPECIAL_KEY_MAP | 全マッピングが正しく定義されている | 全キー対応テーブルとの一致 | 低 |
+| UT-21-r | resizePane | ローカル tmux で resize-pane が正しい引数で実行される（MRD-010） | execFileSync が resize-pane -t pane -x cols -y rows で呼ばれる | 中 |
+| UT-22-r | resizePane | Docker exec 経由で resize-pane が実行される（MRD-010） | docker exec 引数が正しい | 中 |
+| UT-23-r | resizePane | 不正なサイズ（cols=0, rows=-1）で無視される（MRD-010） | execFileSync が呼ばれない | 低 |
+| UT-24-r | authenticateUpgrade | Basic Auth 環境変数未設定時に false と "no_auth_config" を返す（MRD-001） | { authenticated: false, reason: "no_auth_config" } | 高 |
 
 ### 2.2 単体テスト（src/components/__tests__/TerminalModal.test.tsx）
 
@@ -94,6 +98,8 @@
 | IT-5 | WS切断→クリーンアップ | WebSocket close 後にキャプチャループが停止 | clearInterval が呼ばれ、接続ストアから削除 | 高 |
 | IT-6 | Docker環境でのcapture+send | containerId ありの場合 docker exec 経由で実行 | docker 引数が正しい | 中 |
 | IT-7 | 接続再確立 | 一度切断後に再接続で新しいキャプチャループが開始 | 新しい connected メッセージ受信 | 中 |
+| IT-8 | resize メッセージ→tmux resize-pane（MRD-010） | ResizeMessage 受信後に tmux resize-pane が正しい引数で実行される | execFileSync が resize-pane -t pane -x cols -y rows で呼ばれる | 中 |
+| IT-9 | 認証未設定時の接続拒否（MRD-001） | BASIC_AUTH 未設定時に WebSocket 接続が拒否される | 403 応答でソケット切断 | 高 |
 
 ### 2.5 E2Eテスト（e2e/terminal-viewer.spec.ts）
 
@@ -107,6 +113,10 @@
 | E2E-6 | 既存機能への影響なし — セッション一覧 | 1. トップページ開く 2. セッション一覧が表示される | 既存のセッション一覧が正常に動作 | 高 |
 | E2E-7 | 既存機能への影響なし — ask_user 応答 | 1. ask_user 待ちセッションを開く 2. 応答を送信 | 応答が正常に送信される | 高 |
 | E2E-8 | 認証付き環境での WebSocket 接続 | 1. Basic Auth 設定あり環境 2. ログイン後にターミナルモーダル開く | WebSocket 接続が認証を通過して確立 | 中 |
+| E2E-9 | 未認証 WebSocket 接続拒否（MRD-005） | 1. Basic Auth 設定あり環境 2. 認証なしで /ws/terminal に WebSocket 接続 | 接続が拒否される（401 / socket.destroy） | 高 |
+| E2E-10 | 誤認証情報での WebSocket 接続拒否（MRD-005） | 1. Basic Auth 設定あり環境 2. 誤ったユーザー名/パスワードで WebSocket 接続 | 接続が拒否される（401 / socket.destroy） | 高 |
+| E2E-11 | 認証後のみ入力可能（MRD-005） | 1. Basic Auth 設定あり環境 2. ログイン後にターミナルモーダル開く 3. キー入力送信 | 認証済みの場合のみ入力が tmux pane に反映される | 高 |
+| E2E-12 | ターミナルリサイズ（MRD-010） | 1. ターミナルモーダル開く 2. ブラウザウィンドウサイズ変更 | xterm.js がリサイズされ、tmux pane もリサイズされる | 中 |
 
 ---
 
@@ -119,6 +129,8 @@
 | キーボード入力が tmux pane に正しく送信される | 単体: UT-10〜15 / 結合: IT-3 / E2E | E2E-3 |
 | Docker コンテナ内のセッションでもターミナルビューが動作する | 単体: UT-8,15 / 結合: IT-6 / E2E | E2E-5 |
 | 既存のセッション一覧・ask_user 応答機能が正常に動作する | E2E | E2E-6, E2E-7 |
+| 認証済みユーザーのみがターミナル操作できること（MRD-005） | 単体: UT-1〜3,UT-24-r / 結合: IT-4,IT-9 / E2E | E2E-8, E2E-9, E2E-10, E2E-11 |
+| ターミナルリサイズが正常に動作する（MRD-010） | 単体: UT-21-r〜23-r / 結合: IT-8 / E2E | E2E-12 |
 
 ---
 
@@ -310,3 +322,4 @@ npx playwright test e2e/terminal-viewer.spec.ts
 | 日付 | バージョン | 変更内容 | 変更者 |
 |------|------------|----------|--------|
 | 2025-07-17 | 1.0 | 初版作成 | Copilot |
+| 2025-07-17 | 1.1 | MRD-005: 認証E2E陰性テスト追加、MRD-010: resizeテストケース追加(UT/IT/E2E) | Copilot |

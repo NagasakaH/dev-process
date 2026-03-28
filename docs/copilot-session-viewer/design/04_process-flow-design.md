@@ -67,8 +67,9 @@ sequenceDiagram
         Tmux-->>T: ANSI出力
         T->>T: 前回出力と差分比較
         alt 差分あり
+            T->>T: \x1b[H\x1b[2J をプリペンド（MRD-002: 画面クリア）
             T-->>WS: OutputMessage
-            WS-->>B: {"type":"output","data":"[ANSIデータ]"}
+            WS-->>B: {"type":"output","data":"[クリアシーケンス+ANSIデータ]"}
             B->>B: xterm.js.write(data)
         end
     end
@@ -81,6 +82,13 @@ sequenceDiagram
     T->>Tmux: send-keys -t pane -l "ls"
     T->>Tmux: send-keys -t pane Enter
     Note over T,Tmux: 結果は次回 capture-pane で反映
+
+    U->>B: ブラウザウィンドウリサイズ
+    B->>B: FitAddon.fit() → cols, rows 算出
+    B->>WS: {"type":"resize","cols":120,"rows":40}
+    WS->>T: resizePane(pane, 120, 40)
+    T->>Tmux: resize-pane -t pane -x 120 -y 40
+    Note over T,Tmux: MRD-003: paneリサイズ後、次回captureで新サイズ反映
 
     U->>B: Escape キー or ✕ボタン
     B->>WS: WebSocket close
@@ -244,7 +252,7 @@ flowchart TD
     H --> J
     I --> J
     J -->|"No"| K["execFileSync('tmux', args)"]
-    J -->|"Yes"| L["execFileSync('docker', ['exec', '-u', uid, cid, 'tmux', ...args])"]
+    J -->|"Yes"| L["execFileSync('docker', ['exec', '-u', uid, cid, 'tmux', ...args])<br/>MRD-004: bash -c 不使用、直接実行に統一"]
 ```
 
 ---
@@ -259,7 +267,7 @@ flowchart TD
     B --> C{実行成功?}
     C -->|"Yes"| D["errorCount = 0"]
     D --> E{出力 !== lastOutput?}
-    E -->|"Yes"| F["lastOutput = 出力<br/>WS send: OutputMessage"]
+    E -->|"Yes"| F["lastOutput = 出力<br/>\\x1b[H\\x1b[2J をプリペンド（MRD-002）<br/>WS send: OutputMessage"]
     E -->|"No"| G["スキップ"]
     C -->|"No"| H["errorCount++"]
     H --> I{errorCount >= 3?}
@@ -273,8 +281,69 @@ flowchart TD
 
 ---
 
+## 7. resize 処理フロー（MRD-003）
+
+### 7.1 resize メッセージ受信時の処理フロー
+
+```mermaid
+flowchart TD
+    A["WebSocket メッセージ受信<br/>{type:'resize', cols, rows}"] --> B{cols, rows の妥当性検証}
+    B -->|"cols < 1 or rows < 1"| C["無視（ログ出力）"]
+    B -->|"妥当"| D{Docker コンテナ?}
+    D -->|"No"| E["execFileSync('tmux',<br/>['resize-pane', '-t', pane, '-x', cols, '-y', rows])"]
+    D -->|"Yes"| F["execFileSync('docker',<br/>['exec', '-u', uid, cid, 'tmux',<br/>'resize-pane', '-t', pane, '-x', cols, '-y', rows])"]
+    E --> G["リサイズ完了"]
+    F --> G
+    G --> H["次回 capture-pane で新サイズの出力を取得"]
+```
+
+---
+
+## 8. sendInput 擬似コード（MRD-009）
+
+### 8.1 入力分割アルゴリズム
+
+```typescript
+/**
+ * sendInput 擬似コード
+ * 基本方針: xterm.js onData は通常1キーずつ発火する。
+ * ペースト時は複数文字が一括で来るため -l（リテラル）で送信する。
+ * エスケープシーケンス途中での分割を防ぐため、先頭からマッチングを行う。
+ */
+function sendInput(pane: string, data: string, containerId?: string, containerUser?: string): void {
+  let remaining = data;
+
+  while (remaining.length > 0) {
+    let matched = false;
+
+    // 1. SPECIAL_KEY_MAP の長いキーから順にマッチ（エスケープシーケンス優先）
+    for (const [sequence, tmuxKey] of sortedByLengthDesc(SPECIAL_KEY_MAP)) {
+      if (remaining.startsWith(sequence)) {
+        execTmuxSendKeys(pane, tmuxKey, containerId, containerUser);  // send-keys KeyName
+        remaining = remaining.slice(sequence.length);
+        matched = true;
+        break;
+      }
+    }
+
+    if (!matched) {
+      // 2. 次の特殊キーまでの通常文字をまとめてリテラル送信
+      const nextSpecialIdx = findNextSpecialKeyIndex(remaining);
+      const literal = nextSpecialIdx === -1 ? remaining : remaining.slice(0, nextSpecialIdx);
+      execTmuxSendKeysLiteral(pane, literal, containerId, containerUser);  // send-keys -l "text"
+      remaining = remaining.slice(literal.length);
+    }
+  }
+}
+```
+
+> **設計判断**: 単一キー入力が主ケース。ペースト時は `send-keys -l` でリテラル送信し、エスケープシーケンスの途中分割を回避する。
+
+---
+
 ## 変更履歴
 
 | 日付 | バージョン | 変更内容 | 変更者 |
 |------|------------|----------|--------|
 | 2025-07-17 | 1.0 | 初版作成 | Copilot |
+| 2025-07-17 | 1.1 | MRD-002: クリアシーケンスプリペンド、MRD-003: resizeフロー追加、MRD-004: Docker exec統一、MRD-009: sendInput擬似コード追加 | Copilot |
