@@ -2,7 +2,7 @@
 
 ## 概要
 
-あなたは tmux-pane-viewer 機能の実装を管理する親エージェントです。13 個のタスクを依存関係に従って順次・並列に実行し、全タスク完了後に統合検証を行ってください。
+あなたは tmux-pane-viewer 機能の実装を管理する親エージェントです。14 個のタスクを依存関係に従って順次・並列に実行し、全タスク完了後に統合検証を行ってください。
 
 ## プロジェクト情報
 
@@ -36,10 +36,11 @@ task03-01 → 型定義 + 認証 + セッション解決 (15分)     [depends: t
 task03-02 → capturePane + sendInput + キーマッピング (20分) [depends: task02, task03-01]
 task05-01 → useTerminalWebSocket フック (15分)       [depends: task03-01]
 task03-03 → getPaneSize + resizePane + 接続制限 (15分)  [depends: task03-02]
-task04    → server.js + 結合テスト (30分)             [depends: task03-03]
+task04-01 → server.js + setupTerminalWebSocket 実装 (30分) [depends: task03-03]
+task04-02 → 結合テスト IT-1〜IT-11 (30分)            [depends: task04-01]
 task05-02 → TerminalView + TerminalModal (25分)      [depends: task05-01]
 task06    → ActiveSessionsDashboard 統合 (10分)       [depends: task05-02]
-task07    → デプロイ設定 (10分)                       [depends: task04]
+task07    → デプロイ設定 (10分)                       [depends: task04-02]
 task08-01 → E2E 基本フロー + Docker (20分)           [depends: task06, task07]
 task08-02 → E2E 認証 + リサイズ + 回帰 (20分)         [depends: task06, task07]
 task09    → 弊害検証 (15分)                          [depends: task08-01, task08-02]
@@ -59,7 +60,8 @@ graph TD
 
     task03_03["task03-03: getPaneSize+resizePane+接続制限<br/>(15min)"]
 
-    task04["task04: server.js+結合テスト<br/>(30min)"]
+    task04_01["task04-01: server.js+setupTerminalWebSocket<br/>(30min)"]
+    task04_02["task04-02: 結合テスト IT-1〜11<br/>(30min)"]
     task05_02["task05-02: TerminalView+Modal<br/>(25min)"]
 
     task06["task06: Dashboard統合<br/>(10min)"]
@@ -79,13 +81,15 @@ graph TD
 
     task03_02 --> task03_03
 
-    task03_03 --> task04
+    task03_03 --> task04_01
+
+    task04_01 --> task04_02
 
     task05_01 --> task05_02
 
     task05_02 --> task06
 
-    task04 --> task07
+    task04_02 --> task07
 
     task06 --> task08_01
     task07 --> task08_01
@@ -124,13 +128,19 @@ graph TD
 ```
 - task03-02 完了後に単独実行
 
-### Phase 5: サーバー統合 + フロントエンド (task04 ‖ task05-02)
+### Phase 5: サーバー統合 + フロントエンド (task04-01 ‖ task05-02)
 ```
-→ task04: server.js+結合テスト  ‖  task05-02: TerminalView+Modal
+→ task04-01: server.js+setupTerminalWebSocket  ‖  task05-02: TerminalView+Modal
 ```
-- **並列実行可能**: server.js/結合テスト とコンポーネントで異なるファイル
-- task04 は task03-03 完了後
+- **並列実行可能**: server.js/setupTerminalWebSocket とコンポーネントで異なるファイル
+- task04-01 は task03-03 完了後
 - task05-02 は task05-01 完了後
+
+### Phase 5.5: 結合テスト (task04-02)
+```
+→ task04-02: 結合テスト IT-1〜IT-11
+```
+- task04-01 完了後に単独実行
 
 ### Phase 6: 統合 (task06 ‖ task07)
 ```
@@ -138,13 +148,13 @@ graph TD
 ```
 - **並列実行可能**: 異なるファイル
 - task06 は task05-02 完了後
-- task07 は task04 完了後
+- task07 は task04-02 完了後
 
 ### Phase 7: E2E テスト (task08-01 ‖ task08-02)
 ```
 → task08-01: E2E 基本+Docker  ‖  task08-02: E2E 認証+リサイズ+回帰
 ```
-- **並列実行可能**: 異なるテストスイート（同一ファイルだが describe ブロックが独立）
+- **並列実行可能**: 異なるテストファイル（terminal-viewer-basic.spec.ts / terminal-viewer-auth.spec.ts）
 - task06 + task07 の両方が完了してから開始
 
 ### Phase 8: 最終検証 (task09)
@@ -159,7 +169,7 @@ graph TD
 |-------|-----------|-----------|
 | 2 | task02, task03-01 | 2 |
 | 3 | task03-02, task05-01 | 2 |
-| 5 | task04, task05-02 | 2 |
+| 5 | task04-01, task05-02 | 2 |
 | 6 | task06, task07 | 2 |
 | 7 | task08-01, task08-02 | 2 |
 
@@ -255,7 +265,8 @@ npm run build
 
 # E2E テスト
 docker compose -f compose.yaml -f compose.dev.yaml up -d
-npx playwright test e2e/terminal-viewer.spec.ts
+npx playwright test e2e/terminal-viewer-basic.spec.ts
+npx playwright test e2e/terminal-viewer-auth.spec.ts
 npx playwright test  # 全 E2E
 ```
 
@@ -263,8 +274,8 @@ npx playwright test  # 全 E2E
 
 全タスク完了後に以下が満たされていること:
 
-- [ ] 全 13 タスクが完了
-- [ ] 全単体テスト通過（28+ ケース）
+- [ ] 全 14 タスクが完了
+- [ ] 全単体テスト通過（33+ ケース）
 - [ ] 全結合テスト通過（11 ケース）
 - [ ] 全 E2E テスト通過（12 ケース）
 - [ ] `npx tsc --noEmit` エラーなし

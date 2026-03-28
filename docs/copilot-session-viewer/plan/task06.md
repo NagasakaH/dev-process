@@ -133,6 +133,9 @@ const [terminalSession, setTerminalSession] = useState<ActiveSession | null>(nul
 - [ ] `tmuxPane` があるセッションのみにターミナルボタンが表示
 - [ ] ボタンクリックで `TerminalModal` が開く
 - [ ] モーダルを閉じると `terminalSession` が null に戻る
+- [ ] ターミナルボタンが各セッションカードに正しくレンダリングされる
+- [ ] ターミナルボタンクリックで TerminalModal が開く
+- [ ] 既存のセッション一覧表示・ask_user 応答フローに回帰がないこと（AC-5 実装担当）
 - [ ] 既存の ActiveSessionsDashboard テストが通過
 - [ ] `npx tsc --noEmit` がエラーなし
 - [ ] 既存テストが全通過
