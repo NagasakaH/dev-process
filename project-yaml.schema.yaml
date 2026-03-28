@@ -775,9 +775,9 @@ properties:
         description: "ラウンド履歴"
       review_checklist:
         type: object
-        description: "8カテゴリのチェック結果"
+        description: "8カテゴリ+MR要求項目のチェック結果"
         patternProperties:
-          "^(design_conformance|static_analysis|language_best_practices|security|tests_ci|performance|documentation|git_hygiene)$":
+          "^(design_conformance|static_analysis|language_best_practices|security|tests_ci|performance|documentation|git_hygiene|mr_requirements)$":
             type: object
             properties:
               status: { $ref: "#/$defs/check_status" }
@@ -785,6 +785,37 @@ properties:
             required: [status]
             additionalProperties: false
         additionalProperties: false
+      review_method:
+        type: string
+        description: "レビュー方式（例: dual-model (opus-4.6 + codex-5.3)）"
+      intent_groups:
+        type: array
+        items:
+          type: object
+          properties:
+            group_id:
+              type: integer
+              description: "グループ番号"
+            name:
+              type: string
+              description: "グループ名"
+            category:
+              type: string
+              description: "意図カテゴリ（feature/bugfix/refactor/test/docs/config/mixed）"
+            commits:
+              type: array
+              items: { type: string }
+              description: "対象コミットSHA一覧"
+            judgment:
+              type: string
+              enum: [approved, conditional, rejected]
+              description: "グループ判定"
+          required: [group_id, name, category]
+          additionalProperties: false
+        description: "意図分析によるコミットグループ"
+      mr_pr_url:
+        type: string
+        description: "MR/PR URL（存在する場合）"
       issues:
         type: array
         items:
