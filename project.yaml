@@ -126,11 +126,11 @@ design:
   completed_at: "2026-03-28T05:57:31+00:00"
 create_mr_pr:
   status: completed
-  mode: dr
-  platform: github
+  mode: code
+  platform: gitlab
   mr_pr_urls:
-    - https://github.com/NagasakaH/dev-process/pull/11
-  summary: 設計レビュー用Draft PR作成完了
+    - https://gitlab.com/nagasakatools/copilot-session-viewer/-/merge_requests/9
+  summary: 'GitLab MR #9 Draft作成'
 plan:
   status: completed
   started_at: "2026-03-28T07:20:51+00:00"
