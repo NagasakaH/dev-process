@@ -113,8 +113,11 @@ Client                                     Server
 {
   type: "output";
   data: string;   // capture-pane -p -e の出力（ANSI エスケープ付き全画面）
+                  // サーバー側で \x1b[H\x1b[2J（カーソルホーム+画面クリア）をプリペンド済み（MRD-002）
 }
 ```
+
+> **MRD-002 対応**: capture-pane はスナップショット（全画面）を返すため、xterm.js の write() で累積すると画面が崩壊する。サーバー側 ws-terminal.ts の capturePane 出力送信時に `\x1b[H\x1b[2J`（カーソルをホームに移動 + 画面クリア）をプリペンドし、毎回全画面を上書き描画する。
 
 #### `error` — エラー通知
 
@@ -168,11 +171,11 @@ export function setupTerminalWebSocket(server: http.Server): void;
 
 /**
  * WebSocket 接続の認証を検証
- * Basic Auth ヘッダーを検証し、未設定時はスキップ
+ * Basic Auth ヘッダーを検証。未設定時は false を返しターミナル機能を無効化する（MRD-001）
  */
 export function authenticateUpgrade(
   request: http.IncomingMessage
-): boolean;
+): { authenticated: boolean; reason?: "no_auth_config" | "invalid_credentials" | "missing_header" };
 
 /**
  * sessionId からアクティブセッション情報を解決
@@ -211,6 +214,19 @@ export function getPaneSize(
   containerId?: string,
   containerUser?: string
 ): { cols: number; rows: number };
+
+/**
+ * tmux pane をリサイズする（MRD-003）
+ * resize メッセージ受信時に呼び出される
+ * tmux resize-pane -t pane -x cols -y rows を実行
+ */
+export function resizePane(
+  tmuxPane: string,
+  cols: number,
+  rows: number,
+  containerId?: string,
+  containerUser?: string
+): void;
 ```
 
 ### 3.2 サーバー側（src/lib/terminal.ts — 既存関数の拡張）
@@ -288,11 +304,13 @@ interface TerminalViewProps {
 }
 
 /**
- * xterm.js ラッパーコンポーネント
+ * xterm.js ラッパーコンポーネント（MRD-012: WS接続管理責務を担う）
  * - useRef で DOM 要素を管理
  * - useEffect で xterm.js の初期化・破棄
  * - FitAddon でコンテナサイズに追従
  * - next-themes と xterm.js テーマを同期
+ * - useTerminalWebSocket フックを内部で使用し、WebSocket 接続のライフサイクルを管理
+ *   （TerminalModal は UI 表示のみ、TerminalView が通信と描画の責務を持つ）
  */
 export function TerminalView({ sessionId, onReady }: TerminalViewProps): JSX.Element;
 ```
@@ -343,6 +361,8 @@ export function TerminalView({ sessionId, onReady }: TerminalViewProps): JSX.Ele
 
 ### 6.1 サーバー側 Upgrade ハンドラー
 
+> **MRD-001 対応**: WebSocket 認証は常時必須。BASIC_AUTH_USER/PASS 未設定時はターミナル機能自体を無効化する。
+
 ```
 server.on("upgrade") イベント
   ↓
@@ -350,7 +370,8 @@ server.on("upgrade") イベント
   → No: socket.destroy()
   → Yes: ↓
 Basic Auth 環境変数チェック
-  → BASIC_AUTH_USER/PASS 未設定: 認証スキップ → WebSocket 確立
+  → BASIC_AUTH_USER/PASS 未設定: ターミナル機能無効化
+    → 403 応答("Terminal feature requires authentication configuration") → socket.destroy()
   → 設定済み: ↓
 Authorization ヘッダー検証
   → ヘッダーなし: 401 応答 → socket.destroy()
@@ -363,6 +384,8 @@ Authorization ヘッダー検証
 
 ブラウザが Basic Auth で認証済みの場合、WebSocket Upgrade リクエストにも `Authorization` ヘッダーが自動付与される。追加のクライアント側実装は不要。
 
+> **MRD-011 対応**: WebSocket Upgrade への Authorization ヘッダー自動付与はブラウザ実装依存。対応ブラウザ: Chrome 16+、Firefox 11+、Safari 7+、Edge 12+。非対応ブラウザでは「ターミナル機能は利用できません」のエラー表示を行う。
+
 ---
 
 ## 変更履歴
@@ -370,3 +393,4 @@ Authorization ヘッダー検証
 | 日付 | バージョン | 変更内容 | 変更者 |
 |------|------------|----------|--------|
 | 2025-07-17 | 1.0 | 初版作成 | Copilot |
+| 2025-07-17 | 1.1 | MRD-001: WS認証必須化、MRD-002: OutputMessage クリアシーケンス、MRD-003: resizePane追加、MRD-011: ブラウザ互換性注記、MRD-012: コンポーネント責務明確化 | Copilot |

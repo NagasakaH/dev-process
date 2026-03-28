@@ -96,9 +96,12 @@ export type ErrorCode =
 
 /** 切断理由 */
 export type DisconnectReason =
-  | "session_ended"
-  | "pane_closed"
-  | "timeout";
+  | "session_ended"      // セッションが正常終了
+  | "pane_closed"        // tmux pane が閉じられた
+  | "timeout"            // KeepAlive タイムアウト
+  | "capture_failed"     // capture-pane 連続失敗による切断（MRD-007）
+  | "auth_expired"       // 認証期限切れ（MRD-007）
+  | "server_shutdown";   // サーバーシャットダウン（MRD-007）
 ```
 
 ### 1.3 セッション解決結果型
@@ -126,6 +129,7 @@ export interface TerminalConnection {
   captureInterval: ReturnType<typeof setInterval> | null;
   lastOutput: string;         // 前回の capture-pane 出力（差分検出用）
   createdAt: number;          // 接続開始時刻（Unix ms）
+  errorCount: number;         // capture-pane 連続失敗カウント（MRD-008）
 }
 ```
 
@@ -254,6 +258,10 @@ const connections = new Map<WebSocket, TerminalConnection>();
 
 // 同一 pane への接続数制限
 const MAX_CONNECTIONS_PER_PANE = 2;
+
+// 環境別の同時接続数上限（MRD-006）
+const MAX_TOTAL_CONNECTIONS_LOCAL = 5;   // ローカル環境
+const MAX_TOTAL_CONNECTIONS_DOCKER = 2;  // Docker環境（イベントループブロッキング防止）
 ```
 
 ### 4.2 キャプチャ間隔
@@ -325,3 +333,4 @@ DB スキーマ変更なし。既存のファイルベースデータ（events.j
 | 日付 | バージョン | 変更内容 | 変更者 |
 |------|------------|----------|--------|
 | 2025-07-17 | 1.0 | 初版作成 | Copilot |
+| 2025-07-17 | 1.1 | MRD-006: 同時接続数上限追加、MRD-007: DisconnectReason整備、MRD-008: errorCount追加 | Copilot |
