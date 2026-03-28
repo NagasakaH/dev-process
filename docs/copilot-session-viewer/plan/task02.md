@@ -60,6 +60,7 @@
 // src/lib/__tests__/terminal.test.ts に追加
 
 describe("captureTmuxPane with -e flag", () => {
+  // UT-T1: withEscape=true → -e フラグ
   it("withEscape=true の場合、capture-pane に -e フラグが含まれる", () => {
     const mockExecFileSync = vi.mocked(execFileSync);
     mockExecFileSync.mockReturnValue(Buffer.from("test output"));
@@ -73,6 +74,7 @@ describe("captureTmuxPane with -e flag", () => {
     );
   });
 
+  // UT-T2: withEscape=false（デフォルト）→ -e なし
   it("withEscape=false の場合（デフォルト）、-e フラグが含まれない", () => {
     const mockExecFileSync = vi.mocked(execFileSync);
     mockExecFileSync.mockReturnValue(Buffer.from("test output"));
@@ -86,6 +88,7 @@ describe("captureTmuxPane with -e flag", () => {
     );
   });
 
+  // UT-T3: Docker exec + withEscape=true
   it("Docker exec 経由でも withEscape=true で -e フラグが含まれる", () => {
     const mockExecFileSync = vi.mocked(execFileSync);
     mockExecFileSync.mockReturnValue(Buffer.from("test output"));
