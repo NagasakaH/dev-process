@@ -5,47 +5,25 @@ description: "Execute GitLab REST API operations using curl. TRIGGER when: user 
 
 # GitLab API Skill
 
-This skill helps you execute GitLab REST API (v4) operations using curl shell scripts. It provides pre-built functions for common GitLab API operations organized by category.
+GitLab REST API (v4) 操作を curl シェルスクリプトで実行するスキル。カテゴリ別のプリビルド関数を提供する。
 
 ## Setup
 
-### Environment Configuration
+`GITLAB_TOKEN` と `GITLAB_URL` の解決優先順:
 
-The skill resolves `GITLAB_TOKEN` and `GITLAB_URL` with this priority:
-
-1. **Environment variables** (highest priority): `GITLAB_TOKEN`, `GITLAB_URL`
+1. **環境変数** (最優先): `GITLAB_TOKEN`, `GITLAB_URL`
 2. **`$HOME/.config/skills/gitlab/.env`**
-3. **`$HOME/.config/skills/.env`** (lowest priority)
+3. **`$HOME/.config/skills/.env`** (最低優先)
 
-The `.env` files should contain:
+`GITLAB_URL` 未設定時は `https://gitlab.com` がデフォルト。
 
-```
-GITLAB_TOKEN=glpat-xxxxxxxxxxxxxxxxxxxx
-GITLAB_URL=https://gitlab.example.com
-```
-
-If `GITLAB_URL` is not set, it defaults to `https://gitlab.com`.
-
-### Using the Scripts
-
-All scripts source `scripts/common.sh` for token/URL resolution and shared helpers. To use any API function:
-
-```bash
-# Source common utilities (auto-resolves token and URL)
-source scripts/common.sh
-
-# Then source the category-specific script
-source scripts/projects.sh
-
-# Call the function
-gitlab_list_projects
-```
+📖 詳細は [reference/setup-and-usage.md](reference/setup-and-usage.md) を参照
 
 ---
 
 ## API Categories
 
-Read the appropriate reference document based on the user's request:
+ユーザーのリクエストに応じて適切なリファレンスドキュメントを読むこと:
 
 | Category | Reference | Script | Use When |
 |----------|-----------|--------|----------|
@@ -67,55 +45,11 @@ Read the appropriate reference document based on the user's request:
 
 ## Instructions
 
-1. **Identify the API category** from the user's request
-2. **Read the reference doc** for that category to understand available endpoints
-3. **Source `scripts/common.sh`** first, then the category-specific script
-4. **Call the appropriate function** with required parameters
-5. **Parse the JSON response** using `jq` — never use `grep`/`sed` on JSON
-6. **Use GitLab Flavored Markdown (GLFM)** for all `description` and `body` fields — refer to [reference/gitlab-flavored-markdown.md](reference/gitlab-flavored-markdown.md) for syntax
+1. **API カテゴリを特定** — ユーザーのリクエストから判断
+2. **リファレンスドキュメントを読む** — 利用可能なエンドポイントを把握
+3. **`scripts/common.sh`** → カテゴリスクリプトの順にソース
+4. **関数を呼び出す** — 必要パラメータを渡す
+5. **JSON レスポンスは `jq` でパース** — `grep`/`sed` は使わない
+6. **GLFM 記法** — `description`/`body` フィールドには [reference/gitlab-flavored-markdown.md](reference/gitlab-flavored-markdown.md) を参照
 
-### Common Patterns
-
-```bash
-# URL-encode project paths (namespace/project → namespace%2Fproject)
-PROJECT_ID=$(urlencode "my-group/my-project")
-
-# Pagination
-gitlab_api GET "/projects?per_page=100&page=2"
-
-# POST with JSON body
-gitlab_api POST "/projects" '{"name":"new-project","visibility":"private"}'
-
-# PUT to update
-gitlab_api PUT "/projects/$PROJECT_ID" '{"description":"Updated"}'
-
-# DELETE
-gitlab_api DELETE "/projects/$PROJECT_ID"
-```
-
-### Error Handling
-
-All functions check HTTP status codes. On error, the response body (usually containing `{"message":"..."}`) is printed to stderr.
-
-### File Attachment Workflow
-
-To attach images or files to issues, merge requests, or comments:
-
-1. **Upload the file** to the project using `gitlab_upload_project_file` (calls `POST /projects/:id/uploads`)
-2. **Extract the `markdown` link** from the response JSON
-3. **Embed the markdown** in the `description` or note `body`
-
-```bash
-source scripts/common.sh
-source scripts/projects.sh
-source scripts/issues.sh
-
-# Upload file and get markdown link
-UPLOAD=$(gitlab_upload_project_file "my-group/my-project" "/path/to/image.png")
-IMAGE_MD=$(echo "$UPLOAD" | jq -r '.markdown')
-
-# Use in issue description, MR description, or comment body
-gitlab_create_issue "my-group/my-project" "Bug report" "Details:\n\n${IMAGE_MD}"
-```
-
-See [reference/projects.md](reference/projects.md#upload-a-file-to-a-project) for the upload API details.
+📖 共通パターン・エラーハンドリング・ファイル添付は [reference/common-patterns.md](reference/common-patterns.md) を参照
