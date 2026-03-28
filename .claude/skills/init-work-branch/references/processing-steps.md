@@ -25,9 +25,9 @@ echo "ブランチ作成完了: $FEATURE_BRANCH (元ブランチ: $CURRENT_BRANC
 ## 3. サブモジュールディレクトリの準備
 
 ```bash
-# サブモジュールディレクトリを作成（デフォルト: submodules）
+# editable/readonly ディレクトリを作成
 SUBMODULES_DIR="${submodules_dir:-submodules}"
-mkdir -p "$SUBMODULES_DIR"
+mkdir -p "$SUBMODULES_DIR/editable" "$SUBMODULES_DIR/readonly"
 ```
 
 ## 4. 関連リポジトリをサブモジュールとして追加
@@ -35,12 +35,12 @@ mkdir -p "$SUBMODULES_DIR"
 `related_repositories` に定義された各リポジトリに対して実行：
 
 ```bash
-# サブモジュールとして追加
-git submodule add "{repository.url}" "$SUBMODULES_DIR/{repository.name}"
+# readonly サブモジュールとして追加（参照用）
+git submodule add "{repository.url}" "$SUBMODULES_DIR/readonly/{repository.name}"
 
 # 特定ブランチが指定されている場合
 if [ -n "{repository.branch}" ]; then
-    cd "$SUBMODULES_DIR/{repository.name}"
+    cd "$SUBMODULES_DIR/readonly/{repository.name}"
     git checkout "{repository.branch}"
     cd -
 fi
@@ -56,20 +56,20 @@ REPO_NAME="{repository.name}"
 BASE_BRANCH="{repository.base_branch:-main}"
 FEATURE_BRANCH="feature/{ticket_id}"
 
-# サブモジュールとして追加（存在しない場合）
-if [ ! -d "$SUBMODULES_DIR/$REPO_NAME" ]; then
-    git submodule add "{repository.url}" "$SUBMODULES_DIR/$REPO_NAME"
+# editable サブモジュールとして追加（存在しない場合）
+if [ ! -d "$SUBMODULES_DIR/editable/$REPO_NAME" ]; then
+    git submodule add "{repository.url}" "$SUBMODULES_DIR/editable/$REPO_NAME"
 fi
 
 # サブモジュール内でfeatureブランチを作成
-cd "$SUBMODULES_DIR/$REPO_NAME"
+cd "$SUBMODULES_DIR/editable/$REPO_NAME"
 git fetch origin
 git checkout "$BASE_BRANCH"
 git pull origin "$BASE_BRANCH"
 git checkout -b "$FEATURE_BRANCH"
 cd -
 
-echo "サブモジュール追加完了: $SUBMODULES_DIR/$REPO_NAME (ブランチ: $FEATURE_BRANCH)"
+echo "サブモジュール追加完了: $SUBMODULES_DIR/editable/$REPO_NAME (ブランチ: $FEATURE_BRANCH)"
 ```
 
 ## 6. 設計変更ドキュメントの作成
@@ -145,8 +145,8 @@ git commit -m "feat: {ticket_id} 開発環境を初期化
 - 元ブランチ: {current_branch}
 
 ### 追加されたサブモジュール
-- submodules/{repo_name1}
-- submodules/{repo_name2} (feature/{ticket_id})
+- submodules/readonly/{repo_name1}（参照用）
+- submodules/editable/{repo_name2} (feature/{ticket_id})
 
 ### 作成されたドキュメント
 - docs/{ticket_id}.md
