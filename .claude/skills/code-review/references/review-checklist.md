@@ -117,6 +117,26 @@ gh run view <run_id>  # 失敗したrunの詳細
 
 ### TC-07: 変更コードカバレッジの検証方法
 
+**取得優先順位:**
+
+1. **CI/パイプラインのアーティファクトからカバレッジレポートを取得**（推奨）
+2. アーティファクトがない場合 → **ローカルでユニットテストを実行してカバレッジ取得**
+
+#### 優先1: CIアーティファクトから取得
+
+```bash
+# GitHub Actions の場合
+gh run list --branch "$(git branch --show-current)" --limit 1 --json databaseId -q '.[0].databaseId'
+gh run download <run_id>  # カバレッジアーティファクトをダウンロード
+# lcov / cobertura / coverage.json 等を探して解析
+
+# GitLab Pipeline の場合（gitlab-api スキル使用）
+# GET /projects/:id/jobs/:job_id/artifacts
+# カバレッジレポートファイルを取得
+```
+
+#### 優先2: ローカルでユニットテスト実行
+
 ```bash
 # 1. 変更されたソースファイル一覧を取得
 git diff --name-only "$BASE_SHA..$HEAD_SHA" | grep -v test | grep -v spec
