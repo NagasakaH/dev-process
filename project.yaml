@@ -3,7 +3,7 @@ meta:
   target_repo: "copilot-session-viewer"
   version: "1.0"
   created_at: "2026-03-28T05:24:57+00:00"
-  updated_at: "2026-03-28T05:24:57+00:00"
+  updated_at: "2026-03-28T05:37:27+00:00"
 setup:
   description:
     overview: >
@@ -89,4 +89,18 @@ brainstorming:
       execution: "docker compose exec viewer e2e-selftest"
 human_checkpoints:
   brainstorming_review:
-    status: "pending"
+    status: "approved"
+    current_round: 1
+    rounds:
+      - round: 1
+        reviewed_at: "2026-03-28T05:25:45+00:00"
+        verdict: approved
+        feedback: WebSocket + xterm.js + モーダル方式の方針を承認
+investigation:
+  status: completed
+  started_at: "2026-03-28T05:37:27+00:00"
+  summary: "対象リポジトリの詳細調査完了"
+  key_findings: []
+  risks: []
+  artifacts: "docs/copilot-session-viewer/investigation/"
+  completed_at: "2026-03-28T05:37:27+00:00"
