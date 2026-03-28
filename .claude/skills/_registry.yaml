@@ -18,6 +18,7 @@ generic_skills:
   - review-plan
   - implement
   - verification
+  - create-mr-pr
   - code-review
   - code-review-fix
   - finishing-branch
@@ -94,11 +95,12 @@ workflow_sections:
   code_review:
     description: "コードレビュー結果"
     prompt: code-review
-    notes: "code-review-fix プロンプトが issues の status を更新"
+    notes: "MR/PRへの結果書き込み + draft解除 + pr_review チェックポイント。code-review-fix プロンプトが issues の status を更新"
 
-  finishing:
-    description: "ブランチ完了情報"
-    prompt: finishing-branch
+  create_mr_pr:
+    description: "MR/PR作成（DRモード/Codeモード）"
+    prompt: create-mr-pr
+    notes: "DRモード: design後にdev-processリポへ。Codeモード: verification後に各submoduleリポへ"
 
   human_checkpoints:
     description: "人間チェックポイント管理"

@@ -2,14 +2,14 @@
 name: dev-workflow
 description: |
   開発ワークフロー自律実行エージェント。
-  setup.yamlの作成からfinishing-branchまで、10ステップワークフローを1プロンプトで自走する。
+  setup.yamlの作成からcode-reviewまで、10ステップワークフローを1プロンプトで自走する。
   setup.yamlがなければ対話で作成、project.yamlの状態を確認して中断した地点から再開する。
 ---
 
 # 開発ワークフロー自律実行エージェント
 
 あなたは開発プロセスを自律的に実行するエージェントです。
-**1つのプロンプトで、setup.yaml作成からfinishing-branchまで全工程を完走** してください。
+**1つのプロンプトで、setup.yaml作成からcode-review完了まで全工程を完走** してください。
 
 ---
 
@@ -21,7 +21,6 @@ description: |
    以下のスキルは `ask_user` やユーザーとの段階的対話が必要なため、サブエージェントではなくこのエージェント自身が直接実行すること：
    - **create-setup-yaml** — ユーザーと対話しながら setup.yaml を0から作成（段階的質問が必須）
    - **brainstorming** — ユーザーに質問を投げかけて要件を明確化、`ask_user` でテスト戦略を確認
-   - **finishing-branch** — 4つの選択肢（マージ/PR/保持/破棄）をユーザーに提示して選択を受ける
 4. **サブエージェントのモデル選択ルール**:
    - **レビュー系スキル**（review-design, review-plan, code-review）: 品質担保のため **2つのモデルで並列レビュー**（`gpt-5.3-codex` と `claude-opus-4.6`）。ただし **3フェーズ方式**（分析のみ並列 → 結果統合 → 逐次で更新・コミット）で実行し、`project.yaml` や出力ファイルの競合を防止する
    - **その他の全スキル**: 原則 `claude-opus-4.6` を使用
@@ -315,14 +314,15 @@ scripts/project-yaml-helper.sh status project.yaml
 | overview                           | Step 3: brainstorming（overviewはStep 2だが順序は柔軟） |
 | investigation                      | Step 5: design                                          |
 | design (review未実施 or rejected)  | Step 5a: review-design                                  |
-| design (review approved)           | Step 6: plan                                            |
+| design (review approved)           | Step 5b: create-mr-pr (DRモード)                        |
+| create_mr_pr (mode=dr)             | Step 6: plan（design_review承認後）                     |
 | plan (review未実施 or rejected)    | Step 6a: review-plan                                    |
 | plan (review approved)             | Step 7: implement                                       |
 | implement                          | Step 8: verification                                    |
-| verification                       | Step 9: code-review                                     |
-| code_review (rejected/conditional) | Step 9a: code-review-fix → 再レビュー                   |
-| code_review (approved)             | Step 10: finishing-branch                               |
-| finishing                          | 全工程完了 🎉                                            |
+| verification                       | Step 9: create-mr-pr (Codeモード)                       |
+| create_mr_pr (mode=code)           | Step 10: code-review                                    |
+| code_review (rejected/conditional) | Step 10a: code-review-fix → 再レビュー                  |
+| code_review (approved)             | MR/PR draft解除 → pr_review → 全工程完了 🎉             |
 
 ---
 
@@ -543,9 +543,33 @@ task ツール 3:
 
 **レビュー結果の処理**:
 
-- **approved**: Step 6 (plan) に進む
+- **approved**: Step 5b (create-mr-pr DRモード) に進む
 - **conditional**: 指摘を修正 → 再レビュー（Step 5a を再実行）
 - **rejected**: Step 5 (design) に戻って修正 → 再レビュー
+
+---
+
+### Step 5b: create-mr-pr DRモード（設計レビューMR/PR作成）
+
+📋 **まず `prompts/workflow/create-mr-pr.md` を読み、手順を把握すること。**
+
+review-design 承認後、人間による設計レビュー用に dev-process リポに draft MR/PR を作成。
+
+```
+task ツール:
+  agent_type: "general-purpose"
+  model: "claude-opus-4.6"
+  prompt: |
+    create-mr-pr スキルを DR モードで実行してください。
+    dev-process リポに draft MR/PR を作成し、
+    設計資料リンク・ACテストマッピング・修正対象リポ合意テーブル・
+    テスト戦略チェックリストを description に設定してください。
+    prompts/workflow/create-mr-pr.md の手順に従ってください。
+```
+
+**完了後**: design_review 人間チェックポイントが pending 状態。人間が MR/PR 上でレビュー。
+- **承認**: MR/PR を close（マージしない）→ Step 6 (plan) に進む
+- **差し戻し**: 指摘に基づき設計修正 → Step 5 (design) に戻る
 
 ---
 
@@ -667,12 +691,36 @@ task ツール:
 
 ---
 
-### Step 9: code-review（コードレビュー）
+### Step 9: create-mr-pr（MR/PR作成）
+
+📋 **まず `prompts/workflow/create-mr-pr.md` を読み、手順を把握すること。**
+
+1. **前提条件チェック**: ワークフロープロンプトに従い `project-state` スキルで前提条件を確認（verification.status=completed）
+2. **コンテキスト抽出**: ワークフロープロンプトに従い project.yaml から TICKET_ID, TARGET_REPO, ACCEPTANCE_CRITERIA を抽出
+
+```
+task ツール:
+  agent_type: "general-purpose"
+  model: "claude-opus-4.6"
+  prompt: |
+    create-mr-pr スキルを Code モードで実行してください。
+    各 submodules/editable/ 配下の修正対象リポジトリに draft MR/PR を作成し、
+    テンプレート付きチェックリストを description に設定してください。
+    複数リポまたはクロスリポテストがある場合は、
+    dev-process リポに統合 MR/PR も作成してください。
+    prompts/workflow/create-mr-pr.md の手順に従ってください。
+```
+
+**完了条件**: 全対象リポに draft MR/PR 作成済み、project.yaml 更新
+
+---
+
+### Step 10: code-review（コードレビュー）
 
 📋 **まず `prompts/workflow/code-review.md` を読み、手順を把握すること。**
 
-1. **前提条件チェック**: ワークフロープロンプトに従い `project-state` スキルで前提条件を確認（verification.status=completed）
-2. **コンテキスト抽出**: ワークフロープロンプトに従い project.yaml から TICKET_ID, TARGET_REPO, DESIGN_ARTIFACTS, VERIFICATION_STATUS を抽出
+1. **前提条件チェック**: ワークフロープロンプトに従い `project-state` スキルで前提条件を確認（verification.status=completed, create_mr_pr.status=completed）
+2. **コンテキスト抽出**: ワークフロープロンプトに従い project.yaml から TICKET_ID, TARGET_REPO, DESIGN_ARTIFACTS, MR_PR_URLS を抽出
 
 `code-review` スキルを **3フェーズ並列実行**（競合防止パターン）。
 
@@ -684,6 +732,8 @@ task ツール 1 (mode: "background"):
   prompt: |
     code-review スキルの分析フェーズのみを実行してください。
     project.yaml・ファイル生成・git commit は禁止。
+    TC-08（AC全項目テスト必須）とTC-09（修正範囲スコープ）を
+    Critical項目として厳密に検証してください。
     レビュー結果（判定・指摘一覧・チェックリスト結果）を
     構造化テキストで返してください。
 
@@ -693,6 +743,8 @@ task ツール 2 (mode: "background"):
   prompt: |
     code-review スキルの分析フェーズのみを実行してください。
     project.yaml・ファイル生成・git commit は禁止。
+    TC-08（AC全項目テスト必須）とTC-09（修正範囲スコープ）を
+    Critical項目として厳密に検証してください。
     レビュー結果（判定・指摘一覧・チェックリスト結果）を
     構造化テキストで返してください。
 
@@ -700,27 +752,28 @@ task ツール 2 (mode: "background"):
 # → 判定マージ + 指摘マージ + チェックリスト統合
 #   （上記の「レビュー系スキル」セクション参照）
 
-# Phase 3: 更新・コミット（1つのサブエージェントに委譲）
-# ワークフロープロンプトの「完了後の状態更新」に従い project-state スキルで更新
+# Phase 3: 更新・コミット・MR/PR書き込み（1つのサブエージェントに委譲）
 task ツール 3:
   agent_type: "general-purpose"
   model: "claude-opus-4.6"
   prompt: |
     統合済みレビュー結果に基づき、code-review の更新フェーズを実行。
     prompts/workflow/code-review.md の「完了後の状態更新」手順に従い、
-    docs/{target_repo}/code-review/round-NN.md にラウンドレポート生成、
-    project-state スキル（project-yaml-helper.sh）で project.yaml 更新、
-    git commit を行ってください。
+    1. docs/{target_repo}/code-review/round-NN.md にラウンドレポート生成
+    2. project-state スキル（project-yaml-helper.sh）で project.yaml 更新
+    3. MR/PRにレビュー結果コメント投稿 + descriptionチェックリスト更新
+    4. git commit を行ってください。
 ```
 
 **レビュー結果の処理**:
 
-- **approved**: Step 10 (finishing-branch) に進む
+- **approved**: MR/PR draft解除 → pr_review チェックポイント
 - **conditional / rejected**: `code-review-fix` で修正 → 再レビュー
+- **テスト不足でrejected**: ユーザーに `ask_user` でリソース提供を要求
 
 ---
 
-### Step 9a: code-review-fix（レビュー指摘修正）
+### Step 10a: code-review-fix（レビュー指摘修正）
 
 📋 **まず `prompts/workflow/code-review-fix.md` を読み、手順を把握すること。**
 
@@ -736,40 +789,12 @@ task ツール:
   prompt: "code-review-fix スキルを実行してレビュー指摘を修正してください。..."
 ```
 
-修正後、Step 9 (code-review) を再実行。
+修正後、Step 10 (code-review) を再実行。全指摘解消まで繰り返す。
 
----
-
-### Step 10: finishing-branch（完了処理）
-
-⚡ **このエージェントが直接実行**（ユーザーに選択肢を提示する対話が必須のため、2フェーズ方式）
-
-📋 **まず `prompts/workflow/finishing-branch.md` を読み、手順を把握すること。**
-
-1. **前提条件チェック**: ワークフロープロンプトに従い `project-state` スキルで前提条件を確認（code_review.status=approved）
-2. **コンテキスト抽出**: ワークフロープロンプトに従い project.yaml から TICKET_ID, TARGET_REPO を抽出
-
-**Phase 1**: サブエージェントに状態確認を委譲
-
-```
-task ツール:
-  agent_type: "general-purpose"
-  model: "claude-opus-4.6"
-  prompt: |
-    finishing-branch スキルの事前確認を行ってください。
-    以下の情報を構造化して返してください：
-    - テスト実行結果（全テスト通過しているか）
-    - ベースブランチ情報（main/master からの分岐か）
-    - 未コミットの変更の有無
-    - Worktree の状態
-    - ブランチ名と関連情報
-```
-
-**Phase 2**: サブエージェントの結果を使ってユーザーに4つの選択肢を提示し、選択に応じた処理を実行
-
-⚠️ **状態更新**: ワークフロープロンプトの「完了後の状態更新」に従い、`project-state` スキル（`scripts/project-yaml-helper.sh`）で project.yaml を更新すること。
-
-**完了条件**: マージ/PR/ブランチ処理完了、project.yaml 更新
+**全指摘解消後**:
+1. MR/PRのdraftを解除
+2. pr_review 人間チェックポイントが pending 状態に
+3. 人間がMR/PR上でレビュー → 承認後 merge
 
 ---
 
@@ -790,7 +815,7 @@ task ツール:
 | Step 3 (brainstorming)     | 要件の深掘り、設計方針の決定           | ask_user |
 | Step 7 完了後              | 実装結果の確認、追加タスクの有無       | ask_user |
 | Step 8 完了後              | 検証結果の確認、追加検証の必要性       | ask_user |
-| Step 10 (finishing-branch) | マージ/PR/保持/破棄の選択              | ask_user |
+| Step 10 (テスト不足時)     | テストリソース提供の要求               | ask_user |
 | 各ステップ完了時           | 次のステップに進んでよいかの確認       | ask_user |
 
 ### 中断前の確認

@@ -10,6 +10,8 @@
 5. グループごとに順次デュアルモデルレビュー
 6. グループ別レポート出力
 7. 統合サマリー出力・コミット
+8. MR/PRへの結果書き込み
+9. [全指摘解消時] Draft解除
 ```
 
 ## 1. コミット範囲の特定
@@ -63,6 +65,26 @@ git diff --stat "$BASE_SHA..$HEAD_SHA"
 ## 6. コミット
 
 📖 コミットメッセージテンプレートは [output-template.md](output-template.md) を参照
+
+## 7. MR/PRへの結果書き込み
+
+レビュー結果をMR/PRに反映:
+
+1. `round-NN-summary.md` をMR/PRコメントとして投稿
+2. MR/PR descriptionのチェックリストを検証結果に基づき更新
+3. AI+人間チェック項目にAI分析結果と根拠を追記
+
+📖 詳細は [mr-pr-result-writing.md](mr-pr-result-writing.md) を参照
+
+## 8. Draft解除（全指摘解消時のみ）
+
+全てのcode-review-fixループが完了し、指摘がゼロになった場合:
+
+1. 最終ラウンドのレビューが `approved` であることを確認
+2. 全ACに対応するテストがpassしていることを確認
+3. MR/PRのdraftを解除
+
+📖 Draft解除コマンドは [mr-pr-result-writing.md](mr-pr-result-writing.md) を参照
 
 ## エラーハンドリング
 
