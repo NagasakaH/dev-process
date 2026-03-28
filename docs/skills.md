@@ -38,7 +38,8 @@ project.yaml に依存しない、再利用可能なスキル群です。
 | **plan**                 | タスク分割・依存関係整理・TDDプロンプト生成            |
 | **implement**            | タスク計画に従った実装実行（並列化対応）               |
 | **verification**         | テスト・ビルド・リント実行確認 + acceptance_criteria照合 |
-| **finishing-branch**     | 実装完了後のマージ/PR/クリーンアップオプション提示     |
+| **create-mr-pr**         | MR/PR作成（DRモード: 設計レビュー / Codeモード: 実装） |
+| **finishing-branch**     | ~~（非推奨）~~ 実装完了後のマージ/PR/クリーンアップオプション提示 |
 | **init-work-branch**     | 作業ブランチ・サブモジュール・設計ドキュメント初期化   |
 | **submodule-overview**   | サブモジュールの構造分析・概要ドキュメント生成         |
 
@@ -102,5 +103,5 @@ project.yaml や setup.yaml に直接関わるスキル群です。
 | `verification.md`         | verification      | 検証コマンド・acceptance_criteriaの前提条件を定義 |
 | `code-review.md`          | code-review       | コードレビューの入力・チェックリストの前提条件を定義 |
 | `code-review-fix.md`      | code-review-fix   | レビュー修正の入力・再検証の前提条件を定義       |
+| `create-mr-pr.md`         | create-mr-pr      | MR/PR作成（DR/Codeモード）の前提条件を定義       |
 | `init-work-branch.md`     | init-work-branch  | ブランチ作成・初期化の前提条件を定義             |
-| `finishing-branch.md`     | finishing-branch   | マージ/PR作成の前提条件を定義                    |

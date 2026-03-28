@@ -42,10 +42,12 @@ project/
 │       ├── verification.md
 │       ├── code-review.md
 │       ├── code-review-fix.md
-│       └── finishing-branch.md
+│       └── create-mr-pr.md
 └── submodules/
-    ├── {repo_name}/                    # サブモジュール
-    └── {repo_name}.md                  # サブモジュール概要
+    ├── editable/
+    │   └── {target_repo}/              # 修正対象サブモジュール
+    └── readonly/
+        └── {related_repo}/             # 参照用サブモジュール
 ```
 
 ---
@@ -79,7 +81,7 @@ graph TD
     S_PLAN[plan]:::workflow
     S_IMPL[implement]:::workflow
     S_VER[verification]:::workflow
-    S_FIN[finishing-branch]:::workflow
+    S_MR[create-mr-pr]:::workflow
 
     %% ── レビュースキル ──
     S_RD[review-design]:::review
@@ -133,7 +135,7 @@ graph TD
     AGENT -->|ステップ実行| S_VER
     AGENT -->|ステップ実行| S_CR
     AGENT -->|ステップ実行| S_CRF
-    AGENT -->|ステップ実行| S_FIN
+    AGENT -->|ステップ実行| S_MR
     AGENT -->|ステップ実行| S_PSTATE
     AGENT -.->|参照| F_REG
 
