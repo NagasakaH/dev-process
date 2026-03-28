@@ -140,6 +140,7 @@ export interface TerminalConnection {
 export type ConnectionState =
   | "connecting"
   | "connected"
+  | "reconnecting"    // MRD2-004: 再接続中状態を追加
   | "disconnected"
   | "error";
 
@@ -334,3 +335,4 @@ DB スキーマ変更なし。既存のファイルベースデータ（events.j
 |------|------------|----------|--------|
 | 2025-07-17 | 1.0 | 初版作成 | Copilot |
 | 2025-07-17 | 1.1 | MRD-006: 同時接続数上限追加、MRD-007: DisconnectReason整備、MRD-008: errorCount追加 | Copilot |
+| 2025-07-18 | 1.2 | MRD2-004: ConnectionState に "reconnecting" 追加 | Copilot |

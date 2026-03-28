@@ -142,7 +142,8 @@ Client                                     Server
 ```typescript
 {
   type: "disconnected";
-  reason: string;  // "session_ended" | "pane_closed" | "timeout"
+  reason: DisconnectReason;  // 03_data-structure-design.md の DisconnectReason 型を参照
+  // "session_ended" | "pane_closed" | "timeout" | "capture_failed" | "auth_expired" | "server_shutdown"
 }
 ```
 
@@ -153,8 +154,8 @@ Client                                     Server
 | `SESSION_NOT_FOUND` | 指定 sessionId のアクティブセッションが見つからない | エラー表示、モーダルを閉じる |
 | `PANE_NOT_FOUND` | セッションに tmuxPane が紐付いていない | エラー表示 |
 | `CAPTURE_FAILED` | capture-pane の実行に失敗 | 再接続を提案 |
-| `AUTH_FAILED` | 認証失敗（Upgrade 時） | 接続拒否（HTTP 401） |
-| `CONNECTION_LIMIT` | 同一 pane への接続数上限超過 | エラー表示 |
+| `AUTH_FAILED` | 認証失敗（Upgrade 時） | 接続拒否（HTTP 401: 認証情報不正 / HTTP 403: 認証未設定） |
+| `CONNECTION_LIMIT` | 同一 pane への接続数上限超過、または環境別の総接続数上限超過 | エラー表示 |
 
 ---
 
@@ -260,7 +261,7 @@ export function useTerminalWebSocket(
     onDisconnected?: (reason: string) => void;
   }
 ): {
-  isConnected: boolean;
+  connectionState: ConnectionState;  // 03_data-structure-design.md の ConnectionState 型を参照（MRD2-002）
   error: string | null;
   sendInput: (data: string) => void;
   sendResize: (cols: number, rows: number) => void;
@@ -374,10 +375,14 @@ Basic Auth 環境変数チェック
     → 403 応答("Terminal feature requires authentication configuration") → socket.destroy()
   → 設定済み: ↓
 Authorization ヘッダー検証
-  → ヘッダーなし: 401 応答 → socket.destroy()
-  → Basic スキーム以外: socket.destroy()
-  → 認証情報不一致: socket.destroy()
-  → 認証OK: WebSocket 確立
+  → ヘッダーなし: 401 応答("Authorization header required") → socket.destroy()
+  → Basic スキーム以外: 401 応答 → socket.destroy()
+  → 認証情報不一致: 401 応答 → socket.destroy()
+  → 認証OK: ↓
+総接続上限チェック（MRD2-003）
+  → ローカル環境: connections.size >= MAX_TOTAL_CONNECTIONS_LOCAL(5) → CONNECTION_LIMIT エラー → socket.destroy()
+  → Docker環境: connections.size >= MAX_TOTAL_CONNECTIONS_DOCKER(2) → CONNECTION_LIMIT エラー → socket.destroy()
+  → 上限内: WebSocket 確立
 ```
 
 ### 6.2 クライアント側
@@ -394,3 +399,4 @@ Authorization ヘッダー検証
 |------|------------|----------|--------|
 | 2025-07-17 | 1.0 | 初版作成 | Copilot |
 | 2025-07-17 | 1.1 | MRD-001: WS認証必須化、MRD-002: OutputMessage クリアシーケンス、MRD-003: resizePane追加、MRD-011: ブラウザ互換性注記、MRD-012: コンポーネント責務明確化 | Copilot |
+| 2025-07-18 | 1.2 | MRD2-002: DisconnectedMessage.reason を DisconnectReason 型に統一、useTerminalWebSocket 返却型を connectionState: ConnectionState に統一 | Copilot |
