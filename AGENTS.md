@@ -38,13 +38,15 @@ project.yamlの直接参照は禁止、代わりにscripts/project-yaml-helper.s
    - 👤 **brainstorming_review** - project.yaml生成後の人間チェックポイント
 4. **investigation** - 詳細調査（UML図含む）
 5. **design** (+review-design) - 詳細設計（API、データ構造、処理フロー、テスト計画）
-   - 👤 **design_review** - 設計レビュー完了後の人間チェックポイント
+   - 5a. **review-design** - 設計の妥当性レビュー
+   - 5b. **create-mr-pr** (DRモード) - 設計レビュー用 draft MR/PR 作成
+   - 👤 **design_review** - MR/PR上での人間レビュー（承認後close）
 6. **plan** (+review-plan) - タスク分割・プロンプト生成（E2Eタスク含む）
 7. **implement** - 実装実行（並列化対応、定義されたテストの実行確認）
 8. **verification** - テスト・ビルド・リント実行確認 + E2Eテスト + acceptance_criteria照合
-9. **code-review** (+code-review-fix) - チェックリストベース実装レビュー
-10. **finishing-branch** - マージ/PR/クリーンアップ
-    - 👤 **pr_review** - PR発行後の人間チェックポイント
+9. **create-mr-pr** (Codeモード) - 各submoduleにdraft MR/PR作成
+10. **code-review** (+code-review-fix) - チェックリストベース実装レビュー → draft解除
+    - 👤 **pr_review** - MR/PR上での人間レビュー
 
 ## 人間チェックポイント
 
@@ -66,7 +68,7 @@ project.yamlの直接参照は禁止、代わりにscripts/project-yaml-helper.s
 
 | エージェント                                   | 説明                                                                                    |
 | ---------------------------------------------- | --------------------------------------------------------------------------------------- |
-| [dev-workflow](.claude/agents/dev-workflow.md) | 10ステップワークフローを自律実行。setup.yaml作成〜finishing-branchまで1プロンプトで完走 |
+| [dev-workflow](.claude/agents/dev-workflow.md) | 10ステップワークフローを自律実行。setup.yaml作成〜code-reviewまで1プロンプトで完走 |
 
 ## setup.yaml の作成
 

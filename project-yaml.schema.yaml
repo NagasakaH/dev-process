@@ -859,7 +859,46 @@ properties:
     additionalProperties: false
 
   # ---------------------------------------------------------------------------
-  # finishing
+  # create_mr_pr
+  # ---------------------------------------------------------------------------
+  create_mr_pr:
+    type: object
+    description: "MR/PR作成情報（create-mr-pr スキルが記入）"
+    properties:
+      status:
+        $ref: "#/$defs/lifecycle_status"
+      started_at:
+        $ref: "#/$defs/iso8601"
+      completed_at:
+        $ref: "#/$defs/iso8601"
+      mode:
+        type: string
+        enum: [dr, code]
+        description: "MR/PR作成モード（dr: 設計レビュー用, code: コードレビュー用）"
+      platform:
+        type: string
+        enum: [github, gitlab]
+        description: "プラットフォーム"
+      mr_pr_urls:
+        type: array
+        items:
+          type: string
+          format: uri
+        description: "作成したMR/PR URLの一覧"
+      integration_mr_pr_url:
+        type: string
+        format: uri
+        description: "統合MR/PR URL（複数submodule時のみ）"
+      revision_history:
+        type: array
+        items:
+          $ref: "#/$defs/section_snapshot"
+        description: "差し戻しによる再実行時のスナップショット履歴"
+    required: [status, mode]
+    additionalProperties: false
+
+  # ---------------------------------------------------------------------------
+  # finishing（非推奨 — ワークフローではcreate_mr_prに移行済み、互換性のため残す）
   # ---------------------------------------------------------------------------
   finishing:
     type: object
@@ -913,8 +952,8 @@ properties:
       pr_review:
         $ref: "#/$defs/human_checkpoint"
         description: |
-          PR発行後の人間レビュー。
-          実装・テスト・ドキュメントの最終確認を行う。
+          code-review完了・draft解除後の人間レビュー。
+          MR/PR上で実装・テスト・ドキュメントの最終確認を行う。
           差し戻し時はimplement, design等の適切なフェーズからやり直す。
     additionalProperties: false
 
@@ -932,7 +971,7 @@ properties:
         type: object
         description: "各フェーズのメトリクス"
         patternProperties:
-          "^(brainstorming|overview|investigation|design|plan|implement|verification|code_review|finishing)$":
+          "^(brainstorming|overview|investigation|design|plan|implement|verification|code_review|create_mr_pr|finishing)$":
             type: object
             properties:
               duration_min:

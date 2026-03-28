@@ -22,6 +22,7 @@ description: 実装完了後のコード変更をデュアルモデル（Opus 4.
 → 3. レビュー要求項目AI抽出 → 4. コミット意図分析・グループ化
 → 5. グループごとに順次デュアルモデルレビュー
 → 6. グループ別レポート + 統合サマリー出力
+→ 7. MR/PRへの結果書き込み → 8. [全指摘解消時] Draft解除
 ```
 
 📖 詳細は [references/execution-procedure.md](references/execution-procedure.md) を参照
@@ -56,7 +57,7 @@ description: 実装完了後のコード変更をデュアルモデル（Opus 4.
 | 2 | 静的解析 | .editorconfig / フォーマッター / リンター / 型チェック |
 | 3 | 言語別BP | アンチパターン / エラーハンドリング / null安全性 |
 | 4 | セキュリティ | シークレット漏洩 / インジェクション / 認証認可 |
-| 5 | テスト・CI | テスト追加更新 / カバレッジ / 全通過 / CI結果 / 変更コードカバレッジ |
+| 5 | テスト・CI | テスト追加更新 / カバレッジ / 全通過 / CI結果 / **AC全項目テスト必須** / スコープ検証 |
 | 6 | パフォーマンス | N+1クエリ / メモリリーク / アルゴリズム効率 |
 | 7 | ドキュメント | API doc / README / CHANGELOG |
 | 8 | Git作法 | コミット粒度 / デバッグコード / 不要ファイル |
@@ -80,3 +81,13 @@ description: 実装完了後のコード変更をデュアルモデル（Opus 4.
 
 📖 詳細は [references/output-template.md](references/output-template.md) を参照
 📖 再レビューは [references/re-review-procedure.md](references/re-review-procedure.md) を参照
+
+## MR/PR結果書き込み
+
+レビュー完了後、結果をMR/PRに反映:
+- `round-NN-summary.md` をMR/PRコメントとして投稿
+- description チェックリストを更新（AI自動チェック項目）
+- AI+人間チェック項目にAI分析根拠を追記
+- 全指摘解消時にdraftを解除
+
+📖 詳細は [references/mr-pr-result-writing.md](references/mr-pr-result-writing.md) を参照

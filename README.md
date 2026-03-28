@@ -37,8 +37,8 @@ Claude/Copilot向けの開発プロセス用スキル集とエージェント構
 ## 主な特徴
 
 - **プロジェクト非依存の汎用スキル**: 各スキルは単体で利用可能。project.yaml なしでも動作
-- **10ステップワークフロー**: 初期化 → ブレスト → 調査 → 設計 → 計画 → 実装 → 検証 → レビューの体系的プロセス
-- **dev-workflow エージェント**: ワークフローを自律実行し、setup.yaml作成〜finishing-branchまで1プロンプトで完走
+- **10ステップワークフロー**: 初期化 → ブレスト → 調査 → 設計 → 計画 → 実装 → 検証 → MR/PR作成 → レビューの体系的プロセス
+- **dev-workflow エージェント**: ワークフローを自律実行し、setup.yaml作成〜code-reviewまで1プロンプトで完走
 - **品質スキル統合**: TDD、検証、デバッグ、コードレビューの組み込み
 - **並列実行対応**: 独立タスクの並列処理によるスループット向上
 
@@ -55,20 +55,22 @@ flowchart LR
     hc1 -->|🔄 差し戻し| brainstorm
     investigation --> design[5. design]
     design --> review_d[5a. review-design]
-    review_d -->|✅ 承認| hc2{👤 5b. design_review}
+    review_d -->|✅ 承認| dr_mr[5b. create-mr-pr DR]
     review_d -->|❌ 差し戻し| design
-    hc2 -->|✅ 承認| plan[6. plan]
+    dr_mr --> hc2{👤 5c. design_review}
+    hc2 -->|✅ 承認・close| plan[6. plan]
     hc2 -->|🔄 差し戻し| design
     plan --> review_p[6a. review-plan]
     review_p -->|✅ 承認| implement[7. implement]
     review_p -->|❌ 差し戻し| plan
     implement --> verification[8. verification]
-    verification --> code_review[9. code-review]
-    code_review -->|✅ 承認| finish[10. finishing-branch]
-    code_review -->|❌⚠️ 指摘あり| code_review_fix[9a. code-review-fix]
+    verification --> code_mr[9. create-mr-pr Code]
+    code_mr --> code_review[10. code-review]
+    code_review -->|✅ 承認| undraft[draft解除]
+    code_review -->|❌⚠️ 指摘あり| code_review_fix[10a. code-review-fix]
     code_review_fix --> code_review
-    finish -->|PR作成| hc3{👤 10a. pr_review}
-    hc3 -->|✅ 承認| done[完了]
+    undraft --> hc3{👤 pr_review}
+    hc3 -->|✅ 承認・merge| done[完了]
     hc3 -->|🔄 差し戻し| implement
 ```
 
@@ -81,15 +83,16 @@ flowchart LR
 | 4. investigation      | アーキテクチャ・データ構造・依存関係の詳細調査                 |
 | 5. design             | API・データ構造・処理フローの詳細設計                          |
 | 5a. review-design     | 設計の妥当性レビュー（差し戻しあり）                           |
-| 👤 5b. design_review  | 設計レビュー完了後の人間レビュー（差し戻しあり）               |
+| 5b. create-mr-pr (DR) | 設計レビュー用 draft MR/PR 作成                                |
+| 👤 5c. design_review  | MR/PR上での人間レビュー（承認後close）                         |
 | 6. plan               | タスク分割・依存関係整理・TDDプロンプト生成                    |
 | 6a. review-plan       | 計画の妥当性レビュー（差し戻しあり）                           |
 | 7. implement          | サブエージェントによる実装（2段階レビュー付き）                |
 | 8. verification       | テスト・ビルド・リント・型チェック・受入基準照合               |
-| 9. code-review        | 8カテゴリのチェックリストベースレビュー                        |
-| 9a. code-review-fix   | レビュー指摘の修正対応                                         |
-| 10. finishing-branch  | マージ / PR作成 / ブランチ保持 / 破棄                          |
-| 👤 10a. pr_review     | PR発行後の人間レビュー（差し戻しあり）                         |
+| 9. create-mr-pr (Code)| 各submoduleにdraft MR/PR作成                                   |
+| 10. code-review       | チェックリストベースレビュー → draft解除                       |
+| 10a. code-review-fix  | レビュー指摘の修正対応                                         |
+| 👤 pr_review          | MR/PR上での人間レビュー（承認後merge）                         |
 
 📄 各ステップの詳細（インプット/成果物/説明）→ [docs/workflow-details.md](docs/workflow-details.md)
 
@@ -111,7 +114,7 @@ flowchart LR
 
 | カテゴリ | スキル |
 |---------|--------|
-| **ワークフロー** | brainstorming, investigation, design, plan, implement, verification, finishing-branch, init-work-branch, submodule-overview |
+| **ワークフロー** | brainstorming, investigation, design, plan, implement, verification, create-mr-pr, init-work-branch, submodule-overview |
 | **レビュー** | review-design, review-plan, code-review, code-review-fix |
 | **品質ルール** | test-driven-development, systematic-debugging, verification-before-completion |
 | **ユーティリティ** | commit, commit-multi-repo, writing-skills, gitlab-api, terraform, aws-knowledge, aws-documentation |
@@ -143,9 +146,9 @@ claude "タスク計画を作成してください"                            #
 claude "計画をレビューしてください"                              # → review-plan
 claude "実装を開始してください"                                  # → implement
 claude "検証してください"                                        # → verification
+claude "MR/PRを作成してください"                                  # → create-mr-pr (Code)
 claude "コードレビューしてください"                              # → code-review
 claude "レビュー指摘を修正してください"                          # → code-review-fix（指摘がある場合）
-claude "ブランチを完了してください"                              # → finishing-branch
 ```
 
 ---
@@ -159,7 +162,7 @@ claude "ブランチを完了してください"                              # 
 | [docs/skills.md](docs/skills.md)                             | 全スキル一覧と分類                                      |
 | [docs/operations-guide.md](docs/operations-guide.md)         | TDD方針・検証ルール・並列化判断フロー                   |
 | [docs/subagent-development.md](docs/subagent-development.md) | サブエージェント駆動開発の手順・2段階レビュー           |
-| [docs/finishing-branch.md](docs/finishing-branch.md)         | ブランチ完了の自動化フロー・スクリプト例                |
+| [docs/finishing-branch.md](docs/finishing-branch.md)         | ブランチ完了の自動化フロー・スクリプト例（非推奨）      |
 | [docs/code-review-guide.md](docs/code-review-guide.md)       | SHAベースコードレビュー手順・テンプレート・運用例       |
 | [docs/directory-structure.md](docs/directory-structure.md)   | ディレクトリ構成例・依存関係グラフ                      |
 
