@@ -133,3 +133,13 @@ test -f Makefile && make test
 | GH-03 | デバッグコード残留 | `console.log` / `print` / `debugger` / `TODO` 等のデバッグ用コードが残っていないか |
 | GH-04 | 不要ファイル       | ビルド成果物・一時ファイル・IDE設定等が含まれていないか                            |
 | GH-05 | .gitignore 整合性  | `.gitignore` が新規ファイルタイプをカバーしているか                                |
+
+## 9. MR/PR要求項目（MR Description Review Items）
+
+MR/PRディスクリプションから自動抽出された項目。MR/PRが存在しない場合はスキップ。
+
+| ID    | チェック項目 | 説明 |
+| ----- | ------------ | ---- |
+| MR-NNN | （動的生成） | MR/PRディスクリプションから抽出した各項目を個別にチェック |
+
+📖 抽出方法の詳細は [mr-description-extraction.md](mr-description-extraction.md) を参照
