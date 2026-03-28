@@ -95,6 +95,47 @@ test -f go.sum && govulncheck ./... 2>/dev/null
 | TC-03 | テスト品質       | テストが実装の詳細でなく振る舞いを検証しているか                   |
 | TC-04 | テスト全通過     | 既存テスト含め全テストが通過するか                                 |
 | TC-05 | CI設定整合性     | CI/CD パイプラインが新しいテスト・ビルドステップをカバーしているか |
+| TC-06 | CI/パイプライン結果 | CI（GitHub Actions / GitLab Pipeline）の最新実行結果を確認 |
+| TC-07 | 変更コードカバレッジ | 修正対象のコード行がテストコードでカバーされているか検証 |
+
+### TC-06: CI/パイプライン結果の確認方法
+
+```bash
+# GitHub Actions の場合
+gh run list --branch "$(git branch --show-current)" --limit 5
+gh run view <run_id>  # 失敗したrunの詳細
+
+# GitLab Pipeline の場合（gitlab-api スキル使用）
+# GET /projects/:id/pipelines?ref={branch}&per_page=5
+# GET /projects/:id/pipelines/:pipeline_id/jobs
+```
+
+**確認項目:**
+- 最新のCI/パイプラインが成功しているか
+- 失敗している場合、失敗の原因は今回の変更に起因するか
+- 新規追加したテスト/ビルドステップがCIに含まれているか
+
+### TC-07: 変更コードカバレッジの検証方法
+
+```bash
+# 1. 変更されたソースファイル一覧を取得
+git diff --name-only "$BASE_SHA..$HEAD_SHA" | grep -v test | grep -v spec
+
+# 2. カバレッジレポート生成（プロジェクトに応じて）
+# Node.js: npx jest --coverage --collectCoverageFrom='src/**/*.{ts,js}'
+# Python: python -m pytest --cov=src --cov-report=term-missing
+# Go: go test -coverprofile=coverage.out ./... && go tool cover -func=coverage.out
+
+# 3. 変更ファイルのカバレッジを確認
+# カバレッジレポートから変更ファイルの行カバレッジを抽出し、
+# 未カバーの行が変更差分に含まれていないか確認
+```
+
+**判定基準:**
+- 変更された関数/メソッドに対応するテストが存在する
+- 新規追加のコードパスにテストがある
+- 条件分岐（if/else/switch）の各パスがカバーされている
+- エラーハンドリングパスにもテストがある
 
 **実行方法:**
 ```bash
