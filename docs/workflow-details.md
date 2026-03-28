@@ -15,13 +15,14 @@
 **成果物:**
 
 - `feature/{ticket_id}` ブランチ
-- `submodules/{repo_name}/`: サブモジュール追加
+- `submodules/editable/{repo_name}/`: 修正対象サブモジュール
+- `submodules/readonly/{repo_name}/`: 参照用サブモジュール
 - `docs/{ticket_id}.md`: 設計ドキュメント
 
 **説明:**
 
 - `setup.yaml` を読み込み、featureブランチを作成
-- 関連・修正対象リポジトリをサブモジュールとして追加
+- 修正対象リポジトリを `submodules/editable/` に、関連リポジトリを `submodules/readonly/` にサブモジュールとして追加
 - 設計ドキュメント（`docs/{ticket_id}.md`）を生成
 
 > **Note**: このステップでは `project.yaml` はまだ存在しない（`brainstorming` で生成される）
@@ -33,10 +34,11 @@
 **インプット:**
 
 - `project.yaml`（`project-state` スキル経由、存在する場合）
-- `submodules/{repo_name}/`: サブモジュールディレクトリ
-- `submodules/{repo_name}/README.md`: プロジェクト概要
-- `submodules/{repo_name}/CLAUDE.md`: Claude向けコンテキスト（任意）
-- `submodules/{repo_name}/AGENTS.md`: エージェント向け指示（任意）
+- `submodules/editable/{repo_name}/`: 修正対象サブモジュール
+- `submodules/readonly/{repo_name}/`: 参照用サブモジュール
+- `submodules/editable/{repo_name}/README.md`: プロジェクト概要
+- `submodules/editable/{repo_name}/CLAUDE.md`: Claude向けコンテキスト（任意）
+- `submodules/editable/{repo_name}/AGENTS.md`: エージェント向け指示（任意）
 
 **成果物:**
 
@@ -47,7 +49,7 @@
 
 - サブモジュールのREADME/CLAUDE.md/AGENTS.mdから情報収集
 - 技術スタック、API、依存関係を分析
-- `submodules/{name}.md` に概要ドキュメント生成
+- `docs/{name}.md` に概要ドキュメント生成（editable/readonly 両方を対象）
 
 ---
 
@@ -103,7 +105,7 @@
 **インプット:**
 
 - `project.yaml`（`project-state` スキル経由 — `setup.description.background` を背景情報として取得）
-- `submodules/{target_repo}/`: 調査対象リポジトリ
+- `submodules/editable/{target_repo}/`: 調査対象リポジトリ
 
 **成果物:**
 
@@ -159,7 +161,7 @@
 
 ## 5b. 👤 人間チェックポイント: design_review
 
-**タイミング:** review-design が承認（`design.review.status = approved`）された直後
+**タイミング:** review-design が承認後、create-mr-pr (DRモード) で dev-process リポに draft MR/PR を作成した直後
 
 **確認内容:**
 
@@ -243,7 +245,7 @@
 **インプット:**
 
 - `project.yaml`（`project-state` スキル経由 — `implement.status = completed` が前提）
-- `submodules/{target_repo}/`: 実装済みコード
+- `submodules/editable/{target_repo}/`: 実装済みコード
 
 **成果物:**
 
@@ -259,30 +261,55 @@
 
 ---
 
-## 9. code-review（コードレビュー）
+## 9. create-mr-pr Codeモード（MR/PR作成）
 
 **インプット:**
 
 - `project.yaml`（`project-state` スキル経由 — `verification.status = completed` が前提）
+- 各submoduleの変更内容
+
+**成果物:**
+
+- 各submoduleリポジトリにdraft MR/PR
+- 統合MR/PR（複数submodule or クロスリポテストがある場合）
+- `project.yaml` の `create_mr_pr` セクション更新（`project-state` スキル経由）
+
+**説明:**
+
+- 検証完了後、各submoduleリポジトリにdraft MR/PRを作成
+- AI自動チェック（テスト全パス、ビルド成功、リント通過等）をdescriptionに設定
+- 複数submoduleまたはクロスリポテストがある場合はdev-processに統合MR/PRも作成
+- 単一submoduleでテスト完結の場合は統合MR/PR省略可
+
+---
+
+## 10. code-review（コードレビュー）
+
+**インプット:**
+
+- `project.yaml`（`project-state` スキル経由 — `create_mr_pr.status = completed` が前提）
 - コミット範囲（BASE_SHA..HEAD_SHA）
 - `docs/{target_repo}/design/`: 設計成果物（設計準拠性チェック用）
+- draft MR/PR情報（レビュー結果書き込み先）
 
 **成果物:**
 
 - `docs/{target_repo}/code-review/round-01.md`（以降 round-02.md, ...）: レビュー結果
-- `project.yaml` の `code_review` セクション更新（`project-state` スキル経由 — チェックリスト結果・指摘・ラウンド）
+- MR/PRコメント・descriptionチェックリスト更新
+- `project.yaml` の `code_review` セクション更新（`project-state` スキル経由）
 
 **説明:**
 
-- 8カテゴリのチェックリスト（設計準拠性、静的解析、言語別ベストプラクティス、セキュリティ、テスト・CI、パフォーマンス、ドキュメント、Git作法）でレビューを実施
-- **ゼロトレランス方針**: Minorを含む全指摘の修正が必須。「後で対応」は許容しない
-- プロジェクト内の静的解析ツール（prettier / eslint / black / flake8 等）を検出・実行
-- 指摘と修正案の提示が責務（修正自体は code-review-fix が担当）
-- `project.yaml` の `code_review.review_checklist` にチェック項目と結果を構造化記録
+- 8カテゴリのチェックリスト + TC-08（ACテスト完全性、Critical）+ TC-09（修正スコープ準拠、Critical）でレビューを実施
+- **ゼロトレランス方針**: Minorを含む全指摘の修正が必須
+- TC-08: 全ACに対応するテストがpassしていること（未達は自動rejected、ユーザーにテストリソース提供を要求）
+- TC-09: 修正範囲がDR合意済みリポジトリに限定されていること
+- レビュー結果をMR/PRコメントに投稿、descriptionチェックリストを更新
+- 全指摘解消後にdraft解除
 
 ---
 
-## 9a. code-review-fix（レビュー指摘修正）
+## 10a. code-review-fix（レビュー指摘修正）
 
 **インプット:**
 
@@ -302,27 +329,9 @@
 
 ---
 
-## 10. finishing-branch（ブランチ完了）
+## 👤 人間チェックポイント: pr_review
 
-**インプット:**
-
-- `project.yaml`（`project-state` スキル経由 — `code_review.status = approved` が前提）
-
-**成果物:**
-
-- マージ / PR / ブランチ保持 / 破棄
-- `project.yaml` の `finishing` セクション更新（`project-state` スキル経由）
-
-**説明:**
-
-- テスト検証後、4つの選択肢を提示（ローカルマージ / PR作成 / ブランチ保持 / 破棄）
-- 選択されたワークフローを実行し、worktreeクリーンアップを実施
-
----
-
-## 10a. 👤 人間チェックポイント: pr_review
-
-**タイミング:** finishing-branch で PR を作成（`finishing.action = pr`）した直後
+**タイミング:** code-review 承認後、MR/PR の draft 解除直後
 
 **確認内容:**
 
@@ -337,7 +346,7 @@
 2. 指摘内容（`feedback`）と差し戻し先（`rollback_to`: implement, design 等）を記録
 3. 影響セクション（差し戻し先以降）の現在状態を `revision_history` に自動スナップショット
 4. 指定されたフェーズから再実行し、指摘を反映
-5. 再度 verification → code-review → finishing-branch の流れを実行
+5. 再度 verification → create-mr-pr → code-review の流れを実行
 6. 対応完了後、`resolve-checkpoint` で解決を記録
 7. 再レビューで `checkpoint` コマンドを再実行
 

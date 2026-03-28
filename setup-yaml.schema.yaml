@@ -51,7 +51,7 @@ properties:
     type: array
     items:
       $ref: "#/$defs/repository"
-    description: "参照・調査のためにサブモジュールとして追加するリポジトリ"
+    description: "参照・調査のためにサブモジュールとして追加するリポジトリ（submodules/readonly/ に配置）"
 
   # ---------------------------------------------------------------------------
   # target_repositories — 修正対象リポジトリ（必須・1つ以上）
@@ -61,7 +61,7 @@ properties:
     minItems: 1
     items:
       $ref: "#/$defs/target_repository"
-    description: "実際にコード変更を行うリポジトリ"
+    description: "実際にコード変更を行うリポジトリ（submodules/editable/ に配置）"
 
   # ---------------------------------------------------------------------------
   # options — オプション設定
