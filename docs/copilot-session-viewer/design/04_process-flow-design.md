@@ -180,6 +180,7 @@ flowchart TD
 
 | エラー種別 | 発生条件 | サーバー側対応 | クライアント側対応 | リトライ |
 |------------|----------|---------------|-------------------|----------|
+| 認証未設定 | BASIC_AUTH_USER/PASS 未設定 | 403 → socket.destroy()（ターミナル機能無効化） | — (接続不可) | ❌ |
 | 認証失敗 | Authorization ヘッダー不正 | 401 → socket.destroy() | — (接続不可) | ❌ |
 | セッション未検出 | sessionId に対応するアクティブセッションなし | error メッセージ → close | エラー表示 | ❌ |
 | pane 未検出 | tmuxPane が null | error メッセージ → close | エラー表示 | ❌ |
@@ -207,9 +208,13 @@ flowchart TD
     F --> I["upgrade ハンドラー"]
     I --> J{パス === /ws/terminal?}
     J -->|"No"| K["socket.destroy()"]
-    J -->|"Yes"| L{認証検証}
-    L -->|"失敗"| M["401 応答 → socket.destroy()"]
-    L -->|"成功"| N["wss.handleUpgrade()"]
+    J -->|"Yes"| L{認証環境変数チェック}
+    L -->|"未設定"| M0["403 応答 → socket.destroy()<br/>（認証未設定: ターミナル機能無効化）"]
+    L -->|"設定済み"| L2{Authorization ヘッダー検証}
+    L2 -->|"失敗"| M["401 応答 → socket.destroy()<br/>（認証情報不正）"]
+    L2 -->|"成功"| N0{総接続上限チェック}
+    N0 -->|"ローカル5超 or Docker2超"| N1["CONNECTION_LIMIT エラー → socket.destroy()"]
+    N0 -->|"上限内"| N["wss.handleUpgrade()"]
     N --> O["connection イベント"]
     O --> P["resolveSession(sessionId)"]
     P --> Q{セッション存在?}
@@ -347,3 +352,4 @@ function sendInput(pane: string, data: string, containerId?: string, containerUs
 |------|------------|----------|--------|
 | 2025-07-17 | 1.0 | 初版作成 | Copilot |
 | 2025-07-17 | 1.1 | MRD-002: クリアシーケンスプリペンド、MRD-003: resizeフロー追加、MRD-004: Docker exec統一、MRD-009: sendInput擬似コード追加 | Copilot |
+| 2025-07-18 | 1.2 | MRD2-001: 認証ステータスコード401/403使い分け明記+総接続上限チェックフロー追加(MRD2-003) | Copilot |

@@ -46,7 +46,6 @@
 |----|------------|------------|----------|--------|
 | UT-1 | authenticateUpgrade | Basic Auth ヘッダーが正しい場合に true を返す | true | 高 |
 | UT-2 | authenticateUpgrade | Basic Auth ヘッダーが不正な場合に false を返す | false | 高 |
-| UT-3 | authenticateUpgrade | 環境変数未設定時は認証をスキップ（true） | true | 高 |
 | UT-4 | resolveSession | 有効な sessionId でアクティブセッション情報を返す | ResolvedSession オブジェクト | 高 |
 | UT-5 | resolveSession | 無効な sessionId で null を返す | null | 高 |
 | UT-6 | resolveSession | tmuxPane がないセッションで null を返す | null | 中 |
@@ -67,7 +66,9 @@
 | UT-21-r | resizePane | ローカル tmux で resize-pane が正しい引数で実行される（MRD-010） | execFileSync が resize-pane -t pane -x cols -y rows で呼ばれる | 中 |
 | UT-22-r | resizePane | Docker exec 経由で resize-pane が実行される（MRD-010） | docker exec 引数が正しい | 中 |
 | UT-23-r | resizePane | 不正なサイズ（cols=0, rows=-1）で無視される（MRD-010） | execFileSync が呼ばれない | 低 |
-| UT-24-r | authenticateUpgrade | Basic Auth 環境変数未設定時に false と "no_auth_config" を返す（MRD-001） | { authenticated: false, reason: "no_auth_config" } | 高 |
+| UT-24-r | authenticateUpgrade | Basic Auth 環境変数未設定時に false と "no_auth_config" を返す（MRD-001）。旧 UT-3 を統合 | { authenticated: false, reason: "no_auth_config" } | 高 |
+| UT-25-r | 総接続上限チェック（ローカル） | ローカル環境で MAX_TOTAL_CONNECTIONS_LOCAL(5) 超の接続で拒否（MRD2-003） | CONNECTION_LIMIT エラー | 中 |
+| UT-26-r | 総接続上限チェック（Docker） | Docker 環境で MAX_TOTAL_CONNECTIONS_DOCKER(2) 超の接続で拒否（MRD2-003） | CONNECTION_LIMIT エラー | 中 |
 
 ### 2.2 単体テスト（src/components/__tests__/TerminalModal.test.tsx）
 
@@ -100,6 +101,8 @@
 | IT-7 | 接続再確立 | 一度切断後に再接続で新しいキャプチャループが開始 | 新しい connected メッセージ受信 | 中 |
 | IT-8 | resize メッセージ→tmux resize-pane（MRD-010） | ResizeMessage 受信後に tmux resize-pane が正しい引数で実行される | execFileSync が resize-pane -t pane -x cols -y rows で呼ばれる | 中 |
 | IT-9 | 認証未設定時の接続拒否（MRD-001） | BASIC_AUTH 未設定時に WebSocket 接続が拒否される | 403 応答でソケット切断 | 高 |
+| IT-10 | ローカル環境の総接続上限（MRD2-003） | ローカル環境で6番目のWebSocket接続を試行 | CONNECTION_LIMIT エラーで拒否（上限5） | 中 |
+| IT-11 | Docker環境の総接続上限（MRD2-003） | Docker環境で3番目のWebSocket接続を試行 | CONNECTION_LIMIT エラーで拒否（上限2） | 中 |
 
 ### 2.5 E2Eテスト（e2e/terminal-viewer.spec.ts）
 
@@ -129,7 +132,7 @@
 | キーボード入力が tmux pane に正しく送信される | 単体: UT-10〜15 / 結合: IT-3 / E2E | E2E-3 |
 | Docker コンテナ内のセッションでもターミナルビューが動作する | 単体: UT-8,15 / 結合: IT-6 / E2E | E2E-5 |
 | 既存のセッション一覧・ask_user 応答機能が正常に動作する | E2E | E2E-6, E2E-7 |
-| 認証済みユーザーのみがターミナル操作できること（MRD-005） | 単体: UT-1〜3,UT-24-r / 結合: IT-4,IT-9 / E2E | E2E-8, E2E-9, E2E-10, E2E-11 |
+| 認証済みユーザーのみがターミナル操作できること（MRD-005） | 単体: UT-1,UT-2,UT-24-r / 結合: IT-4,IT-9 / E2E | E2E-8, E2E-9, E2E-10, E2E-11 |
 | ターミナルリサイズが正常に動作する（MRD-010） | 単体: UT-21-r〜23-r / 結合: IT-8 / E2E | E2E-12 |
 
 ---
@@ -323,3 +326,4 @@ npx playwright test e2e/terminal-viewer.spec.ts
 |------|------------|----------|--------|
 | 2025-07-17 | 1.0 | 初版作成 | Copilot |
 | 2025-07-17 | 1.1 | MRD-005: 認証E2E陰性テスト追加、MRD-010: resizeテストケース追加(UT/IT/E2E) | Copilot |
+| 2025-07-18 | 1.2 | MRD2-001: UT-3削除(UT-24-rに統合)、MRD2-003: 総接続上限テストケース追加(UT-25-r/UT-26-r/IT-10/IT-11) | Copilot |
