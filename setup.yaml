@@ -1,0 +1,57 @@
+task_name: "tmux pane ターミナルビューア機能の追加"
+
+ticket_id: "tmux-pane-viewer"
+
+description:
+  overview: |
+    copilot-session-viewer にアクティブセッションの tmux pane 内容をリアルタイムで
+    ブラウザ上に表示し、直接キー入力・操作ができるターミナルビューア画面を追加する。
+  purpose: |
+    現在の copilot-session-viewer は events.jsonl を通じた間接的なセッション表示と
+    ask_user 応答のみ。TUI アプリとして動作する Copilot CLI の実際の画面を確認し、
+    直接操作できる手段がない。この機能により、ブラウザからターミナルの実画面を確認し
+    そのまま操作できるようにする。
+  background: |
+    copilot-session-viewer は Next.js 16 (React 19, App Router) で構築された
+    Web ビューア。tmux の send-keys / capture-pane を介した間接操作は既に実装済み
+    (src/lib/terminal.ts)。Docker コンテナ内の tmux にも対応している。
+    現在は xterm.js 等のターミナルエミュレータは未使用。
+  requirements:
+    functional:
+      - アクティブセッション画面から tmux pane のターミナル表示を開ける
+      - ターミナル表示はリアルタイム（数秒以内）で pane 内容が更新される
+      - キーボード入力がそのまま tmux pane に送られ TUI アプリを直接操作できる
+      - Docker コンテナ内の tmux pane にも対応する
+    non_functional:
+      - 既存の ask_user 応答やセッション一覧機能に影響しない
+      - ターミナル表示のレンダリングパフォーマンスが実用的であること
+      - セキュリティ上、認証済みユーザーのみがターミナル操作できること
+  acceptance_criteria:
+    - アクティブセッション一覧からターミナルビューを開くUIが存在する
+    - ターミナルビューに tmux pane の内容がリアルタイム表示される
+    - キーボード入力が tmux pane に正しく送信される
+    - Docker コンテナ内のセッションでもターミナルビューが動作する
+    - 既存のセッション一覧・ask_user 応答機能が正常に動作する
+  test_scope:
+    - unit
+    - integration
+    - e2e
+  scope:
+    - ターミナルビューコンポーネント（xterm.js 等の導入）
+    - pane 内容のリアルタイム取得 API
+    - キー入力転送 API
+    - Docker コンテナ対応
+  out_of_scope:
+    - 既存の ConversationTimeline 等の変更
+    - 新しい認証方式の追加（既存の Basic Auth を使用）
+    - モバイル対応
+
+target_repositories:
+  - name: "copilot-session-viewer"
+    url: "git@gitlab.com:nagasakatools/copilot-session-viewer.git"
+    base_branch: "main"
+
+options:
+  create_design_document: true
+  design_document_dir: "docs"
+  submodules_dir: "submodules"
