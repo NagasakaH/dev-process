@@ -56,6 +56,14 @@ project.yamlの直接参照は禁止、代わりにscripts/project-yaml-helper.s
 - `resolve-checkpoint` コマンドで差し戻し対応完了を記録
 - 詳細は [docs/project-yaml.md](docs/project-yaml.md) を参照
 
+## API呼び出し安全性ルール
+
+- **shell展開の禁止**: bash heredoc / echo / printf で API リクエストボディを構築しない。`$変数` やバッククォートが意図せず展開され、リクエストが壊れるリスクがある
+- **推奨パターン**: `create` ツールで Python/Node.js スクリプトをファイルに書き出し → `bash` ツールで実行。マルチラインコンテンツやユーザー生成コンテンツを含む場合は必須
+- **作成後の内容確認**: Issue / MR / PR 作成後は API で内容を再取得し、意図通りか確認してから完了とする。不一致があれば即座に修正する
+
+📖 詳細は [.claude/skills/gitlab-api/SKILL.md](.claude/skills/gitlab-api/SKILL.md#shell展開防止ルール) を参照
+
 ## 品質ルール
 
 - **TDD**: 失敗するテストなしにコードを書かない
