@@ -32,6 +32,7 @@ generic_skills:
   - writing-skills
   - gitlab-api
   - terraform
+  - session-jsonl-analyzer
   - aws-knowledge
   - aws-documentation
 
