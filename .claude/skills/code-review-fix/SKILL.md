@@ -59,7 +59,8 @@ flowchart TD
     I -->|❌| K[修正を調整]
     K --> H
     J --> L[コミット]
-    L --> M[完了レポート → 再レビューへ]
+    L --> M[PR/MR書き込み]
+    M --> N[完了レポート → 再レビューへ]
 ```
 
 ## 出力
@@ -67,6 +68,15 @@ flowchart TD
 修正完了後、各指摘のステータス（`fixed` / `disputed`）と対応内容を出力し、コミット・完了レポートを作成します。
 
 📖 出力例・ステータス遷移・コミットテンプレート・完了レポートは [references/output-templates.md](references/output-templates.md) を参照
+
+## PR/MR書き込み
+
+コミット後、修正結果をMR/PRに反映:
+- 完了レポートをMR/PRコメントとして投稿
+- 各指摘のレビュースレッドに対応結果（修正済み/反論）を返信
+- 書き込み後にAPIで内容を再取得し確認
+
+📖 詳細は [references/pr-result-writing.md](references/pr-result-writing.md) を参照
 
 ## 注意事項
 
