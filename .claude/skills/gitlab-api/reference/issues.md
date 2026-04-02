@@ -270,24 +270,22 @@ To embed images or other files in an issue description or comment, first upload 
 
 ### Example
 
-```bash
-source scripts/common.sh
-source scripts/projects.sh
-source scripts/issues.sh
+```python
+from common import GitLabClient
+from projects import upload_project_file
+from issues import create_issue
 
-PROJECT="my-group/my-project"
+client = GitLabClient()
+PROJECT = "my-group/my-project"
 
-# Upload the file
-UPLOAD=$(gitlab_upload_project_file "$PROJECT" "/path/to/screenshot.png")
-IMAGE_MD=$(echo "$UPLOAD" | jq -r '.markdown')
+# Upload screenshot
+upload = upload_project_file(client, PROJECT, "/path/to/screenshot.png")
+image_md = upload["markdown"]
 
 # Create issue with embedded image
-DESCRIPTION=$(printf "## Bug Report\n\nSee screenshot below:\n\n%s" "$IMAGE_MD")
-gitlab_create_issue "$PROJECT" "Visual glitch on dashboard" "$DESCRIPTION"
-
-# Or add image as a comment on an existing issue
-NOTE_BODY=$(printf "Adding screenshot:\n\n%s" "$IMAGE_MD")
-gitlab_create_issue_note "$PROJECT" 42 "$NOTE_BODY"
+create_issue(client, PROJECT, "Visual bug on dashboard",
+             description="## Bug Report\n\nScreenshot:\n\n{}".format(image_md),
+             labels="bug")
 ```
 
 > **Tip:** Multiple files can be uploaded and embedded. Each upload returns its own Markdown link.

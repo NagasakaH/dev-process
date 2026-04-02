@@ -19,15 +19,34 @@ If `GITLAB_URL` is not set, it defaults to `https://gitlab.com`.
 
 ## Using the Scripts
 
-All scripts source `scripts/common.sh` for token/URL resolution and shared helpers. To use any API function:
+All scripts import `common.py` for token/URL resolution and shared helpers. Each script can be run directly from the command line or imported as a Python module.
+
+### CLI Usage
 
 ```bash
-# Source common utilities (auto-resolves token and URL)
-source scripts/common.sh
+# Run any function directly (auto-resolves token and URL)
+python3 scripts/projects.py list_projects --visibility private
 
-# Then source the category-specific script
-source scripts/projects.sh
+# Get help (lists available functions)
+python3 scripts/projects.py --help
 
-# Call the function
-gitlab_list_projects
+# Pass positional args followed by keyword args
+python3 scripts/merge_requests.py create_merge_request "my-group/my-project" feature/foo main "feat: new feature"
 ```
+
+### Import Usage
+
+```python
+import sys, os
+sys.path.insert(0, "path/to/scripts")
+from common import GitLabClient
+from projects import get_project
+
+client = GitLabClient()
+project = get_project(client, "my-group/my-project")
+print(project["web_url"])
+```
+
+## Python Version Compatibility
+
+Scripts are written for **Python 3.6+** using only the standard library (`urllib`, `json`, `os`, `sys`). No external packages required.
