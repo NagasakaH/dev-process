@@ -250,30 +250,25 @@ To embed images or other files in a merge request description or comment, first 
 
 ### Example
 
-```bash
-source scripts/common.sh
-source scripts/projects.sh
-source scripts/merge-requests.sh
+```python
+from common import GitLabClient
+from projects import upload_project_file
+from merge_requests import create_merge_request, create_mr_note
 
-PROJECT="my-group/my-project"
+client = GitLabClient()
+PROJECT = "my-group/my-project"
 
 # Upload the file
-UPLOAD=$(gitlab_upload_project_file "$PROJECT" "/path/to/design-mockup.png")
-IMAGE_MD=$(echo "$UPLOAD" | jq -r '.markdown')
+upload = upload_project_file(client, PROJECT, "/path/to/design-mockup.png")
+image_md = upload["markdown"]
 
 # Create MR with embedded image
-DESCRIPTION=$(printf "## UI Redesign\n\nMockup:\n\n%s" "$IMAGE_MD")
-JSON=$(jq -n \
-  --arg title "feat: redesign dashboard" \
-  --arg desc "$DESCRIPTION" \
-  --arg src "feature/redesign" \
-  --arg tgt "main" \
-  '{title: $title, description: $desc, source_branch: $src, target_branch: $tgt}')
-gitlab_api POST "/projects/$(urlencode "$PROJECT")/merge_requests" "$JSON"
+description = "## UI Redesign\n\nMockup:\n\n{}".format(image_md)
+create_merge_request(client, PROJECT, "feature/redesign", "main",
+                     "feat: redesign dashboard", description=description)
 
 # Or add image as a comment on an existing MR
-NOTE_BODY=$(printf "Updated mockup:\n\n%s" "$IMAGE_MD")
-gitlab_create_mr_note "$PROJECT" 15 "$NOTE_BODY"
+create_mr_note(client, PROJECT, 15, "Updated mockup:\n\n{}".format(image_md))
 ```
 
 > **Tip:** Multiple files can be uploaded and embedded. Each upload returns its own Markdown link.

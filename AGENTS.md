@@ -64,11 +64,11 @@ project.yamlの直接参照は禁止、代わりにscripts/project-yaml-helper.s
 
 ## API呼び出し安全性ルール
 
-- **shell展開の禁止**: bash heredoc / echo / printf で API リクエストボディを構築しない。`$変数` やバッククォートが意図せず展開され、リクエストが壊れるリスクがある
-- **推奨パターン**: `create` ツールで Python/Node.js スクリプトをファイルに書き出し → `bash` ツールで実行。マルチラインコンテンツやユーザー生成コンテンツを含む場合は必須
+- **GitLab API は Python スクリプトで実行**: `scripts/*.py` モジュールを CLI 実行またはインポートして使用。Python の `json` モジュールによりシェル展開の問題は根本的に解消済み
+- **推奨パターン**: 複雑な API 呼び出し（マルチライン description 等）は `create` ツールで Python スクリプトを作成 → `bash` ツールで実行
 - **作成後の内容確認**: Issue / MR / PR 作成後は API で内容を再取得し、意図通りか確認してから完了とする。不一致があれば即座に修正する
 
-📖 詳細は [.claude/skills/gitlab-api/SKILL.md](.claude/skills/gitlab-api/SKILL.md#shell展開防止ルール) を参照
+📖 詳細は [.claude/skills/gitlab-api/SKILL.md](.claude/skills/gitlab-api/SKILL.md) を参照
 
 ## 品質ルール
 

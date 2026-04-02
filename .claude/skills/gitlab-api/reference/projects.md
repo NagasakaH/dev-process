@@ -370,15 +370,22 @@ To attach an image or file to an issue or merge request description:
 2. **Extract the `markdown` field** from the response
 3. **Include the markdown** in the `description` field when creating/editing an issue or merge request
 
-```bash
+```python
+from common import GitLabClient
+from projects import upload_project_file
+from issues import create_issue
+
+client = GitLabClient()
+
 # Step 1: Upload file
-UPLOAD_RESULT=$(gitlab_upload_project_file "my-group/my-project" "/path/to/screenshot.png")
+upload = upload_project_file(client, "my-group/my-project", "/path/to/screenshot.png")
 
 # Step 2: Extract markdown link
-IMAGE_MD=$(echo "$UPLOAD_RESULT" | jq -r '.markdown')
+image_md = upload["markdown"]
 
-# Step 3: Use in issue or MR description
-gitlab_create_issue "my-group/my-project" "Bug report" "Found a bug:\n\n${IMAGE_MD}"
+# Step 3: Use in issue description
+create_issue(client, "my-group/my-project", "Bug report",
+             description="Found a bug:\n\n{}".format(image_md))
 ```
 
 > **Note:** Uploaded files are scoped to the project. The returned relative URL (`/uploads/...`) is resolved by GitLab when rendered in Markdown.
