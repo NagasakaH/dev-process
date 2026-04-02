@@ -65,7 +65,7 @@ project.yamlの直接参照は禁止、代わりにscripts/project-yaml-helper.s
 ## API呼び出し安全性ルール
 
 - **GitLab API は Python スクリプトで実行**: `scripts/*.py` モジュールを CLI 実行またはインポートして使用。Python の `json` モジュールによりシェル展開の問題は根本的に解消済み
-- **推奨パターン**: 複雑な API 呼び出し（マルチライン description 等）は `create` ツールで Python スクリプトを作成 → `bash` ツールで実行
+- **推奨パターン**: CLI 直接実行 (`python3 scripts/*.py`) またはインポート。マルチラインコンテンツも CLI 引数で直接渡せる
 - **作成後の内容確認**: Issue / MR / PR 作成後は API で内容を再取得し、意図通りか確認してから完了とする。不一致があれば即座に修正する
 
 📖 詳細は [.claude/skills/gitlab-api/SKILL.md](.claude/skills/gitlab-api/SKILL.md) を参照

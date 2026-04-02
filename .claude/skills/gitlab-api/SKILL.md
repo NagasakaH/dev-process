@@ -73,9 +73,9 @@ python3 scripts/merge_requests.py create_merge_request "my-group/my-project" fea
 python3 scripts/projects.py --help
 ```
 
-### Python スクリプトからインポート
+### Python モジュールをインポートして使用
 
-マルチラインの description や複雑な JSON ボディを扱う場合は、`create` ツールで Python スクリプトを作成して実行する:
+CLI 引数では表現しにくい複雑なロジック（条件分岐、ループ、複数 API の組み合わせ等）が必要な場合:
 
 ```python
 import sys, os
@@ -88,6 +88,8 @@ result = create_issue(client, "my-group/my-project", "Bug report",
                       description="## Steps to reproduce\n\n1. Step 1\n2. Step 2")
 print(result["web_url"])
 ```
+
+> **Note**: マルチラインの description 等は CLI 引数でも直接渡せる。`json` モジュールが自動エスケープするため、一時スクリプト作成は不要。
 
 ---
 
