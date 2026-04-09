@@ -1,0 +1,189 @@
+meta:
+  ticket_id: "tmux-pane-viewer"
+  target_repo: "copilot-session-viewer"
+  version: "1.0"
+  created_at: "2026-03-28T05:24:57+00:00"
+  updated_at: "2026-03-29T21:03:51+09:00"
+setup:
+  description:
+    overview: >
+      copilot-session-viewer にアクティブセッションの tmux pane 内容をリアルタイムで ブラウザ上に表示し、直接キー入力・操作ができるターミナルビューア画面を追加する。
+
+    purpose: >
+      ブラウザからターミナルの実画面を確認しそのまま操作できるようにする。
+
+    background: >
+      copilot-session-viewer は Next.js 16 (React 19, App Router) で構築。 tmux send-keys / capture-pane による間接操作は実装済み。 Docker コンテナ内 tmux にも対応。xterm.js 等は未使用。
+
+    requirements:
+      functional:
+        - "アクティブセッション画面から tmux pane のターミナル表示を開ける"
+        - "ターミナル表示はリアルタイム（数秒以内）で pane 内容が更新される"
+        - "キーボード入力がそのまま tmux pane に送られ TUI アプリを直接操作できる"
+        - "Docker コンテナ内の tmux pane にも対応する"
+      non_functional:
+        - "既存の ask_user 応答やセッション一覧機能に影響しない"
+        - "ターミナル表示のレンダリングパフォーマンスが実用的であること"
+        - "セキュリティ上、認証済みユーザーのみがターミナル操作できること"
+    acceptance_criteria:
+      - "アクティブセッション一覧からターミナルビューを開くUIが存在する"
+      - "ターミナルビューに tmux pane の内容がリアルタイム表示される"
+      - "キーボード入力が tmux pane に正しく送信される"
+      - "Docker コンテナ内のセッションでもターミナルビューが動作する"
+      - "既存のセッション一覧・ask_user 応答機能が正常に動作する"
+    test_scope:
+      - unit
+      - integration
+      - e2e
+    scope:
+      - "ターミナルビューコンポーネント（xterm.js 導入）"
+      - "pane 内容のリアルタイム取得（WebSocket）"
+      - "キー入力転送（WebSocket → tmux send-keys）"
+      - "Docker コンテナ対応"
+    out_of_scope:
+      - "既存の ConversationTimeline 等の変更"
+      - "新しい認証方式の追加（既存の Basic Auth を使用）"
+      - "モバイル対応"
+brainstorming:
+  status: "completed"
+  summary: "要件探索・テスト戦略確定。WebSocket + xterm.js + モーダル方式で合意"
+  decisions:
+    - topic: "表示方式"
+      decision: "モーダル（オーバーレイ）でセッションカードからワンクリック起動"
+      rationale: "現在の画面を残したまま大きく表示でき、UXが良い"
+    - topic: "リアルタイム通信"
+      decision: "WebSocket（custom server.js にWS組み込み）"
+      rationale: "双方向通信で最高のレスポンス。キー入力転送にも最適"
+    - topic: "レンダリング"
+      decision: "xterm.js でANSIエスケープシーケンスを完全再現"
+      rationale: "TUIアプリの表示を正確に再現するため"
+    - topic: "入力方式"
+      decision: "xterm.js onData → WebSocket → tmux send-keys パイプライン"
+      rationale: "キー入力をリアルタイムで転送"
+    - topic: "Docker対応"
+      decision: "docker exec 経由で capture-pane / send-keys を実行"
+      rationale: "既存の terminal.ts のDocker対応パターンを踏襲"
+  test_strategy:
+    scope:
+      - unit
+      - integration
+      - e2e
+    unit:
+      framework: "Vitest"
+      targets:
+        - "WebSocket サーバーのメッセージハンドリング"
+        - "tmux capture-pane のパース・ANSIデータ処理"
+        - "Docker コンテナ対応ロジック"
+    integration:
+      framework: "Vitest"
+      targets:
+        - "WebSocket 接続→capture-pane→xterm.js 描画パイプライン"
+        - "キー入力→WebSocket→tmux send-keys の往復"
+    e2e:
+      framework: "Playwright"
+      environment: "Docker Compose (compose.dev.yaml)"
+      targets:
+        - "ターミナルビューモーダルの表示・操作"
+        - "実際の tmux pane とのリアルタイム連携"
+        - "既存機能への影響なし確認"
+      execution: "docker compose exec viewer e2e-selftest"
+human_checkpoints:
+  brainstorming_review:
+    status: "approved"
+    current_round: 1
+    rounds:
+      - round: 1
+        reviewed_at: "2026-03-28T05:25:45+00:00"
+        verdict: approved
+        feedback: WebSocket + xterm.js + モーダル方式の方針を承認
+  design_review:
+    status: approved
+    current_round: 1
+    rounds:
+      - round: 1
+        reviewed_at: "2026-03-28T07:08:32+00:00"
+        verdict: approved
+  pr_review:
+    status: approved
+    current_round: 1
+    rounds:
+      - round: 1
+        reviewed_at: "2026-03-29T21:03:51+09:00"
+        verdict: approved
+        feedback: 'MR #9 マージ完了。E2Eテスト24/24パス、code-review round 2条件付き承認→Minor修正済み'
+investigation:
+  status: completed
+  started_at: "2026-03-28T05:37:27+00:00"
+  summary: "対象リポジトリの詳細調査完了"
+  key_findings: []
+  risks: []
+  artifacts: "docs/copilot-session-viewer/investigation/"
+  completed_at: "2026-03-28T05:37:27+00:00"
+design:
+  status: completed
+  started_at: "2026-03-28T05:45:53+00:00"
+  summary: "設計レビューRound 1の全指摘(MRD-001〜012)を反映して修正完了"
+  approach: ""
+  key_decisions: []
+  review:
+    round: 2
+    status: approved
+    reviewed_at: "2026-03-28T06:06:38+00:00"
+    artifacts: docs/copilot-session-viewer/review-design/
+  artifacts: "docs/copilot-session-viewer/design/"
+  completed_at: "2026-03-28T05:57:31+00:00"
+create_mr_pr:
+  status: completed
+  mode: code
+  platform: gitlab
+  mr_pr_urls:
+    - https://gitlab.com/nagasakatools/copilot-session-viewer/-/merge_requests/9
+  summary: 'GitLab MR #9 Draft作成'
+plan:
+  status: completed
+  started_at: "2026-03-28T07:20:51+00:00"
+  summary: "タスク計画作成完了（13タスク、推定200分）"
+  total_tasks: 0
+  tasks: []
+  review:
+    round: 1
+    status: approved
+    reviewed_at: 2026-03-28T07:35:30Z
+    artifacts: docs/copilot-session-viewer/review-plan/
+  artifacts: "docs/copilot-session-viewer/plan/"
+  completed_at: "2026-03-28T07:20:57+00:00"
+implement:
+  status: completed
+  completed_at: "2026-03-28T11:59:31+00:00"
+verification:
+  status: completed
+  started_at: "2026-03-28T12:16:09+00:00"
+  results:
+    test:
+      status: skip
+      detail: ""
+    build:
+      status: skip
+      detail: ""
+    lint:
+      status: skip
+      detail: ""
+    typecheck:
+      status: skip
+      detail: ""
+  acceptance_criteria_check: []
+  summary: "191テスト全通過, ビルド成功, リント/型チェック通過. E2Eは Docker Compose 環境必要のため未実行(テストコード作成済み)"
+  evidence: []
+  artifacts: []
+  completed_at: "2026-03-28T12:23:48+00:00"
+code_review:
+  status: approved
+  started_at: "2026-03-28T13:25:24+00:00"
+  round: 1
+  rounds: []
+  review_checklist: {}
+  issues: []
+  artifacts: docs/copilot-session-viewer/code-review/
+  completed_at: "2026-03-28T13:25:24+00:00"
+  summary: 'Round 1: 10指摘全修正 (3 Critical, 6 Major, 1 Minor)'
+  review_method: dual-model (opus-4.6 + codex-5.3)
