@@ -5,7 +5,7 @@ meta:
   target_repo: "floci-apigateway-csharp"
   branch: "feature/floci-apigateway-csharp-001"
   created_at: "2026-04-25T19:34:55+00:00"
-  updated_at: "2026-04-25T19:55:19+00:00"
+  updated_at: "2026-04-25T20:01:23+00:00"
 setup:
   description:
     overview: >-
@@ -137,6 +137,93 @@ design:
   key_decisions: []
   review:
     round: 1
-    status: pending
+    status: rejected
+    latest_verdict: 差し戻し（Critical 2件・Major 9件・Minor 5件、全16件 open）
+    completed_at: "2026-04-25T20:01:23+00:00"
+    summary: AC7（実AWS不使用）を破る可能性（DR-001）と API/SFN 間 id 生成責務の論理矛盾（DR-002）を含む Critical 2件を検出。Terraform/IAM/Lambda/API GW/CI/compose の具体性不足も多数。Minor 含め全16件の修正が必須。
+    notes: Minor 含め全件 status=open。再設計時は全件 resolved 化または明示的 deferred（要ユーザー承認）が必要。
+    artifacts:
+      - docs/floci-apigateway-csharp/review-design/
+    issues:
+      - id: DR-001
+        severity: critical
+        category: AC7/実AWS不使用整合性
+        description: AWS_ENDPOINT_URL 未設定時にデフォルトAWSエンドポイントへ接続し得る設計があり、floci 完結要件に違反する。
+        status: open
+      - id: DR-002
+        severity: critical
+        category: 設計の論理矛盾/API-SFN間のID生成責務
+        description: POST /todos が StartExecution 直後に id を返す設計と、id 生成が ValidateTodo Lambda 側に見える記述が矛盾し E2E POST→GET 前提が崩れる。
+        status: open
+      - id: DR-003
+        severity: major
+        category: 要件カバレッジ/CRUD範囲
+        description: CRUD を中心とする要件に対し POST/GET のみで Update/Delete/List の扱いと除外根拠が不足。
+        status: open
+      - id: DR-004
+        severity: major
+        category: README要件/AC6
+        description: README 要件が実装段階での担保のみで、設計時点の章構成・必須記載項目・検証方法が未定義。
+        status: open
+      - id: DR-005
+        severity: major
+        category: 技術的妥当性/ASL Retry整合性
+        description: PersistTodo の Retry を前提にしている記述と ASL 定義例（Retry 節なし）が矛盾。
+        status: open
+      - id: DR-006
+        severity: major
+        category: Terraform provider設定
+        description: provider.tf の具体的 HCL（endpoints/skip_*/s3_use_path_style 等）が不足し、実 AWS 問い合わせ抑止証跡が弱い。
+        status: open
+      - id: DR-007
+        severity: major
+        category: GitLab CI具体定義
+        description: .gitlab-ci.yml の stages/jobs/image/services/variables/scripts/artifacts/after_script/DinD/tfstate 方針が未定義。
+        status: open
+      - id: DR-008
+        severity: major
+        category: docker-compose具体定義
+        description: compose/docker-compose.yml の image/ports/environment/FLOCI_HOSTNAME/volumes/healthcheck が未定義。
+        status: open
+      - id: DR-009
+        severity: major
+        category: IAMポリシー
+        description: Lambda/SFN に必要な DynamoDB/StepFunctions/Lambda Invoke の最小権限ポリシーが未定義。
+        status: open
+      - id: DR-010
+        severity: major
+        category: Lambda設定属性
+        description: role/memory_size/timeout/environment/source_code_hash が不足し、設計内 timeout=30s と Terraform 表が不整合。
+        status: open
+      - id: DR-011
+        severity: major
+        category: API Gateway deployment
+        description: Method/Integration 変更時の再デプロイトリガーと create_before_destroy が未定義。
+        status: open
+      - id: DR-012
+        severity: minor
+        category: CI前提/Runner
+        description: GitLab Runner privileged 前提が未確定で AC5 実現性にリスク。
+        status: open
+      - id: DR-013
+        severity: minor
+        category: description正規化
+        description: description 空文字の扱いが未定義。
+        status: open
+      - id: DR-014
+        severity: minor
+        category: 補助スクリプト
+        description: scripts/deploy-local.sh / scripts/e2e.sh の内容が未定義。
+        status: open
+      - id: DR-015
+        severity: minor
+        category: Integration fixture
+        description: Integration テストの DynamoDB テーブルセットアップ方法が Terraform/AWS CLI 二択で未確定。
+        status: open
+      - id: DR-016
+        severity: minor
+        category: API Gateway invoke URL/FLOCI_HOSTNAME
+        description: var.endpoint と FLOCI_HOSTNAME の役割分担が不明確で、CI で localhost 混入リスクの検証観点が不足。
+        status: open
   artifacts: "docs/floci-apigateway-csharp/design/"
   completed_at: "2026-04-25T19:55:19+00:00"
