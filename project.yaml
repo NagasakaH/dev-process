@@ -5,25 +5,15 @@ meta:
   target_repo: "floci-apigateway-csharp"
   branch: "feature/floci-apigateway-csharp-001"
   created_at: "2026-04-25T19:34:55+00:00"
-  updated_at: "2026-04-25T19:34:55+00:00"
-
+  updated_at: "2026-04-25T19:40:39+00:00"
 setup:
   description:
     overview: >-
-      floci を AWS シミュレータとして利用し、API Gateway、.NET 8 Lambda、
-      Step Functions を組み合わせた Todo API サンプルアプリを作成する。
-      Terraform で floci 上にデプロイできる IaC を用意し、GitLab CI では
-      xUnit の単体テスト、Lambda テスト、API Gateway 経由の E2E テストまでを
-      floci 上で実行できる仕組みを構築する。
+      floci を AWS シミュレータとして利用し、API Gateway、.NET 8 Lambda、 Step Functions を組み合わせた Todo API サンプルアプリを作成する。 Terraform で floci 上にデプロイできる IaC を用意し、GitLab CI では xUnit の単体テスト、Lambda テスト、API Gateway 経由の E2E テストまでを floci 上で実行できる仕組みを構築する。
     purpose: >-
-      .NET Lambda と AWS サーバーレス構成を floci で継続的に検証できる
-      参照実装を提供し、Terraform デプロイ、GitLab CI、テスト、デバッグの
-      標準的な手順を README から再現できるようにする。
+      .NET Lambda と AWS サーバーレス構成を floci で継続的に検証できる 参照実装を提供し、Terraform デプロイ、GitLab CI、テスト、デバッグの 標準的な手順を README から再現できるようにする。
     background: >-
-      https://github.com/floci-io/floci.git を関連リポジトリとして参照し、
-      floci が提供する AWS シミュレータ機能を使って API Gateway/Lambda/
-      Step Functions の動作検証を CI 内で完結させる。実AWSは利用せず、
-      ローカルおよび CI の責務は floci 上の検証までとする。
+      https://github.com/floci-io/floci.git を関連リポジトリとして参照し、 floci が提供する AWS シミュレータ機能を使って API Gateway/Lambda/ Step Functions の動作検証を CI 内で完結させる。実AWSは利用せず、 ローカルおよび CI の責務は floci 上の検証までとする。
     requirements:
       functional:
         - "Todo API のサンプルを作成する。CRUD を中心とし、Step Functions は簡易的な Todo 処理フローで利用する。"
@@ -58,9 +48,7 @@ setup:
       - "実AWSへのデプロイ、および CI から実AWSへ自動デプロイする仕組み"
       - "複雑な Todo ドメインや永続化基盤の本格実装"
     notes: >-
-      作成先リポジトリは新規または空に近い状態を想定し、base_branch は main とする。
-      README では floci 向け Terraform 実行とローカル tfstate を基本手順とし、
-      必要に応じて GitLab managed Terraform state へ移行する補足を記載する。
+      作成先リポジトリは新規または空に近い状態を想定し、base_branch は main とする。 README では floci 向け Terraform 実行とローカル tfstate を基本手順とし、 必要に応じて GitLab managed Terraform state へ移行する補足を記載する。
   related_repositories:
     - name: "floci"
       url: "https://github.com/floci-io/floci.git"
@@ -73,15 +61,12 @@ setup:
     create_design_document: true
     design_document_dir: "docs"
     submodules_dir: "submodules"
-
 brainstorming:
   status: "completed"
   started_at: "2026-04-25T19:34:55+00:00"
   completed_at: "2026-04-25T19:34:55+00:00"
   summary: >-
-    Todo API サンプルとして、DynamoDB 永続化、REST API v1、.NET 8 ZIP Lambda、
-    ValidateTodo→PersistTodo の Step Functions 最小フローを採用する。CI は floci を
-    docker compose で起動し、単体・Lambda 結合・API Gateway E2E まで検証する。
+    Todo API サンプルとして、DynamoDB 永続化、REST API v1、.NET 8 ZIP Lambda、 ValidateTodo→PersistTodo の Step Functions 最小フローを採用する。CI は floci を docker compose で起動し、単体・Lambda 結合・API Gateway E2E まで検証する。
   decisions:
     - question: "Todo の永続化方式"
       decision: "DynamoDB を使う。floci 上で AWS SDK と Terraform の連携を検証しやすくする。"
@@ -121,16 +106,18 @@ brainstorming:
         - "CI は実AWS資格情報に依存せず floci 上で完結すること"
       environment: "GitLab CI + docker compose floci + Terraform local tfstate"
   artifacts: "project.yaml"
-
 overview:
   status: "completed"
   started_at: "2026-04-25T19:34:55+00:00"
   completed_at: "2026-04-25T19:34:55+00:00"
   summary: "floci と floci-apigateway-csharp のサブモジュール概要を作成済み。"
   artifacts: "submodules/floci.md, submodules/floci-apigateway-csharp.md"
-
 human_checkpoints:
   brainstorming_review:
-    status: "pending"
-    current_round: 0
-    rounds: []
+    status: "approved"
+    current_round: 1
+    rounds:
+      - round: 1
+        reviewed_at: "2026-04-25T19:40:39+00:00"
+        verdict: approved
+        feedback: ユーザー確認OK。残りStepはユーザー確認不要で継続。
