@@ -55,7 +55,7 @@ resource "aws_dynamodb_table" "todos" {
 |------|------------|------|------|
 | `id` | S | ✅ | UUID v4。PartitionKey |
 | `title` | S | ✅ | 1〜120 文字 |
-| `description` | S | — | 任意、最大 1024 文字。空文字は格納しない（属性欠損で表現） |
+| `description` | S | — | 任意、最大 1024 文字。**空文字 / 空白のみは null と等価**として扱い、属性自体を出力しない（DR-013 対応、UT-11 で確認） |
 | `status` | S | ✅ | `pending` / `done` |
 | `created_at` | S | ✅ | ISO 8601 UTC（例 `2026-04-25T10:00:00Z`） |
 | `updated_at` | S | ✅ | 同上 |
@@ -87,7 +87,8 @@ public enum TodoStatus { Pending, Done }
 
 public sealed record CreateTodoRequest(string Title, string? Description);
 
-public sealed record ValidateTodoInput(CreateTodoRequest Todo);
+// DR-002: api-handler が id・タイムスタンプ・status を確定した完全な Todo を渡す
+public sealed record ValidateTodoInput(Todo Todo);
 
 public sealed record ValidateTodoOutput(
     Todo Todo,
@@ -118,7 +119,7 @@ internal static class JsonOpts
 |---------------|-----------------|----|------|
 | `Id` | `id` | S | — |
 | `Title` | `title` | S | — |
-| `Description` | `description` | S | `null` の場合は属性自体を出力しない |
+| `Description` | `description` | S | `null` or 空白のみ → **属性自体を出力しない**（`TodoMapper` で正規化、DR-013） |
 | `Status` | `status` | S | `Pending` → `"pending"` / `Done` → `"done"` |
 | `CreatedAt` | `created_at` | S | `ToUniversalTime().ToString("O")` |
 | `UpdatedAt` | `updated_at` | S | 同上 |
@@ -136,22 +137,25 @@ public static Todo FromAttributeMap(Dictionary<string, AttributeValue> map);
 
 ## 4. データフロー
 
-### 4.1 POST /todos のデータフロー
+### 4.1 POST /todos のデータフロー（DR-002 対応：id 採番は api-handler に統一）
 
 ```mermaid
 flowchart LR
     C[Client] -->|JSON CreateTodoRequest| AGW[API Gateway]
     AGW -->|APIGatewayProxyRequest| H[ApiHandler]
-    H -->|sync TodoValidator.Validate| H
-    H -->|StartExecution input=ValidateTodoInput| SFN[Step Functions]
-    SFN -->|ValidateTodoInput| V[ValidateTodoHandler]
-    V -->|ValidateTodoOutput Todo+Valid| SFN
+    H -->|sync TodoValidator.Validate + description 正規化| H
+    H -->|Guid.NewGuid + DateTime.UtcNow で Todo を確定| H
+    H -->|StartExecution input=ValidateTodoInput Todo含む| SFN[Step Functions]
+    SFN -->|ValidateTodoInput Todo| V[ValidateTodoHandler]
+    V -->|ValidateTodoOutput Todo+Valid 検証のみ id不変| SFN
     SFN -->|ValidateTodoOutput| P[PersistTodoHandler]
-    P -->|PutItem AttributeMap| DDB[(DynamoDB Todos)]
+    P -->|PutItem AttributeMap id=Todo.Id| DDB[(DynamoDB Todos)]
     P -->|PersistTodoOutput| SFN
     H -->|APIGatewayProxyResponse 201 Todo+executionArn| AGW
     AGW --> C
 ```
+
+> **id の流れ（DR-002）**: api-handler で `Guid.NewGuid()` 採番 → SFN input の `Todo.Id` → ValidateTodo 入出力で不変 → PersistTodo の `PutItem.id` → 同 id を POST レスポンス・GET key に使用。
 
 ### 4.2 GET /todos/{id} のデータフロー
 
@@ -213,3 +217,4 @@ GSI/LSI は未使用（サンプル要件に含まれないため）。
 | 日付 | バージョン | 変更内容 | 変更者 |
 |------|------------|----------|--------|
 | 2026-04-25 | 1.0 | 初版作成 | dev-workflow |
+| 2026-04-25 | 1.1 | review-design round1 反映: description の空白正規化を明記（DR-013）、DTO を `ValidateTodoInput(Todo)` に変更（DR-002）、§4.1 データフロー図を id 採番が api-handler である旨に更新（DR-002） | dev-workflow |

@@ -129,3 +129,4 @@ Terraform output で完全 URL を E2E に渡す（investigation 05）。
 | 日付 | バージョン | 変更内容 | 変更者 |
 |------|------------|----------|--------|
 | 2026-04-25 | 1.0 | 初版作成 | dev-workflow |
+| 2026-04-25 | 1.1 | review-design round1 反映: 全設計ファイルへの DR-001〜DR-016 反映を統合管理 | dev-workflow |

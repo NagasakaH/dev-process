@@ -17,10 +17,11 @@
 **「最小構成サーバーレス3層 + 単一 .NET 8 Lambda アセンブリ + Terraform 単一スタック + GitLab CI 3 ジョブ」** を採用する。
 
 - **アプリ層**: 1 つの .NET 8 ZIP アセンブリ（`TodoApi.Lambda`）に 3 つのハンドラ（`Function::ApiHandler`、`Function::ValidateTodo`、`Function::PersistTodo`）を実装し、Terraform 側で 3 つの `aws_lambda_function` として同一 zip を別エントリポイントで登録する。これにより、ビルド成果物を 1 つに保ち、サンプルとしての可読性を最大化する。
-- **オーケストレーション層**: Step Functions ステートマシンは `ValidateTodo → Choice($.valid) → PersistTodo / Fail` の最小フロー。`POST /todos` Lambda は `StartExecution` のみ行い `executionArn` を即返却（同期完了は待たない）し、E2E 側が `DescribeExecution` を polling して SUCCEEDED を確認する。
+- **API スコープ（DR-003）**: 本サンプルは **POST `/todos` + GET `/todos/{id}` + 作成フロー（API GW→Lambda→Step Functions→DynamoDB）の検証** に範囲を限定する。Update/Delete/List（PATCH/PUT/DELETE/`GET /todos`）は **out_of_scope** として README に「Future Work」セクションを設けて明記する。要件「CRUD を中心」は Create/Read を中心にサンプルを構成し、SFN 連携を含む作成フローを完結させることで満たす。
+- **オーケストレーション層**: Step Functions ステートマシンは `ValidateTodo → Choice($.valid) → PersistTodo / Fail` の最小フロー。`POST /todos` Lambda は **id・タイムスタンプ・status を確定した完全な Todo を SFN 入力に渡し**（DR-002）、`StartExecution` 後 `executionArn` を即返却（同期完了は待たない）し、E2E 側が `DescribeExecution` を polling して SUCCEEDED を確認する。
 - **永続化層**: DynamoDB シングルテーブル `Todos`（HASH: `id`、`PAY_PER_REQUEST`）。GSI / TTL / Streams は不採用。
-- **IaC**: `infra/` 配下の単一 Terraform スタックで API Gateway / Lambda x3 / Step Functions / DynamoDB / IAM Role / Lambda Permission / API Gateway Deployment & Stage を宣言。`provider.tf` で floci endpoints を一括設定。
-- **CI**: GitLab CI で `unit` → `integration` → `e2e` の 3 ジョブを順次実行。`e2e` ジョブのみ `services: docker:dind` + `docker compose up -d floci` + `terraform apply` を行い、`HttpClient` で API Gateway invoke URL を叩く。
+- **IaC**: `infra/` 配下の単一 Terraform スタックで API Gateway / Lambda x3 / Step Functions / DynamoDB / IAM Role / Lambda Permission / API Gateway Deployment & Stage を宣言。`provider.tf` で floci endpoints を一括設定し、`var.endpoint` は default なし required（DR-001/DR-006、詳細は 02 §6.1）。
+- **CI**: GitLab CI で `unit` → `integration` → `e2e` の 3 ジョブを順次実行。`e2e` ジョブのみ `services: docker:dind` + `docker compose up -d floci` + `terraform apply` を行い、`HttpClient` で API Gateway invoke URL を叩く（YAML スケルトンは 05 §7.3、DR-007）。
 
 ### 1.2 技術選定
 
@@ -132,8 +133,135 @@ floci-apigateway-csharp/
 
 ---
 
+## 6. docker-compose.yml（DR-008 対応：完全例）
+
+`compose/docker-compose.yml`:
+
+```yaml
+services:
+  floci:
+    image: floci/floci:latest
+    container_name: floci
+    hostname: floci
+    ports:
+      - "4566:4566"
+    environment:
+      FLOCI_HOSTNAME: floci
+      AWS_DEFAULT_REGION: us-east-1
+      DEBUG: "0"
+      SERVICES: "apigateway,lambda,dynamodb,stepfunctions,iam,sts,cloudwatchlogs"
+      LAMBDA_EXECUTOR: docker
+      DOCKER_HOST: unix:///var/run/docker.sock
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "floci-data:/var/lib/floci"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:4566/_localstack/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+    networks:
+      - floci-net
+
+volumes:
+  floci-data:
+
+networks:
+  floci-net:
+    name: floci-net
+```
+
+> **設計意図（DR-008）**:
+> - `hostname: floci` と `FLOCI_HOSTNAME=floci` をペアで設定し、CI 内 invoke URL の host が `floci` になることを保証（DR-016 と整合）。
+> - `docker.sock` を mount し、floci が Lambda 実行のために子コンテナを起動できるようにする。
+> - `healthcheck` で起動完了を待つことで、後続の `terraform apply` がエンドポイント未到達で失敗しないようにする。
+> - `SERVICES` で本サンプルが必要なものに限定して起動時間を短縮。
+
+---
+
+## 7. 補助スクリプト（DR-014 対応：擬似コード）
+
+### 7.1 `scripts/deploy-local.sh`
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Local: docker compose で floci を起動した前提（http://localhost:4566）
+ENDPOINT="${ENDPOINT:-http://localhost:4566}"
+ROOT="$(git rev-parse --show-toplevel)"
+
+# 1. floci 起動（既起動ならスキップ）
+docker compose -f "$ROOT/compose/docker-compose.yml" up -d
+docker compose -f "$ROOT/compose/docker-compose.yml" exec -T floci \
+  curl -fsS http://localhost:4566/_localstack/health >/dev/null
+
+# 2. Lambda zip ビルド
+pushd "$ROOT/src/TodoApi.Lambda"
+dotnet tool restore || dotnet tool install --local Amazon.Lambda.Tools
+dotnet lambda package --configuration Release \
+  --output-package "$ROOT/infra/lambda/TodoApi.Lambda.zip"
+popd
+
+# 3. Terraform apply
+pushd "$ROOT/infra"
+terraform init -input=false
+terraform fmt -check
+terraform validate
+terraform apply -auto-approve -var "endpoint=${ENDPOINT}"
+popd
+
+echo "API_BASE_URL=$(cd "$ROOT/infra" && terraform output -raw invoke_url)"
+echo "STATE_MACHINE_ARN=$(cd "$ROOT/infra" && terraform output -raw state_machine_arn)"
+```
+
+### 7.2 `scripts/e2e.sh`
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+ENDPOINT="${ENDPOINT:-http://localhost:4566}"
+
+# deploy-local.sh の前提が済んでいる想定（CI では .gitlab-ci.yml が直接連結）
+"$ROOT/scripts/deploy-local.sh"
+
+API_BASE_URL=$(cd "$ROOT/infra" && terraform output -raw invoke_url)
+STATE_MACHINE_ARN=$(cd "$ROOT/infra" && terraform output -raw state_machine_arn)
+
+trap '(cd "$ROOT/infra" && terraform destroy -auto-approve -var "endpoint=${ENDPOINT}") || true' EXIT
+
+API_BASE_URL="$API_BASE_URL" \
+  STATE_MACHINE_ARN="$STATE_MACHINE_ARN" \
+  AWS_ENDPOINT_URL="$ENDPOINT" \
+  AWS_DEFAULT_REGION=us-east-1 \
+  AWS_ACCESS_KEY_ID=test \
+  AWS_SECRET_ACCESS_KEY=test \
+  dotnet test "$ROOT/tests/TodoApi.E2ETests" --filter Category=E2E -c Release
+```
+
+> **設計意図（DR-014）**:
+> - CI（05 §7.3）と「同等手順」をローカルで再現できるよう、CI スクリプトと擬似コードを 1:1 対応させる。
+> - `trap` で `terraform destroy` を保証し、ローカル/CI 双方でリソース残存を防ぐ。
+
+---
+
+## 8. CI Runner 前提（DR-012 対応：privileged + 代替）
+
+| 環境 | 前提 | 採用パターン |
+|------|------|--------------|
+| **推奨**: GitLab Runner Docker executor + `privileged = true` | DinD `services: docker:dind` で `docker compose up floci` が可能 | `.gitlab-ci.yml` 標準パス（05 §7.3） |
+| **代替**: GitLab Runner shell executor（runner ホストに docker / docker compose / .NET 8 SDK / terraform をインストール） | privileged 不可な共有 runner 環境向け | `.gitlab-ci.yml` の `e2e` ジョブを `services` 抜きで `docker compose -f compose/docker-compose.yml up -d` に変更（README に明記） |
+
+> **AC5 達成方針**: いずれのパターンでも acceptance_criteria（floci 経由 E2E）は満たせる。設計時点で **両方のパターンを README で提示**し、運用側が選択する形を取る。privileged 化が確認できない場合の fallback は shell executor を README の「CI 環境セクション」に明記する。
+
+---
+
 ## 変更履歴
 
 | 日付 | バージョン | 変更内容 | 変更者 |
 |------|------------|----------|--------|
 | 2026-04-25 | 1.0 | 初版作成 | dev-workflow |
+| 2026-04-25 | 1.1 | review-design round1 指摘対応（DR-001/002/003/006/008/012/014） | dev-workflow |
