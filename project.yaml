@@ -1,0 +1,136 @@
+meta:
+  version: "1.0"
+  ticket_id: "floci-apigateway-csharp-001"
+  task_name: "API Gateway + Lambda(.NET) + Step Functions サンプルアプリと CI/CD 基盤の構築"
+  target_repo: "floci-apigateway-csharp"
+  branch: "feature/floci-apigateway-csharp-001"
+  created_at: "2026-04-25T19:34:55+00:00"
+  updated_at: "2026-04-25T19:34:55+00:00"
+
+setup:
+  description:
+    overview: >-
+      floci を AWS シミュレータとして利用し、API Gateway、.NET 8 Lambda、
+      Step Functions を組み合わせた Todo API サンプルアプリを作成する。
+      Terraform でローカル/手動デプロイできる IaC を用意し、GitLab CI では
+      xUnit の単体テスト、Lambda テスト、API Gateway 経由の E2E テストまでを
+      floci 上で実行できる仕組みを構築する。
+    purpose: >-
+      .NET Lambda と AWS サーバーレス構成を floci で継続的に検証できる
+      参照実装を提供し、Terraform デプロイ、GitLab CI、テスト、デバッグの
+      標準的な手順を README から再現できるようにする。
+    background: >-
+      https://github.com/floci-io/floci.git を関連リポジトリとして参照し、
+      floci が提供する AWS シミュレータ機能を使って API Gateway/Lambda/
+      Step Functions の動作検証を CI 内で完結させる。実AWSへのデプロイは
+      ユーザーが手動で実行する前提とし、CI の責務は floci 上の検証までとする。
+    requirements:
+      functional:
+        - "Todo API のサンプルを作成する。CRUD を中心とし、Step Functions は簡易的な Todo 処理フローで利用する。"
+        - ".NET 8 Lambda を実装し、API Gateway から呼び出せる構成にする。"
+        - "Step Functions ステートマシンを Terraform で定義し、Lambda と連携させる。"
+        - "Terraform で API Gateway、Lambda、Step Functions、および必要な権限を定義する。"
+        - "GitLab CI で xUnit の単体テストを実行する。"
+        - "GitLab CI で Lambda ハンドラ/関数レベルのテストを実行する。"
+        - "GitLab CI で floci を使い、API Gateway 経由の E2E テストを実行する。"
+        - "README にローカル実行、CI、Terraform デプロイ、テスト、デバッグ方法を記載する。"
+      non_functional:
+        - "サンプルとして読みやすく、最小構成で再現しやすい構成にする。"
+        - "GitLab CI 上で floci による検証を自動化し、実AWS資格情報なしでも主要テストを実行できるようにする。"
+        - "Terraform state はローカル tfstate を基本とし、GitLab managed Terraform state 化は README の補足として記載する。"
+        - ".NET 8 と Terraform の一般的な開発フローに沿った構成にする。"
+    acceptance_criteria:
+      - "作成先リポジトリに Todo API サンプルの .NET 8 Lambda 実装が含まれている。"
+      - "Terraform で API Gateway、Lambda、Step Functions のサンプル構成をデプロイできる。"
+      - "GitLab CI で xUnit 単体テストが実行される。"
+      - "GitLab CI で Lambda ハンドラ/関数レベルのテストが実行される。"
+      - "GitLab CI で floci を使った API Gateway 経由の E2E テストが実行される。"
+      - "README にセットアップ、ローカル実行、Terraform 手動デプロイ、CI、テスト、デバッグ方法が記載されている。"
+      - "実AWSへのデプロイはユーザーが手動で実行する前提として整理されている。"
+    scope:
+      - "Todo API サンプルアプリの新規作成"
+      - ".NET 8 Lambda、API Gateway、Step Functions の最小構成"
+      - "Terraform による IaC 定義"
+      - "GitLab CI による floci 上の単体/結合/E2E テスト自動化"
+      - "README の手順・デバッグ方法整備"
+    out_of_scope:
+      - "本番運用向けの認証/認可、監視、アラート、マルチ環境運用の本格実装"
+      - "CI から実AWSへ自動デプロイする仕組み"
+      - "複雑な Todo ドメインや永続化基盤の本格実装"
+    notes: >-
+      作成先リポジトリは新規または空に近い状態を想定し、base_branch は main とする。
+      README ではローカル tfstate を基本手順とし、必要に応じて GitLab managed
+      Terraform state へ移行する補足を記載する。
+  related_repositories:
+    - name: "floci"
+      url: "https://github.com/floci-io/floci.git"
+      branch: "main"
+  target_repositories:
+    - name: "floci-apigateway-csharp"
+      url: "git@gitlab.com:nagasaka-experimental/floci-apigateway-csharp.git"
+      base_branch: "main"
+  options:
+    create_design_document: true
+    design_document_dir: "docs"
+    submodules_dir: "submodules"
+
+brainstorming:
+  status: "completed"
+  started_at: "2026-04-25T19:34:55+00:00"
+  completed_at: "2026-04-25T19:34:55+00:00"
+  summary: >-
+    Todo API サンプルとして、DynamoDB 永続化、REST API v1、.NET 8 ZIP Lambda、
+    ValidateTodo→PersistTodo の Step Functions 最小フローを採用する。CI は floci を
+    docker compose で起動し、単体・Lambda 結合・API Gateway E2E まで検証する。
+  decisions:
+    - question: "Todo の永続化方式"
+      decision: "DynamoDB を使う。floci 上で AWS SDK と Terraform の連携を検証しやすくする。"
+    - question: "API Gateway タイプ"
+      decision: "REST API v1 を使う。Lambda イベント型は APIGatewayProxyRequest を基本にする。"
+    - question: "Lambda パッケージング"
+      decision: "ZIP パッケージを使う。dotnet lambda package と Terraform で扱いやすい構成にする。"
+    - question: "Step Functions フロー"
+      decision: "ValidateTodo → PersistTodo の2ステート最小フローを採用する。"
+    - question: "CI と E2E 検証方針"
+      decision: "docker compose で floci を起動し、dotnet format、terraform fmt/validate、POST→GET→Step Functions SUCCEEDED の E2E を実行する。"
+  refined_requirements:
+    - "DynamoDB テーブルを Terraform で定義し、Todo の保存先として利用する。"
+    - "API Gateway は REST API v1 とし、Lambda は APIGatewayProxyRequest/Response を利用する。"
+    - "Lambda は .NET 8 ZIP パッケージ方式でビルド・デプロイする。"
+    - "Step Functions は ValidateTodo と PersistTodo の2ステートで Todo 作成フローを表現する。"
+    - "GitLab CI は floci を docker compose で起動し、実AWSではなく floci 上で E2E まで実行する。"
+    - "品質チェックとして dotnet format、terraform fmt、terraform validate を CI に含める。"
+    - "E2E は POST /todos、GET /todos/{id}、Step Functions 実行 SUCCEEDED の確認を最低基準とする。"
+  test_strategy:
+    scope:
+      - unit
+      - integration
+      - e2e
+    unit:
+      framework: "xUnit"
+      target: "Todo ドメインロジック、入力バリデーション、Step Functions 入出力 DTO などの純粋ロジック"
+    integration:
+      framework: "xUnit + Amazon.Lambda.TestUtilities"
+      target: "Lambda ハンドラ、DynamoDB/Step Functions AWS SDK クライアントの floci endpoint 連携"
+    e2e:
+      method: "GitLab CI で docker compose により floci を起動し、Terraform apply 後に API Gateway のエンドポイントを HttpClient/xUnit で呼び出す"
+      criteria:
+        - "POST /todos が 201 相当のレスポンスを返し Todo ID を取得できること"
+        - "GET /todos/{id} が 200 相当のレスポンスを返し POST した Todo を取得できること"
+        - "Step Functions の Todo 作成実行が SUCCEEDED になること"
+        - "CI は実AWS資格情報に依存せず floci 上で完結すること"
+      environment: "GitLab CI + docker compose floci + Terraform local tfstate"
+  artifacts: "project.yaml"
+
+overview:
+  status: "completed"
+  started_at: "2026-04-25T19:34:55+00:00"
+  completed_at: "2026-04-25T19:34:55+00:00"
+  summary: "floci と floci-apigateway-csharp のサブモジュール概要を作成済み。"
+  artifacts: "submodules/floci.md, submodules/floci-apigateway-csharp.md"
+
+human_checkpoints:
+  brainstorming_review:
+    status: "pending"
+    current_round: 0
+    rounds: []
