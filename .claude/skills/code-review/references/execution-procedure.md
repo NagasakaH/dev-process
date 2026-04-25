@@ -37,7 +37,7 @@ git diff --stat "$BASE_SHA..$HEAD_SHA"
 
 1. グループ対象コミットの差分を取得
 2. 静的解析ツールの検出・実行（グループ対象ファイルに限定）
-3. **Opus 4.6 + Codex 5.3 の並列レビュー起動**（task ツール background モード）
+3. **Opus 4.6 + GPT-5.5 の並列レビュー起動**（task ツール background モード）
 4. 両レビュー結果を **Opus 4.6（統合担当）** に入力して統合判定
 5. `round-NN-group-MM.md` 出力
 
