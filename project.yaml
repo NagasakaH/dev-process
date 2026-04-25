@@ -5,7 +5,7 @@ meta:
   target_repo: "floci-apigateway-csharp"
   branch: "feature/floci-apigateway-csharp-001"
   created_at: "2026-04-25T19:34:55+00:00"
-  updated_at: "2026-04-25T20:16:35+00:00"
+  updated_at: "2026-04-25T20:24:40+00:00"
 setup:
   description:
     overview: >-
@@ -137,12 +137,13 @@ design:
   key_decisions: []
   review:
     round: 2
-    status: pending
-    latest_verdict: round1 指摘 16 件全て resolved（round2 設計再実施完了）。round2 review-design 待ち。
-    summary: round1 で検出された Critical 2 件（DR-001/DR-002）と Major 9 件、Minor 5 件の全 16 件について設計ドキュメントへ反映済み。round2 review-design 実施待ち。
-    notes: round1 issues 全件 status=resolved + resolved_in_round=2。round2 レビューで再検証。
+    status: conditional
+    latest_verdict: "⚠️ 条件付き承認: round1 16件は全て resolved。round2 で新規 Minor 3件（DR2-001/002/003）を検出。"
+    completed_at: "2026-04-25T20:24:40+00:00"
+    summary: round1 指摘 16 件（Critical 2 / Major 9 / Minor 5）は全て resolved_in_round=2 で解決。round2 で UT-11/E2E-5 の回帰チェックリスト漏れ 2 件と Function クラス partial 宣言不整合 1 件の Minor 3 件を新規検出。Critical/Major なし。
+    notes: round1 DR-001〜DR-016 は status=resolved 維持。round2 新規 DR2-001/DR2-002/DR2-003 は open。Info 2 件（INFO-1/INFO-2）は修正任意で記録のみ。
     artifacts:
-      - docs/floci-apigateway-csharp/review-design/
+      - docs/floci-apigateway-csharp/review-design/round-2/
     issues:
       - id: DR-001
         severity: critical
@@ -240,5 +241,20 @@ design:
         description: var.endpoint と FLOCI_HOSTNAME の役割分担が不明確で、CI で localhost 混入リスクの検証観点が不足。
         status: resolved
         resolved_in_round: 2
+      - id: DR2-001
+        severity: minor
+        category: テスト可能性/回帰チェックリスト
+        description: 06_side-effect-verification.md §2.2 の回帰チェックリストが UT-1〜UT-10 のままで、追加した UT-11（description 正規化）が必須実行対象から漏れている。UT-1〜UT-11 に更新する。
+        status: open
+      - id: DR2-002
+        severity: minor
+        category: テスト可能性/回帰チェックリスト
+        description: 06_side-effect-verification.md §2.2 の回帰チェックリスト必須 E2E 対象に E2E-5（localhost 混入検出）が含まれていない。E2E-5 を追加する。
+        status: open
+      - id: DR2-003
+        severity: minor
+        category: 技術的妥当性/Function クラス宣言不整合
+        description: 02_interface-api-design.md の Function クラス宣言が §3.1 の `public sealed class Function` と §3.2 の `public sealed partial class Function` で不一致。両方 partial に統一する。
+        status: open
   artifacts: "docs/floci-apigateway-csharp/design/"
   completed_at: "2026-04-25T20:16:35+00:00"
