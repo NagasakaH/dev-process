@@ -309,7 +309,12 @@ unit:
 
 integration:
   stage: integration
-  image: docker:24
+  # INFO-2 対応: Alpine edge リポジトリの dotnet8-sdk 依存は不安定（edge は破壊的変更が起こり得る）。
+  # 安定運用のため「.NET SDK が同梱された安定イメージ + Docker CLI/Compose プラグイン」の組み合わせを採用する。
+  # 推奨パターン: (a) `mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION}` ベースに Docker CLI/Compose を追加導入したカスタムイメージを社内レジストリで配布、
+  # または (b) 公式 `mcr.microsoft.com/dotnet/sdk` をそのまま使い、DinD service 経由で `docker` CLI を利用（下記例）。
+  # いずれの場合も Alpine edge への `apk add` は採用しない。
+  image: mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION}
   services:
     - name: docker:24-dind
       alias: docker
@@ -317,8 +322,12 @@ integration:
     DOCKER_TLS_CERTDIR: ""
     DOCKER_HOST: "tcp://docker:2375"
   before_script:
-    - apk add --no-cache bash curl docker-compose
-    - apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main dotnet8-sdk
+    # Debian ベースの dotnet/sdk イメージに docker CLI + compose plugin を追加
+    - apt-get update && apt-get install -y --no-install-recommends curl ca-certificates gnupg
+    - install -m 0755 -d /etc/apt/keyrings
+    - curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    - echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(. /etc/os-release && echo $VERSION_CODENAME) stable" > /etc/apt/sources.list.d/docker.list
+    - apt-get update && apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin
     - docker compose -f compose/docker-compose.yml up -d
     - until curl -fsS "$ENDPOINT/_localstack/health"; do sleep 2; done
   script:
@@ -328,7 +337,8 @@ integration:
 
 e2e:
   stage: e2e
-  image: docker:24
+  # INFO-2 対応: 同上の方針で Alpine edge dotnet8-sdk 依存を排除。dotnet/sdk + Docker CLI + Terraform をベースとする。
+  image: mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION}
   services:
     - name: docker:24-dind
       alias: docker
@@ -336,10 +346,13 @@ e2e:
     DOCKER_TLS_CERTDIR: ""
     DOCKER_HOST: "tcp://docker:2375"
   before_script:
-    - apk add --no-cache bash curl docker-compose unzip git
-    - apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main dotnet8-sdk
-    - wget -q "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip"
-    - unzip -q "terraform_${TF_VERSION}_linux_amd64.zip" -d /usr/local/bin
+    - apt-get update && apt-get install -y --no-install-recommends curl ca-certificates gnupg unzip git
+    - install -m 0755 -d /etc/apt/keyrings
+    - curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    - echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(. /etc/os-release && echo $VERSION_CODENAME) stable" > /etc/apt/sources.list.d/docker.list
+    - apt-get update && apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin
+    - curl -fsSLo terraform.zip "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip"
+    - unzip -q terraform.zip -d /usr/local/bin && rm terraform.zip
     - dotnet tool install -g Amazon.Lambda.Tools
     - export PATH="$PATH:$HOME/.dotnet/tools"
     - docker compose -f compose/docker-compose.yml up -d
@@ -427,3 +440,4 @@ privileged Docker executor が利用できない場合、shell executor を runn
 |------|------------|----------|--------|
 | 2026-04-25 | 1.0 | 初版作成 | dev-workflow |
 | 2026-04-25 | 1.1 | review-design round1 指摘反映: UT-10 を fail-fast 例外検証に修正（DR-001）、UT-11 description 正規化追加（DR-013）、IT-3/5/7 を id 不変検証に修正（DR-002）、§4.2 fixture を AWSSDK.DynamoDBv2 CreateTableAsync 冪等実行に固定（DR-015）、E2E-1 に id 一致検証追加（DR-002）、E2E-5 localhost 混入検出追加（DR-016）、§7.3 GitLab CI YAML スケルトン追加（DR-007）、§7.4 shell executor 代替（DR-012）、§9 README 必須セクション/検証観点追加（DR-004） | dev-workflow |
+| 2026-04-25 | 1.2 | review-design round2 反映: §7.3 integration / e2e ジョブの CI イメージを Alpine edge `dotnet8-sdk` 依存から「`mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION}` + Docker CLI/Compose plugin（DinD service）」に変更（INFO-2）。安定したベースイメージで CI 再現性を確保。 | dev-workflow |

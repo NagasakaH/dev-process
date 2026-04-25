@@ -5,7 +5,7 @@ meta:
   target_repo: "floci-apigateway-csharp"
   branch: "feature/floci-apigateway-csharp-001"
   created_at: "2026-04-25T19:34:55+00:00"
-  updated_at: "2026-04-25T20:24:40+00:00"
+  updated_at: "2026-04-25T20:28:58+00:00"
 setup:
   description:
     overview: >-
@@ -132,16 +132,16 @@ investigation:
 design:
   status: completed
   started_at: "2026-04-25T19:55:06+00:00"
-  summary: "詳細設計 round2 完了: review-design round1 の指摘 16 件（Critical 2 / Major 9 / Minor 5）を全て反映。AwsClientFactory fail-fast 化（DR-001）、id 採番を api-handler に統一（DR-002）、CRUD スコープ再定義（DR-003）、ASL Retry/Catch（DR-005）、provider.tf 完全 HCL（DR-006）、IAM 最小権限（DR-009）、Lambda 完全属性（DR-010）、API GW deployment triggers（DR-011）、docker-compose 完全例（DR-008）、deploy-local.sh / e2e.sh 擬似コード（DR-014）、Runner privileged 代替（DR-012）、description 正規化（DR-013）、Integration fixture を AWSSDK CreateTableAsync 冪等化（DR-015）、var.endpoint vs FLOCI_HOSTNAME 役割分担 + E2E localhost 検出（DR-016）、GitLab CI YAML スケルトン（DR-007）、README 必須セクション（DR-004）を docs/floci-apigateway-csharp/design/ に反映。"
+  summary: "詳細設計 round3 完了: review-design round2 の指摘 3件（DR2-001/002/003、Minor）を全て反映し resolved_in_round=3 とした。06_side-effect-verification.md §2.2 回帰チェックリストを UT-1〜UT-11 に更新し UT-11（description 正規化、DR-013）を必須化（DR2-001）、必須 E2E に E2E-5（localhost 混入検出、DR-016）を追加（DR2-002）、02_interface-api-design.md §3.1 Function クラス宣言を `public sealed partial class Function` に統一（DR2-003）。あわせて Info 2件も設計に反映: ASL Lambda Resource を Terraform `jsonencode` + `aws_lambda_function.*.arn` 動的参照に変更し ARN ハードコードを撤廃（INFO-1）、CI イメージを Alpine edge dotnet8-sdk 依存から `mcr.microsoft.com/dotnet/sdk` + Docker CLI/Compose plugin に変更し安定化（INFO-2）。round1/round2 の resolved 状態は維持。"
   approach: ""
   key_decisions: []
   review:
-    round: 2
-    status: conditional
-    latest_verdict: "⚠️ 条件付き承認: round1 16件は全て resolved。round2 で新規 Minor 3件（DR2-001/002/003）を検出。"
+    round: 3
+    status: pending
+    latest_verdict: "round2 指摘 DR2-001/002/003（Minor 3件）を design round3 で resolved。Info 2件（INFO-1/INFO-2）も設計に反映。再レビュー待ち。"
     completed_at: "2026-04-25T20:24:40+00:00"
-    summary: round1 指摘 16 件（Critical 2 / Major 9 / Minor 5）は全て resolved_in_round=2 で解決。round2 で UT-11/E2E-5 の回帰チェックリスト漏れ 2 件と Function クラス partial 宣言不整合 1 件の Minor 3 件を新規検出。Critical/Major なし。
-    notes: round1 DR-001〜DR-016 は status=resolved 維持。round2 新規 DR2-001/DR2-002/DR2-003 は open。Info 2 件（INFO-1/INFO-2）は修正任意で記録のみ。
+    summary: round1 指摘 16 件は resolved_in_round=2 で解決済。round2 新規 Minor 3 件（DR2-001/DR2-002/DR2-003）を design round3 で resolved_in_round=3 として解消。INFO-1（ASL Lambda ARN 動的参照）と INFO-2（CI イメージ安定化）も併せて設計に反映。
+    notes: round1 DR-001〜DR-016 は status=resolved 維持（resolved_in_round=2）。round2 DR2-001/DR2-002/DR2-003 は resolved_in_round=3。Info 2件は設計反映済。次は review-design round3 で再判定。
     artifacts:
       - docs/floci-apigateway-csharp/review-design/round-2/
     issues:
@@ -245,16 +245,19 @@ design:
         severity: minor
         category: テスト可能性/回帰チェックリスト
         description: 06_side-effect-verification.md §2.2 の回帰チェックリストが UT-1〜UT-10 のままで、追加した UT-11（description 正規化）が必須実行対象から漏れている。UT-1〜UT-11 に更新する。
-        status: open
+        status: resolved
+        resolved_in_round: 3
       - id: DR2-002
         severity: minor
         category: テスト可能性/回帰チェックリスト
         description: 06_side-effect-verification.md §2.2 の回帰チェックリスト必須 E2E 対象に E2E-5（localhost 混入検出）が含まれていない。E2E-5 を追加する。
-        status: open
+        status: resolved
+        resolved_in_round: 3
       - id: DR2-003
         severity: minor
         category: 技術的妥当性/Function クラス宣言不整合
         description: 02_interface-api-design.md の Function クラス宣言が §3.1 の `public sealed class Function` と §3.2 の `public sealed partial class Function` で不一致。両方 partial に統一する。
-        status: open
+        status: resolved
+        resolved_in_round: 3
   artifacts: "docs/floci-apigateway-csharp/design/"
   completed_at: "2026-04-25T20:16:35+00:00"

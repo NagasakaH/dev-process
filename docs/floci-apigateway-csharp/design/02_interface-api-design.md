@@ -128,7 +128,7 @@ public sealed record CreateTodoRequest(string Title, string? Description);
 ### 3.1 API ハンドラ（Function::ApiHandler）
 
 ```csharp
-public sealed class Function
+public sealed partial class Function
 {
     private readonly ITodoRepository _repo;
     private readonly IAmazonStepFunctions _sfn;
@@ -266,6 +266,10 @@ public sealed record PersistTodoOutput(string TodoId, bool Persisted);
 
 ## 5. Step Functions ASL 定義（DR-005 対応：Retry/Catch を ASL に明記）
 
+> **INFO-1 対応（round2）**: ASL 内の Lambda ARN は固定文字列ではなく、Terraform 側で `jsonencode` + `aws_lambda_function.*.arn` を用いて動的参照する。これにより AWS アカウント ID／関数名変更時にも ASL を編集不要にする。下記 JSON は **設計表現用のテンプレート**であり、実体は次節の HCL で組み立てる。
+
+設計表現用テンプレート（プレースホルダ `${VALIDATE_TODO_ARN}` / `${PERSIST_TODO_ARN}` を Terraform で差し替え）:
+
 ```jsonc
 {
   "Comment": "Todo 作成フロー",
@@ -273,7 +277,7 @@ public sealed record PersistTodoOutput(string TodoId, bool Persisted);
   "States": {
     "ValidateTodo": {
       "Type": "Task",
-      "Resource": "arn:aws:lambda:us-east-1:000000000000:function:validate-todo",
+      "Resource": "${VALIDATE_TODO_ARN}",
       "Next": "CheckValid",
       "Catch": [
         { "ErrorEquals": ["States.ALL"], "Next": "Failed" }
@@ -288,7 +292,7 @@ public sealed record PersistTodoOutput(string TodoId, bool Persisted);
     },
     "PersistTodo": {
       "Type": "Task",
-      "Resource": "arn:aws:lambda:us-east-1:000000000000:function:persist-todo",
+      "Resource": "${PERSIST_TODO_ARN}",
       "Retry": [
         {
           "ErrorEquals": ["States.TaskFailed"],
@@ -307,8 +311,45 @@ public sealed record PersistTodoOutput(string TodoId, bool Persisted);
 }
 ```
 
-Terraform 内では `aws_sfn_state_machine.todo` の `definition` に上記を `jsonencode()` で埋め込む。
-Resource ARN の Lambda 関数名（`validate-todo` / `persist-todo`）は Terraform variable 化する。
+Terraform 側の組み立て例（`infra/main.tf` 抜粋。ARN ハードコード禁止、`aws_lambda_function.*.arn` を直接参照）:
+
+```hcl
+resource "aws_sfn_state_machine" "todo" {
+  name     = "todo-flow"
+  role_arn = aws_iam_role.sfn_exec.arn
+
+  definition = jsonencode({
+    Comment = "Todo 作成フロー"
+    StartAt = "ValidateTodo"
+    States = {
+      ValidateTodo = {
+        Type     = "Task"
+        Resource = aws_lambda_function.validate_todo.arn
+        Next     = "CheckValid"
+        Catch    = [{ ErrorEquals = ["States.ALL"], Next = "Failed" }]
+      }
+      CheckValid = {
+        Type    = "Choice"
+        Choices = [{ Variable = "$.valid", BooleanEquals = true, Next = "PersistTodo" }]
+        Default = "Failed"
+      }
+      PersistTodo = {
+        Type     = "Task"
+        Resource = aws_lambda_function.persist_todo.arn
+        Retry = [{
+          ErrorEquals     = ["States.TaskFailed"]
+          IntervalSeconds = 1
+          MaxAttempts     = 3
+          BackoffRate     = 2.0
+        }]
+        Catch = [{ ErrorEquals = ["States.ALL"], Next = "Failed" }]
+        End   = true
+      }
+      Failed = { Type = "Fail", Error = "ValidationFailed" }
+    }
+  })
+}
+```
 
 > **設計の整合（DR-005）**: 04 §3.2 の「`States.TaskFailed` リトライ 3 回」記述は本 ASL の `PersistTodo.Retry` と一致する。`ValidateTodo` はリトライしない（バリデーション結果はリトライしても変わらないため）。
 
@@ -615,3 +656,4 @@ private static APIGatewayProxyResponse Json(int status, object body) =>
 |------|------------|----------|--------|
 | 2026-04-25 | 1.0 | 初版作成 | dev-workflow |
 | 2026-04-25 | 1.1 | review-design round1 反映: §1 スコープ再定義（DR-003）、§2.1 id 採番を api-handler に統一（DR-002）+ description 正規化（DR-013）、§3.4 AwsClientFactory fail-fast 化（DR-001）、§4 DTO を `ValidateTodoInput(Todo)` に変更（DR-002）、§5 ASL に Retry/Catch 追加（DR-005）、§6.1 provider.tf 完全 HCL（DR-006）、§6.2.1 var.endpoint vs FLOCI_HOSTNAME 表（DR-016）、§6.3 IAM 最小権限（DR-009）、§6.4 Lambda 完全属性（DR-010）、§6.5 API GW deployment triggers/lifecycle（DR-011） | dev-workflow |
+| 2026-04-25 | 1.2 | review-design round2 反映: §3.1 Function クラス宣言を `public sealed partial class Function` に統一し §3.2 と整合（DR2-003）、§5 ASL の Lambda Resource を Terraform `jsonencode` + `aws_lambda_function.*.arn` 動的参照に変更し ARN ハードコードを撤廃（INFO-1） | dev-workflow |
