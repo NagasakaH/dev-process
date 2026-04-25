@@ -5,7 +5,7 @@ meta:
   target_repo: "floci-apigateway-csharp"
   branch: "feature/floci-apigateway-csharp-001"
   created_at: "2026-04-25T19:34:55+00:00"
-  updated_at: "2026-04-25T19:40:39+00:00"
+  updated_at: "2026-04-25T19:46:26+00:00"
 setup:
   description:
     overview: >-
@@ -121,3 +121,11 @@ human_checkpoints:
         reviewed_at: "2026-04-25T19:40:39+00:00"
         verdict: approved
         feedback: ユーザー確認OK。残りStepはユーザー確認不要で継続。
+investigation:
+  status: completed
+  started_at: "2026-04-25T19:46:10+00:00"
+  summary: "floci-apigateway-csharp の新規構築方針を6カテゴリで整理（アーキテクチャ/データ構造/依存/既存パターン/統合ポイント/リスク）。floci 互換 Terraform provider 設定、API GW invoke URL 形式、Step Functions ポーリング、Docker socket 制約を主要発見として記録。"
+  key_findings: []
+  risks: []
+  artifacts: "docs/floci-apigateway-csharp/investigation/"
+  completed_at: "2026-04-25T19:46:19+00:00"
