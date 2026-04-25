@@ -5,7 +5,7 @@ meta:
   target_repo: "floci-apigateway-csharp"
   branch: "feature/floci-apigateway-csharp-001"
   created_at: "2026-04-25T19:34:55+00:00"
-  updated_at: "2026-04-25T20:28:58+00:00"
+  updated_at: "2026-04-25T20:33:07+00:00"
 setup:
   description:
     overview: >-
@@ -137,13 +137,15 @@ design:
   key_decisions: []
   review:
     round: 3
-    status: pending
-    latest_verdict: "round2 指摘 DR2-001/002/003（Minor 3件）を design round3 で resolved。Info 2件（INFO-1/INFO-2）も設計に反映。再レビュー待ち。"
-    completed_at: "2026-04-25T20:24:40+00:00"
-    summary: round1 指摘 16 件は resolved_in_round=2 で解決済。round2 新規 Minor 3 件（DR2-001/DR2-002/DR2-003）を design round3 で resolved_in_round=3 として解消。INFO-1（ASL Lambda ARN 動的参照）と INFO-2（CI イメージ安定化）も併せて設計に反映。
-    notes: round1 DR-001〜DR-016 は status=resolved 維持（resolved_in_round=2）。round2 DR2-001/DR2-002/DR2-003 は resolved_in_round=3。Info 2件は設計反映済。次は review-design round3 で再判定。
+    status: approved
+    latest_verdict: "round3 で round1/round2 累積指摘 19 件すべて resolved。Critical/Major/Minor 指摘なし。Info のみ任意記録。総合判定 approved。"
+    completed_at: "2026-04-25T20:33:07+00:00"
+    summary: round1（DR-001〜DR-016）と round2（DR2-001/DR2-002/DR2-003）の累積 19 件は全て resolved。round3 で新規 Critical/Major/Minor 指摘なし。INFO-1（ASL Lambda ARN 動的参照）と INFO-2（CI image 安定化）も設計反映済。
+    notes: round1 DR-001〜DR-016 は resolved_in_round=2、round2 DR2-001/DR2-002/DR2-003 は resolved_in_round=3 を維持。Opus 側の CI 安定性 Info は任意記録。次は design_review 人間チェックポイントの承認待ち。
     artifacts:
+      - docs/floci-apigateway-csharp/review-design/
       - docs/floci-apigateway-csharp/review-design/round-2/
+      - docs/floci-apigateway-csharp/review-design/round-3/
     issues:
       - id: DR-001
         severity: critical
