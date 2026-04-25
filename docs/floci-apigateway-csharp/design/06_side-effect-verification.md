@@ -20,7 +20,7 @@
 | 箇所 | 影響度 | 発生可能性 | 検証方法 | 優先度 |
 |------|--------|------------|----------|--------|
 | API Gateway invoke URL 形式（floci 固有 `/restapis/{id}/{stage}/_user_request_/...`）が AWS と異なる | 中 | 高 | E2E で `terraform output -raw invoke_url` を読み出し、`HttpClient` で 200/201 を確認 | 高 |
-| `FLOCI_HOSTNAME` 未設定時、CI 内 invoke URL に `localhost` が混入し他コンテナから到達不能 | 高 | 中 | CI で `compose exec floci env` に `FLOCI_HOSTNAME=floci` が含まれるか確認、E2E アサーションで URL の host が `floci` か検証 | 高 |
+| `FLOCI_HOSTNAME` 未設定時、CI 内 invoke URL に `localhost` が混入し他コンテナから到達不能 | 高 | 中 | (1) CI で `docker compose exec floci env` に `FLOCI_HOSTNAME=floci` が含まれるか確認 / (2) **E2E 先頭で `Assert.DoesNotContain("localhost", apiBaseUrl)` を実行**、CI 環境（`Environment.GetEnvironmentVariable("CI") == "true"`）では URL の host が `floci` であることをアサート（DR-016、E2E-5） | 高 |
 | Step Functions 実行が SUCCEEDED になる前に E2E が判定 | 中 | 高 | E2E で `DescribeExecution` を 1 秒間隔最大 30 秒 polling し、SUCCEEDED 確認後にのみ GET を実行 | 高 |
 | .NET 8 Lambda コールドスタートで API GW タイムアウト（30s）超過 | 中 | 中 | E2E に warmup invoke を追加（E2E-4）、API GW タイムアウトを既定（29s）超過しないか測定 | 中 |
 | Docker socket / DinD 不可な runner で `e2e` ジョブが起動失敗 | 高 | 中 | README に runner 要件を明記、`.gitlab-ci.yml` の `before_script` で `docker info` の成否を出力 | 高 |
@@ -236,3 +236,4 @@ flowchart TD
 | 日付 | バージョン | 変更内容 | 変更者 |
 |------|------------|----------|--------|
 | 2026-04-25 | 1.0 | 初版作成 | dev-workflow |
+| 2026-04-25 | 1.1 | review-design round1 反映: §1.1 表に E2E 先頭での `Assert.DoesNotContain("localhost", apiBaseUrl)` 検証アサーションを追加（DR-016、E2E-5 と整合） | dev-workflow |
