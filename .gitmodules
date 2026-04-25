@@ -1,0 +1,6 @@
+[submodule "submodules/readonly/floci"]
+	path = submodules/readonly/floci
+	url = https://github.com/floci-io/floci.git
+[submodule "submodules/editable/floci-apigateway-csharp"]
+	path = submodules/editable/floci-apigateway-csharp
+	url = git@gitlab.com:nagasaka-experimental/floci-apigateway-csharp.git
