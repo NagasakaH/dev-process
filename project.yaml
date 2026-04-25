@@ -12,7 +12,7 @@ setup:
     overview: >-
       floci を AWS シミュレータとして利用し、API Gateway、.NET 8 Lambda、
       Step Functions を組み合わせた Todo API サンプルアプリを作成する。
-      Terraform でローカル/手動デプロイできる IaC を用意し、GitLab CI では
+      Terraform で floci 上にデプロイできる IaC を用意し、GitLab CI では
       xUnit の単体テスト、Lambda テスト、API Gateway 経由の E2E テストまでを
       floci 上で実行できる仕組みを構築する。
     purpose: >-
@@ -22,8 +22,8 @@ setup:
     background: >-
       https://github.com/floci-io/floci.git を関連リポジトリとして参照し、
       floci が提供する AWS シミュレータ機能を使って API Gateway/Lambda/
-      Step Functions の動作検証を CI 内で完結させる。実AWSへのデプロイは
-      ユーザーが手動で実行する前提とし、CI の責務は floci 上の検証までとする。
+      Step Functions の動作検証を CI 内で完結させる。実AWSは利用せず、
+      ローカルおよび CI の責務は floci 上の検証までとする。
     requirements:
       functional:
         - "Todo API のサンプルを作成する。CRUD を中心とし、Step Functions は簡易的な Todo 処理フローで利用する。"
@@ -41,12 +41,12 @@ setup:
         - ".NET 8 と Terraform の一般的な開発フローに沿った構成にする。"
     acceptance_criteria:
       - "作成先リポジトリに Todo API サンプルの .NET 8 Lambda 実装が含まれている。"
-      - "Terraform で API Gateway、Lambda、Step Functions のサンプル構成をデプロイできる。"
+      - "Terraform で API Gateway、Lambda、Step Functions のサンプル構成を floci 上にデプロイできる。"
       - "GitLab CI で xUnit 単体テストが実行される。"
       - "GitLab CI で Lambda ハンドラ/関数レベルのテストが実行される。"
       - "GitLab CI で floci を使った API Gateway 経由の E2E テストが実行される。"
-      - "README にセットアップ、ローカル実行、Terraform 手動デプロイ、CI、テスト、デバッグ方法が記載されている。"
-      - "実AWSへのデプロイはユーザーが手動で実行する前提として整理されている。"
+      - "README にセットアップ、ローカル実行、Terraform による floci デプロイ、CI、テスト、デバッグ方法が記載されている。"
+      - "実AWSを使わず、floci のみでデプロイとテストが完結する構成になっている。"
     scope:
       - "Todo API サンプルアプリの新規作成"
       - ".NET 8 Lambda、API Gateway、Step Functions の最小構成"
@@ -55,12 +55,12 @@ setup:
       - "README の手順・デバッグ方法整備"
     out_of_scope:
       - "本番運用向けの認証/認可、監視、アラート、マルチ環境運用の本格実装"
-      - "CI から実AWSへ自動デプロイする仕組み"
+      - "実AWSへのデプロイ、および CI から実AWSへ自動デプロイする仕組み"
       - "複雑な Todo ドメインや永続化基盤の本格実装"
     notes: >-
       作成先リポジトリは新規または空に近い状態を想定し、base_branch は main とする。
-      README ではローカル tfstate を基本手順とし、必要に応じて GitLab managed
-      Terraform state へ移行する補足を記載する。
+      README では floci 向け Terraform 実行とローカル tfstate を基本手順とし、
+      必要に応じて GitLab managed Terraform state へ移行する補足を記載する。
   related_repositories:
     - name: "floci"
       url: "https://github.com/floci-io/floci.git"
