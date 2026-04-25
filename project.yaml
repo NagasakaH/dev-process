@@ -5,7 +5,7 @@ meta:
   target_repo: "floci-apigateway-csharp"
   branch: "feature/floci-apigateway-csharp-001"
   created_at: "2026-04-25T19:34:55+00:00"
-  updated_at: "2026-04-25T19:46:26+00:00"
+  updated_at: "2026-04-25T19:55:19+00:00"
 setup:
   description:
     overview: >-
@@ -129,3 +129,14 @@ investigation:
   risks: []
   artifacts: "docs/floci-apigateway-csharp/investigation/"
   completed_at: "2026-04-25T19:46:19+00:00"
+design:
+  status: completed
+  started_at: "2026-04-25T19:55:06+00:00"
+  summary: "詳細設計完了: Todo API サンプル（実装方針・I/F・データ構造・処理フロー・テスト計画・弊害検証）を docs/floci-apigateway-csharp/design/ に出力。AC1〜AC7 を単体/結合/E2E に対応付け済み。"
+  approach: ""
+  key_decisions: []
+  review:
+    round: 1
+    status: pending
+  artifacts: "docs/floci-apigateway-csharp/design/"
+  completed_at: "2026-04-25T19:55:19+00:00"
