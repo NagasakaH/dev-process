@@ -1,0 +1,281 @@
+meta:
+  version: "1.0"
+  ticket_id: "floci-apigateway-csharp-001"
+  task_name: "API Gateway + Lambda(.NET) + Step Functions サンプルアプリと CI/CD 基盤の構築"
+  target_repo: "floci-apigateway-csharp"
+  branch: "feature/floci-apigateway-csharp-001"
+  created_at: "2026-04-25T19:34:55+00:00"
+  updated_at: "2026-04-25T20:39:19+00:00"
+setup:
+  description:
+    overview: >-
+      floci を AWS シミュレータとして利用し、API Gateway、.NET 8 Lambda、 Step Functions を組み合わせた Todo API サンプルアプリを作成する。 Terraform で floci 上にデプロイできる IaC を用意し、GitLab CI では xUnit の単体テスト、Lambda テスト、API Gateway 経由の E2E テストまでを floci 上で実行できる仕組みを構築する。
+    purpose: >-
+      .NET Lambda と AWS サーバーレス構成を floci で継続的に検証できる 参照実装を提供し、Terraform デプロイ、GitLab CI、テスト、デバッグの 標準的な手順を README から再現できるようにする。
+    background: >-
+      https://github.com/floci-io/floci.git を関連リポジトリとして参照し、 floci が提供する AWS シミュレータ機能を使って API Gateway/Lambda/ Step Functions の動作検証を CI 内で完結させる。実AWSは利用せず、 ローカルおよび CI の責務は floci 上の検証までとする。
+    requirements:
+      functional:
+        - "Todo API のサンプルを作成する。CRUD を中心とし、Step Functions は簡易的な Todo 処理フローで利用する。"
+        - ".NET 8 Lambda を実装し、API Gateway から呼び出せる構成にする。"
+        - "Step Functions ステートマシンを Terraform で定義し、Lambda と連携させる。"
+        - "Terraform で API Gateway、Lambda、Step Functions、および必要な権限を定義する。"
+        - "GitLab CI で xUnit の単体テストを実行する。"
+        - "GitLab CI で Lambda ハンドラ/関数レベルのテストを実行する。"
+        - "GitLab CI で floci を使い、API Gateway 経由の E2E テストを実行する。"
+        - "README にローカル実行、CI、Terraform デプロイ、テスト、デバッグ方法を記載する。"
+      non_functional:
+        - "サンプルとして読みやすく、最小構成で再現しやすい構成にする。"
+        - "GitLab CI 上で floci による検証を自動化し、実AWS資格情報なしでも主要テストを実行できるようにする。"
+        - "Terraform state はローカル tfstate を基本とし、GitLab managed Terraform state 化は README の補足として記載する。"
+        - ".NET 8 と Terraform の一般的な開発フローに沿った構成にする。"
+    acceptance_criteria:
+      - "作成先リポジトリに Todo API サンプルの .NET 8 Lambda 実装が含まれている。"
+      - "Terraform で API Gateway、Lambda、Step Functions のサンプル構成を floci 上にデプロイできる。"
+      - "GitLab CI で xUnit 単体テストが実行される。"
+      - "GitLab CI で Lambda ハンドラ/関数レベルのテストが実行される。"
+      - "GitLab CI で floci を使った API Gateway 経由の E2E テストが実行される。"
+      - "README にセットアップ、ローカル実行、Terraform による floci デプロイ、CI、テスト、デバッグ方法が記載されている。"
+      - "実AWSを使わず、floci のみでデプロイとテストが完結する構成になっている。"
+    scope:
+      - "Todo API サンプルアプリの新規作成"
+      - ".NET 8 Lambda、API Gateway、Step Functions の最小構成"
+      - "Terraform による IaC 定義"
+      - "GitLab CI による floci 上の単体/結合/E2E テスト自動化"
+      - "README の手順・デバッグ方法整備"
+    out_of_scope:
+      - "本番運用向けの認証/認可、監視、アラート、マルチ環境運用の本格実装"
+      - "実AWSへのデプロイ、および CI から実AWSへ自動デプロイする仕組み"
+      - "複雑な Todo ドメインや永続化基盤の本格実装"
+    notes: >-
+      作成先リポジトリは新規または空に近い状態を想定し、base_branch は main とする。 README では floci 向け Terraform 実行とローカル tfstate を基本手順とし、 必要に応じて GitLab managed Terraform state へ移行する補足を記載する。
+  related_repositories:
+    - name: "floci"
+      url: "https://github.com/floci-io/floci.git"
+      branch: "main"
+  target_repositories:
+    - name: "floci-apigateway-csharp"
+      url: "git@gitlab.com:nagasaka-experimental/floci-apigateway-csharp.git"
+      base_branch: "main"
+  options:
+    create_design_document: true
+    design_document_dir: "docs"
+    submodules_dir: "submodules"
+brainstorming:
+  status: "completed"
+  started_at: "2026-04-25T19:34:55+00:00"
+  completed_at: "2026-04-25T19:34:55+00:00"
+  summary: >-
+    Todo API サンプルとして、DynamoDB 永続化、REST API v1、.NET 8 ZIP Lambda、 ValidateTodo→PersistTodo の Step Functions 最小フローを採用する。CI は floci を docker compose で起動し、単体・Lambda 結合・API Gateway E2E まで検証する。
+  decisions:
+    - question: "Todo の永続化方式"
+      decision: "DynamoDB を使う。floci 上で AWS SDK と Terraform の連携を検証しやすくする。"
+    - question: "API Gateway タイプ"
+      decision: "REST API v1 を使う。Lambda イベント型は APIGatewayProxyRequest を基本にする。"
+    - question: "Lambda パッケージング"
+      decision: "ZIP パッケージを使う。dotnet lambda package と Terraform で扱いやすい構成にする。"
+    - question: "Step Functions フロー"
+      decision: "ValidateTodo → PersistTodo の2ステート最小フローを採用する。"
+    - question: "CI と E2E 検証方針"
+      decision: "docker compose で floci を起動し、dotnet format、terraform fmt/validate、POST→GET→Step Functions SUCCEEDED の E2E を実行する。"
+  refined_requirements:
+    - "DynamoDB テーブルを Terraform で定義し、Todo の保存先として利用する。"
+    - "API Gateway は REST API v1 とし、Lambda は APIGatewayProxyRequest/Response を利用する。"
+    - "Lambda は .NET 8 ZIP パッケージ方式でビルド・デプロイする。"
+    - "Step Functions は ValidateTodo と PersistTodo の2ステートで Todo 作成フローを表現する。"
+    - "GitLab CI は floci を docker compose で起動し、実AWSではなく floci 上で E2E まで実行する。"
+    - "品質チェックとして dotnet format、terraform fmt、terraform validate を CI に含める。"
+    - "E2E は POST /todos、GET /todos/{id}、Step Functions 実行 SUCCEEDED の確認を最低基準とする。"
+  test_strategy:
+    scope:
+      - unit
+      - integration
+      - e2e
+    unit:
+      framework: "xUnit"
+      target: "Todo ドメインロジック、入力バリデーション、Step Functions 入出力 DTO などの純粋ロジック"
+    integration:
+      framework: "xUnit + Amazon.Lambda.TestUtilities"
+      target: "Lambda ハンドラ、DynamoDB/Step Functions AWS SDK クライアントの floci endpoint 連携"
+    e2e:
+      method: "GitLab CI で docker compose により floci を起動し、Terraform apply 後に API Gateway のエンドポイントを HttpClient/xUnit で呼び出す"
+      criteria:
+        - "POST /todos が 201 相当のレスポンスを返し Todo ID を取得できること"
+        - "GET /todos/{id} が 200 相当のレスポンスを返し POST した Todo を取得できること"
+        - "Step Functions の Todo 作成実行が SUCCEEDED になること"
+        - "CI は実AWS資格情報に依存せず floci 上で完結すること"
+      environment: "GitLab CI + docker compose floci + Terraform local tfstate"
+  artifacts: "project.yaml"
+overview:
+  status: "completed"
+  started_at: "2026-04-25T19:34:55+00:00"
+  completed_at: "2026-04-25T19:34:55+00:00"
+  summary: "floci と floci-apigateway-csharp のサブモジュール概要を作成済み。"
+  artifacts: "submodules/floci.md, submodules/floci-apigateway-csharp.md"
+human_checkpoints:
+  brainstorming_review:
+    status: "approved"
+    current_round: 1
+    rounds:
+      - round: 1
+        reviewed_at: "2026-04-25T19:40:39+00:00"
+        verdict: approved
+        feedback: ユーザー確認OK。残りStepはユーザー確認不要で継続。
+  design_review:
+    status: approved
+    current_round: 1
+    rounds:
+      - round: 1
+        reviewed_at: "2026-04-25T20:39:19+00:00"
+        verdict: approved
+        feedback: 'ユーザーから『残りStepはユーザー確認不要』の明示指示あり。DR PR #32 を Draft で作成済み。設計レビューラウンド累積19件すべて resolved・round3 で新規指摘なし・review-design status=approved を踏まえ、設計レビュー人間チェックポイントを承認として記録。'
+investigation:
+  status: completed
+  started_at: "2026-04-25T19:46:10+00:00"
+  summary: "floci-apigateway-csharp の新規構築方針を6カテゴリで整理（アーキテクチャ/データ構造/依存/既存パターン/統合ポイント/リスク）。floci 互換 Terraform provider 設定、API GW invoke URL 形式、Step Functions ポーリング、Docker socket 制約を主要発見として記録。"
+  key_findings: []
+  risks: []
+  artifacts: "docs/floci-apigateway-csharp/investigation/"
+  completed_at: "2026-04-25T19:46:19+00:00"
+design:
+  status: completed
+  started_at: "2026-04-25T19:55:06+00:00"
+  summary: "詳細設計 round3 完了: review-design round2 の指摘 3件（DR2-001/002/003、Minor）を全て反映し resolved_in_round=3 とした。06_side-effect-verification.md §2.2 回帰チェックリストを UT-1〜UT-11 に更新し UT-11（description 正規化、DR-013）を必須化（DR2-001）、必須 E2E に E2E-5（localhost 混入検出、DR-016）を追加（DR2-002）、02_interface-api-design.md §3.1 Function クラス宣言を `public sealed partial class Function` に統一（DR2-003）。あわせて Info 2件も設計に反映: ASL Lambda Resource を Terraform `jsonencode` + `aws_lambda_function.*.arn` 動的参照に変更し ARN ハードコードを撤廃（INFO-1）、CI イメージを Alpine edge dotnet8-sdk 依存から `mcr.microsoft.com/dotnet/sdk` + Docker CLI/Compose plugin に変更し安定化（INFO-2）。round1/round2 の resolved 状態は維持。"
+  approach: ""
+  key_decisions: []
+  review:
+    round: 3
+    status: approved
+    latest_verdict: "round3 で round1/round2 累積指摘 19 件すべて resolved。Critical/Major/Minor 指摘なし。Info のみ任意記録。総合判定 approved。"
+    completed_at: "2026-04-25T20:33:07+00:00"
+    summary: round1（DR-001〜DR-016）と round2（DR2-001/DR2-002/DR2-003）の累積 19 件は全て resolved。round3 で新規 Critical/Major/Minor 指摘なし。INFO-1（ASL Lambda ARN 動的参照）と INFO-2（CI image 安定化）も設計反映済。
+    notes: round1 DR-001〜DR-016 は resolved_in_round=2、round2 DR2-001/DR2-002/DR2-003 は resolved_in_round=3 を維持。Opus 側の CI 安定性 Info は任意記録。次は design_review 人間チェックポイントの承認待ち。
+    artifacts:
+      - docs/floci-apigateway-csharp/review-design/
+      - docs/floci-apigateway-csharp/review-design/round-2/
+      - docs/floci-apigateway-csharp/review-design/round-3/
+    issues:
+      - id: DR-001
+        severity: critical
+        category: AC7/実AWS不使用整合性
+        description: AWS_ENDPOINT_URL 未設定時にデフォルトAWSエンドポイントへ接続し得る設計があり、floci 完結要件に違反する。
+        status: resolved
+        resolved_in_round: 2
+      - id: DR-002
+        severity: critical
+        category: 設計の論理矛盾/API-SFN間のID生成責務
+        description: POST /todos が StartExecution 直後に id を返す設計と、id 生成が ValidateTodo Lambda 側に見える記述が矛盾し E2E POST→GET 前提が崩れる。
+        status: resolved
+        resolved_in_round: 2
+      - id: DR-003
+        severity: major
+        category: 要件カバレッジ/CRUD範囲
+        description: CRUD を中心とする要件に対し POST/GET のみで Update/Delete/List の扱いと除外根拠が不足。
+        status: resolved
+        resolved_in_round: 2
+      - id: DR-004
+        severity: major
+        category: README要件/AC6
+        description: README 要件が実装段階での担保のみで、設計時点の章構成・必須記載項目・検証方法が未定義。
+        status: resolved
+        resolved_in_round: 2
+      - id: DR-005
+        severity: major
+        category: 技術的妥当性/ASL Retry整合性
+        description: PersistTodo の Retry を前提にしている記述と ASL 定義例（Retry 節なし）が矛盾。
+        status: resolved
+        resolved_in_round: 2
+      - id: DR-006
+        severity: major
+        category: Terraform provider設定
+        description: provider.tf の具体的 HCL（endpoints/skip_*/s3_use_path_style 等）が不足し、実 AWS 問い合わせ抑止証跡が弱い。
+        status: resolved
+        resolved_in_round: 2
+      - id: DR-007
+        severity: major
+        category: GitLab CI具体定義
+        description: .gitlab-ci.yml の stages/jobs/image/services/variables/scripts/artifacts/after_script/DinD/tfstate 方針が未定義。
+        status: resolved
+        resolved_in_round: 2
+      - id: DR-008
+        severity: major
+        category: docker-compose具体定義
+        description: compose/docker-compose.yml の image/ports/environment/FLOCI_HOSTNAME/volumes/healthcheck が未定義。
+        status: resolved
+        resolved_in_round: 2
+      - id: DR-009
+        severity: major
+        category: IAMポリシー
+        description: Lambda/SFN に必要な DynamoDB/StepFunctions/Lambda Invoke の最小権限ポリシーが未定義。
+        status: resolved
+        resolved_in_round: 2
+      - id: DR-010
+        severity: major
+        category: Lambda設定属性
+        description: role/memory_size/timeout/environment/source_code_hash が不足し、設計内 timeout=30s と Terraform 表が不整合。
+        status: resolved
+        resolved_in_round: 2
+      - id: DR-011
+        severity: major
+        category: API Gateway deployment
+        description: Method/Integration 変更時の再デプロイトリガーと create_before_destroy が未定義。
+        status: resolved
+        resolved_in_round: 2
+      - id: DR-012
+        severity: minor
+        category: CI前提/Runner
+        description: GitLab Runner privileged 前提が未確定で AC5 実現性にリスク。
+        status: resolved
+        resolved_in_round: 2
+      - id: DR-013
+        severity: minor
+        category: description正規化
+        description: description 空文字の扱いが未定義。
+        status: resolved
+        resolved_in_round: 2
+      - id: DR-014
+        severity: minor
+        category: 補助スクリプト
+        description: scripts/deploy-local.sh / scripts/e2e.sh の内容が未定義。
+        status: resolved
+        resolved_in_round: 2
+      - id: DR-015
+        severity: minor
+        category: Integration fixture
+        description: Integration テストの DynamoDB テーブルセットアップ方法が Terraform/AWS CLI 二択で未確定。
+        status: resolved
+        resolved_in_round: 2
+      - id: DR-016
+        severity: minor
+        category: API Gateway invoke URL/FLOCI_HOSTNAME
+        description: var.endpoint と FLOCI_HOSTNAME の役割分担が不明確で、CI で localhost 混入リスクの検証観点が不足。
+        status: resolved
+        resolved_in_round: 2
+      - id: DR2-001
+        severity: minor
+        category: テスト可能性/回帰チェックリスト
+        description: 06_side-effect-verification.md §2.2 の回帰チェックリストが UT-1〜UT-10 のままで、追加した UT-11（description 正規化）が必須実行対象から漏れている。UT-1〜UT-11 に更新する。
+        status: resolved
+        resolved_in_round: 3
+      - id: DR2-002
+        severity: minor
+        category: テスト可能性/回帰チェックリスト
+        description: 06_side-effect-verification.md §2.2 の回帰チェックリスト必須 E2E 対象に E2E-5（localhost 混入検出）が含まれていない。E2E-5 を追加する。
+        status: resolved
+        resolved_in_round: 3
+      - id: DR2-003
+        severity: minor
+        category: 技術的妥当性/Function クラス宣言不整合
+        description: 02_interface-api-design.md の Function クラス宣言が §3.1 の `public sealed class Function` と §3.2 の `public sealed partial class Function` で不一致。両方 partial に統一する。
+        status: resolved
+        resolved_in_round: 3
+  artifacts: "docs/floci-apigateway-csharp/design/"
+  completed_at: "2026-04-25T20:16:35+00:00"
+create_mr_pr:
+  status: completed
+  mode: dr
+  platform: github
+  started_at: "2026-04-25T20:39:19+00:00"
+  completed_at: "2026-04-25T20:39:19+00:00"
+  mr_pr_urls:
+    - https://github.com/NagasakaH/dev-process/pull/32
