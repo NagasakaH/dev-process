@@ -65,9 +65,9 @@ flowchart TD
 
 ### 2.2 回帰テストチェックリスト
 
-- [ ] UT-1〜UT-10 が全て PASS
+- [ ] UT-1〜UT-11 が全て PASS（**UT-11: description 正規化（DR-013）を必須化**）
 - [ ] IT-1〜IT-7 が全て PASS
-- [ ] E2E-PRE-1, E2E-1, E2E-2, E2E-3 が PASS
+- [ ] E2E-PRE-1, E2E-1, E2E-2, E2E-3, **E2E-5（localhost 混入検出、DR-016 / DR2-002 対応）** が PASS
 - [ ] `dotnet format --verify-no-changes` が PASS
 - [ ] `terraform fmt -check` / `terraform validate` が PASS
 - [ ] `terraform destroy` が `after_script` で常に実行されている（CI ログで確認）
@@ -237,3 +237,4 @@ flowchart TD
 |------|------------|----------|--------|
 | 2026-04-25 | 1.0 | 初版作成 | dev-workflow |
 | 2026-04-25 | 1.1 | review-design round1 反映: §1.1 表に E2E 先頭での `Assert.DoesNotContain("localhost", apiBaseUrl)` 検証アサーションを追加（DR-016、E2E-5 と整合） | dev-workflow |
+| 2026-04-25 | 1.2 | review-design round2 反映: §2.2 回帰チェックリストを UT-1〜UT-11 に更新し UT-11（description 正規化、DR-013）を必須化（DR2-001）、必須 E2E に E2E-5（localhost 混入検出、DR-016）を追加（DR2-002） | dev-workflow |
