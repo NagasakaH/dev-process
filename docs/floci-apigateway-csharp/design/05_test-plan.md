@@ -1,0 +1,207 @@
+# テスト計画
+
+## 概要
+
+| 項目       | 内容                                                  |
+| ---------- | ----------------------------------------------------- |
+| チケットID | FRONTEND-001                                          |
+| タスク名   | floci-apigateway-csharp に Angular フロントエンド追加 |
+| 作成日     | 2026-04-29                                            |
+
+本書は **brainstorming.test_strategy** で確定した範囲（unit / integration / e2e）を全て含み、`acceptance_criteria` と各テスト種別の対応を明示する。
+
+> **事前決定のテスト戦略（再掲）**
+> - **unit**: Karma + Jasmine。Angular component/service/pipe。HttpClient はモック。
+> - **integration**: Karma + Jasmine + HttpTestingController。API クライアント、設定読み込み、フォーム→API 呼び出し境界、エラー表示。
+> - **e2e**: Playwright。floci 起動 → terraform apply → invoke_url 取得 → ng build → S3 sync → nginx 起動 → Playwright 実行。API は nginx 経由にせず floci API Gateway を直接呼び出す。
+
+---
+
+## 1. テスト方針
+
+### 1.1 テストスコープ
+
+| 範囲          | 対象                                                                                 | 除外                                                  |
+| ------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------- |
+| 単体テスト    | Angular component / service / pipe（HttpClient はモック）                            | Lambda / Terraform / nginx                            |
+| 結合テスト    | TodoApiService × HttpTestingController、ConfigService の load、コンポーネント↔サービス境界 | フル browser、外部 floci 起動                         |
+| E2Eテスト     | ブラウザ → nginx 静的配信 → API Gateway → Lambda → DDB の通し検証（CORS 含む）       | 認証、本番 AWS、性能ベンチ                            |
+| 既存 .NET    | Unit/Integration/E2E（CORS ヘッダ追加に伴う期待値更新を含む）                        | 既存仕様の変更                                        |
+| 既存 CI ジョブ | リグレッション確認（`web-*` 追加で既存ジョブが落ちないこと）                         | -                                                     |
+
+### 1.2 テストカバレッジ目標
+
+| 項目             | 目標値 | 備考                                                  |
+| ---------------- | ------ | ----------------------------------------------------- |
+| Angular 行       | 80%    | `karma.conf.js` の `coverageReporter` で出力          |
+| Angular 分岐     | 70%    | 同上                                                  |
+| Angular 関数     | 90%    | 同上                                                  |
+| Lambda（既存）   | 既存維持 | `JsonHeaders` 変更に伴う期待値更新で破壊しない        |
+
+### 1.3 テストランナー / レポート
+
+| 種別        | フレームワーク                            | レポート形式                                |
+| ----------- | ----------------------------------------- | ------------------------------------------- |
+| 単体        | Karma + Jasmine + ChromeHeadlessCI         | `karma-junit-reporter` → `junit.xml`        |
+| 結合        | Karma + Jasmine + HttpTestingController   | 同上                                        |
+| E2E         | Playwright (`@playwright/test`)            | `reporter: ['junit', 'html']`               |
+| 既存 .NET   | xUnit                                     | `--logger junit` (既存維持)                 |
+
+---
+
+## 2. 新規テストケース
+
+### 2.1 単体テスト（Karma + Jasmine）
+
+| No   | テスト対象                | テスト内容                                                                          | 期待結果                                                       | 優先度 |
+| ---- | ------------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------- | ------ |
+| UT-1 | `ConfigService.load`      | `/assets/config.json` から `apiBaseUrl` を読み取り、`apiBaseUrl` を返す             | `cfg.apiBaseUrl === 'http://...'`                              | 高     |
+| UT-2 | `ConfigService.load`      | `apiBaseUrl` 欠落 / 空文字 / `http(s)://` 非該当時に reject                         | Promise reject（fail-fast）                                    | 高     |
+| UT-3 | `TodoApiService.create`   | `apiBaseUrl + /todos` に POST、Content-Type ヘッダ                                  | URL/メソッド/ヘッダが期待通り                                  | 高     |
+| UT-4 | `TodoApiService.get`      | `apiBaseUrl + /todos/{id}` に GET                                                   | 同上                                                           | 高     |
+| UT-5 | `TodoApiService` エラー整形 | 400 `{ errors: [...] }` を `ApiErrorResponse` で再 throw                            | `catchError` で整形済みオブジェクト                            | 中     |
+| UT-6 | `TodoApiService` エラー整形 | 500 `{ error: "..." }` を `ApiErrorResponse` で再 throw                             | 同上                                                           | 中     |
+| UT-7 | `TodoApiService` ネットワーク | `status === 0`（CORS / オフライン）を区別して再 throw                               | `UiError` 用に network 種別が判別可能                          | 中     |
+| UT-8 | `TodoComponent` 表示      | 4xx 時 `errors[0]` を表示                                                            | DOM に該当文言                                                 | 中     |
+| UT-9 | `TodoComponent` 表示      | 5xx 時 "サーバエラーが発生しました" を表示                                          | DOM に該当文言                                                 | 中     |
+| UT-10 | `TodoComponent` 表示      | network error 時 "API に接続できませんでした" を表示                                | DOM に該当文言                                                 | 中     |
+
+### 2.2 結合テスト（Karma + Jasmine + HttpTestingController）
+
+| No   | テスト対象                                | テスト内容                                                                                              | 期待結果                                                                   | 優先度 |
+| ---- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------ |
+| IT-1 | `TodoComponent` ↔ `TodoApiService`        | フォーム入力 → ボタン押下で `POST /todos` が 1 回発行され、201 応答で結果が画面に出る                   | HttpTestingController で 1 リクエスト検出 + DOM 反映                       | 高     |
+| IT-2 | `TodoComponent` ↔ `TodoApiService` ↔ Config | `ConfigService.load` 後に `TodoApiService` の URL に `apiBaseUrl` が反映される                          | リクエスト URL が `<apiBaseUrl>/todos`                                     | 高     |
+| IT-3 | エラーパス                                | `POST /todos` を 400 `{ errors: ["title is required"] }` で flush                                       | DOM に "title is required" を表示                                          | 中     |
+| IT-4 | エラーパス                                | `POST /todos` を 500 で flush                                                                           | "サーバエラーが発生しました" を表示                                        | 中     |
+| IT-5 | ネットワーク                              | `POST /todos` を `error(new ProgressEvent('error'))` で flush                                           | "API に接続できませんでした" を表示                                        | 中     |
+| IT-6 | ConfigService 異常                        | `/assets/config.json` を 404 で flush                                                                   | アプリ全体が「設定読み込みエラー」状態に遷移                               | 中     |
+
+### 2.3 E2E テスト（Playwright）
+
+| No    | テストシナリオ                       | 手順                                                                                                                                                         | 期待結果                                                                                  | 優先度 |
+| ----- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- | ------ |
+| E2E-1 | UI から Todo 作成・取得              | 1. `http://localhost:8080/` を開く<br>2. title 入力 → 送信<br>3. 表示された id を控える<br>4. 取得フォームに id 入力 → 取得                                 | 同じ title の Todo が GET 結果として表示される                                            | 高     |
+| E2E-2 | nginx 静的配信 / SPA fallback        | `http://localhost:8080/foo/bar` (任意のパス) を直接開く                                                                                                      | 200 + `index.html` が返り、Angular ルータが処理                                           | 高     |
+| E2E-3 | **CORS 成立アサート**                | UI から `POST /todos` を実行し、ブラウザに `console.error` が出ない / Network タブ的に preflight 204 + 本リクエスト 201                                      | preflight が 204、本リクエストが 201。Playwright の `page.on('console', ...)` でエラー無 | 高     |
+| E2E-4 | 4xx エラー UI 表示                   | title を空で送信                                                                                                                                             | UI にエラー文言（API の `errors[0]`）が表示される                                          | 中     |
+| E2E-5 | 5xx エラー UI 表示                   | （任意・skipable）floci の Lambda を一時的に落として 5xx を再現                                                                                              | UI に "サーバエラーが発生しました" 表示。skip 時はログにスキップ理由出力                  | 低     |
+| E2E-6 | 実 AWS 接続防止                      | `AWS_ENDPOINT_URL` 未設定で `scripts/web-e2e.sh` を実行                                                                                                      | 実 AWS に到達せず、明確なエラーで exit                                                    | 高     |
+
+#### E2E 実行手順（ローカル / CI 共通）
+
+```bash
+# 1. floci + nginx 起動（compose/docker-compose.yml）
+docker compose -f compose/docker-compose.yml up -d floci nginx
+
+# 2. floci ヘルスチェック
+scripts/wait-floci-healthy.sh   # 既存パターン踏襲
+
+# 3. Lambda パッケージ + Terraform apply（OPTIONS + S3 含む）
+scripts/deploy-local.sh
+
+# 4. invoke_url を assets/config.json に注入 + Angular ビルド
+scripts/build-frontend.sh
+
+# 5. floci S3 へ成果物配置（fallback: ./frontend/dist の volume mount）
+scripts/deploy-frontend.sh
+
+# 6. Playwright 実行
+scripts/web-e2e.sh
+# 内部: cd frontend && npx playwright test --reporter=junit,html
+
+# 7. 後片付け
+docker compose -f compose/docker-compose.yml down -v
+```
+
+#### Playwright 設定要点 (`frontend/playwright.config.ts`)
+
+```typescript
+export default defineConfig({
+  testDir: './e2e',
+  workers: 1,                       // floci 競合回避
+  use: {
+    baseURL: process.env.WEB_BASE_URL ?? 'http://localhost:8080',
+    trace: 'retain-on-failure',
+  },
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  reporter: [['junit', { outputFile: 'test-results/junit.xml' }], ['html']],
+});
+```
+
+#### 判定基準
+
+- 全 E2E ケースが pass、`junit.xml` が生成されること
+- ブラウザの Console に CORS 由来のエラーが**出ない**こと（E2E-3）
+- レポート HTML がアーティファクトとして保管されること
+
+---
+
+## 3. 既存テスト修正
+
+| ファイル / 対象                                          | 修正内容                                                       | 理由                                                  |
+| -------------------------------------------------------- | -------------------------------------------------------------- | ----------------------------------------------------- |
+| `tests/TodoApi.UnitTests/ApiHandlerRoutingTests.cs` 等   | レスポンスヘッダ期待値に `Access-Control-Allow-Origin: *` 等を追加 | `JsonHeaders` 拡張に伴うリグレッション防止           |
+| `tests/TodoApi.IntegrationTests/*`                       | OPTIONS 経路の最低 1 ケース追加（`OPTIONS /todos` → 204 + CORS） | API Gateway OPTIONS の追加検証                        |
+| `tests/TodoApi.E2ETests/*`                               | 既存ケースは無修正で pass を確認（CORS ヘッダ付与は後方互換）   | フロント追加でも .NET E2E が壊れないことを保証        |
+| `scripts/verify-readme-sections.sh`                      | 新セクション "Frontend" を検証対象に追加                       | README 整合性                                         |
+| `.gitlab-ci.yml`                                         | `web-lint / web-unit / web-integration / web-e2e` 追加         | CI でフロントテストを実行                             |
+
+---
+
+## 4. テストデータ設計
+
+| データ                | 値                                                                                       | 用途                                |
+| --------------------- | ---------------------------------------------------------------------------------------- | ----------------------------------- |
+| 正常 title            | `"buy milk"`                                                                              | UT/IT/E2E の正常系                   |
+| バリデーション NG     | `""`（空文字）                                                                            | UT/IT/E2E の 400 系                  |
+| 長すぎ title          | `"a".repeat(10000)`                                                                       | （任意）バリデーション境界           |
+| 既存 fixture invoke_url | `terraform output -raw invoke_url`                                                       | E2E、CI                              |
+| `WEB_BASE_URL` env    | local: `http://localhost:8080` / CI: `http://docker:8080`                                | Playwright `baseURL`                 |
+
+---
+
+## 5. acceptance_criteria 対応表
+
+| acceptance_criteria                                                                                                                                                          | 検証する種別 | 対応テスト ID                                                  |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | -------------------------------------------------------------- |
+| ローカルで Angular フロントエンドを起動し、floci 上の API を叩いて Todo を作成・取得できること                                                                               | E2E          | E2E-1, E2E-3                                                   |
+| ローカルで S3 + CloudFront 相当の配信構成を起動し、フロントエンド経由の Todo 作成・取得ができること                                                                          | E2E          | E2E-1, E2E-2 (nginx 静的配信), E2E-3                          |
+| Angular の単体テスト（component/service）がローカルと CI で実行され、全て通過すること                                                                                        | 単体         | UT-1〜UT-10（CI: `web-unit`）                                  |
+| Angular の結合テスト（HttpClient/API 接続境界など）がローカルと CI で実行され、全て通過すること                                                                              | 結合         | IT-1〜IT-6（CI: `web-integration`）                            |
+| Playwright E2E が floci + terraform apply 済み API と S3 + CloudFront 相当フロントエンドに対してローカルと CI で実行され、全て通過すること                                  | E2E          | E2E-1〜E2E-6（CI: `web-e2e`）                                  |
+| 既存 .NET 側の lint/unit/integration/e2e ジョブが引き続き成功すること                                                                                                        | 既存         | 既存 .NET CI ジョブ + `06_side-effect-verification.md` の回帰確認 |
+| README または同等のドキュメントにローカル起動、テスト、CI 実行方法が記載されていること                                                                                       | ドキュメント | `scripts/verify-readme-sections.sh` 拡張で機械検証              |
+
+---
+
+## 6. テスト実行戦略
+
+| 環境              | 実行コマンド                                                    | 想定所要時間   |
+| ----------------- | --------------------------------------------------------------- | -------------- |
+| ローカル単体      | `cd frontend && npm test`                                       | < 1 分          |
+| ローカル結合      | `cd frontend && npm run test:integration`                       | < 1 分          |
+| ローカル E2E      | `scripts/web-e2e.sh`                                            | 5–10 分        |
+| CI `web-lint`     | `cd frontend && npm ci && npm run lint`                         | < 2 分          |
+| CI `web-unit`     | `cd frontend && npm ci && npm test -- --watch=false ...`        | 2–4 分          |
+| CI `web-integration` | 同上の integration spec                                       | 2–4 分          |
+| CI `web-e2e`      | floci up → tf apply → ng build → s3 sync → playwright           | 8–15 分         |
+
+> R4 軽減として npm / Playwright / docker layer をキャッシュ（`02_interface-api-design.md` §7 参照）。
+
+---
+
+## 7. 失敗時の切り分けフロー
+
+```mermaid
+flowchart TD
+    F[テスト失敗] --> A{種別}
+    A -->|UT| U[Karma ログ + DOM スナップショット]
+    A -->|IT| I[HttpTestingController 期待値ログ]
+    A -->|E2E| E[Playwright trace + console + network]
+    E --> E1{CORS 由来?}
+    E1 -->|Yes| C1[OPTIONS の 4xx or ヘッダ欠落 → APIGW or Lambda fallback 検討]
+    E1 -->|No| C2{設定 /assets/config.json?}
+    C2 -->|Yes| C3[build-frontend.sh の invoke_url 注入確認]
+    C2 -->|No| C4[Lambda / DDB ログ参照 + .NET E2E と比較]
+```
