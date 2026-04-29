@@ -18,10 +18,12 @@
 ```mermaid
 erDiagram
     TODO {
-        string id PK "Lambda 採番 (UUID 等)"
+        string id PK "Lambda 採番 (UUID)"
         string title "1〜N 文字, TodoValidator 対象"
-        string status "任意"
-        string created_at "ISO8601"
+        string description "任意 (null 許容、JSON では WhenWritingNull で省略)"
+        string status "TodoStatus enum (snake_case_lower: open / in_progress / done)"
+        string createdAt "ISO8601 (DateTime, JsonOpts CamelCase)"
+        string updatedAt "ISO8601 (DateTime, JsonOpts CamelCase)"
     }
 ```
 
@@ -33,17 +35,33 @@ DynamoDB テーブル `Todos`（既存）に変更なし。
 
 ### 2.1 ドメインモデル
 
+JSON キー命名は **Lambda 側の `JsonOpts.Default` (`PropertyNamingPolicy = JsonNamingPolicy.CamelCase`)** に一致させる（RD-009 解消）。`Status` enum は `JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower)` のため文字列値は `'open' | 'in_progress' | 'done'`。`DateTime` は ISO8601 文字列としてシリアライズされる。
+
+| API 上のキー | 型             | 由来 (Lambda)                          | 備考 |
+| ------------ | -------------- | -------------------------------------- | ---- |
+| `id`         | string         | `Todo.Id`                              | UUID |
+| `title`      | string         | `Todo.Title`                           | 必須 |
+| `description`| string \| null | `Todo.Description` + `WhenWritingNull` | null 時は省略 |
+| `status`     | string         | `Todo.Status` (`TodoStatus` enum)      | snake_case_lower (`open` 等) |
+| `createdAt`  | string         | `Todo.CreatedAt` (`DateTime`)          | ISO8601 |
+| `updatedAt`  | string         | `Todo.UpdatedAt` (`DateTime`)          | ISO8601 |
+
 ```typescript
 // frontend/src/app/models/todo.ts
+export type TodoStatus = 'open' | 'in_progress' | 'done';
+
 export interface Todo {
   id: string;
   title: string;
-  status?: string;
-  created_at?: string;
+  description?: string;       // Lambda 側 WhenWritingNull のため optional
+  status: TodoStatus;
+  createdAt: string;          // ISO8601
+  updatedAt: string;          // ISO8601
 }
 
 export interface TodoCreateRequest {
   title: string;
+  description?: string;
 }
 
 // 既存 Lambda の 4xx/5xx レスポンス両形式に対応
@@ -136,10 +154,12 @@ s3://frontend-bucket/
     └── config.json
 ```
 
-`aws s3 sync frontend/dist/ s3://frontend-bucket/` で配置。
-nginx は本タスクではこの S3 を直接 origin にせず、`./frontend/dist:/usr/share/nginx/html:ro` のボリュームマウントで配信する（floci S3 静的ホスティング互換不確実のため）。S3 への sync は「将来の本番化導線」「`scripts/deploy-frontend.sh` の存在確認」を兼ねる。
+`aws s3 sync frontend/dist/ s3://frontend-bucket/` で配置する。**ブラウザに配信する成果物は常に nginx の host volume mount (`./frontend/dist:/usr/share/nginx/html:ro`) 経由** とし、S3 を nginx origin にしたり、S3 静的ホスティング URL をブラウザから直接利用したりしない（RD-001 正規経路）。S3 sync は次の目的のために必ず実行する:
 
-> **R2 軽減策**: floci S3 が静的ホスティング互換であれば、nginx の `proxy_pass` ではなく **「nginx を撤去して S3 静的ホスティング URL を直接使う」または「nginx config を S3 オブジェクトを fetch するよう書き換える」** どちらの拡張も可能な構造としておく（実装フェーズで決定）。
+- `scripts/deploy-frontend.sh` の経路と認証（floci AWS_*=test）が成立していることの検証
+- 将来の本番化（S3 + CloudFront）に向けた配置経路の論理一致
+
+> **R2 軽減策**: floci S3 が静的ホスティング互換であっても、nginx 撤去 / S3 origin 化 / config 書き換えは **本タスクでは行わない**（却下案、`01_implementation-approach.md` §2 案 5・案 6 参照）。fallback 経路は設けず、配信は nginx 一意とする。
 
 ---
 
@@ -149,15 +169,12 @@ nginx は本タスクではこの S3 を直接 origin にせず、`./frontend/di
 
 | リソースタイプ                                      | 名称                          | 役割                                          |
 | --------------------------------------------------- | ----------------------------- | --------------------------------------------- |
-| `aws_s3_bucket`                                     | `frontend`                    | フロント成果物の配信元                        |
-| `aws_s3_bucket_website_configuration`               | `frontend`                    | （任意）静的ホスティング設定                  |
-| `aws_api_gateway_method` (`OPTIONS`)                | `options_todos`               | `/todos` の OPTIONS                           |
-| `aws_api_gateway_method` (`OPTIONS`)                | `options_todo_id`             | `/todos/{id}` の OPTIONS                      |
-| `aws_api_gateway_integration` (`MOCK`)              | `options_todos_int`           | OPTIONS の MOCK 統合（200 を即返す）          |
-| `aws_api_gateway_integration` (`MOCK`)              | `options_todo_id_int`         | 同上                                          |
-| `aws_api_gateway_method_response`                   | `options_todos_resp`          | OPTIONS の応答ヘッダ宣言                      |
-| `aws_api_gateway_integration_response`              | `options_todos_int_resp`      | OPTIONS の応答ヘッダ値（CORS）                |
-| 同上 (`/todos/{id}` 用)                             | `options_todo_id_*`           | 同上                                          |
+| `aws_s3_bucket`                                     | `frontend`                    | フロント成果物の配置先（nginx origin にはしない） |
+| `aws_api_gateway_method` (`OPTIONS`)                | `options_todos`               | `/todos` の OPTIONS（authorization=`NONE`）   |
+| `aws_api_gateway_method` (`OPTIONS`)                | `options_todo_id`             | `/todos/{id}` の OPTIONS（同上）              |
+| `aws_api_gateway_integration` (`AWS_PROXY`)         | `options_todos_int`           | OPTIONS を Lambda に統合（標準・MOCK 不採用） |
+| `aws_api_gateway_integration` (`AWS_PROXY`)         | `options_todo_id_int`         | 同上                                          |
+| `aws_lambda_permission`                             | `allow_apigw_options_*`       | APIGW から Lambda OPTIONS 呼び出し許可         |
 
 ### 5.2 outputs.tf 追加
 
@@ -172,7 +189,8 @@ output "frontend_url" {
 }
 ```
 
-> 互換性懸念がある場合は `aws_s3_bucket_website_configuration` を実装フェーズで切り離し可能に保つ。
+> AWS_PROXY 統合のため、Lambda が返す CORS レスポンスヘッダはそのまま透過される。`aws_api_gateway_method_response.response_parameters` での宣言は不要（RD-011、`02_interface-api-design.md` §2.4 参照）。
+> `aws_s3_bucket_website_configuration` は本タスクでは作成しない（nginx 配信に一意化、RD-001）。
 
 ---
 
@@ -253,8 +271,10 @@ floci-apigateway-csharp/
 
 ## 8. スキーマ整合性
 
-- Angular `Todo` 型は Lambda `Models/Todo.cs` のフィールド名（`id`, `title`, `status`, `created_at`）に追従する。命名差異（snake_case vs camelCase）は実装フェーズで `JsonOpts.cs` の Naming Policy を確認のうえ、Angular 側で `JsonProperty`/`@SerializedName` 相当の変換は行わずに **API のキー名そのまま** を採用する。
-- API レスポンスのフィールド追加には Angular 側 `Todo` を `Partial`-tolerant な定義（オプショナル `?`）で受ける。
+- Angular `Todo` 型は Lambda `JsonOpts.Default` (`PropertyNamingPolicy = JsonNamingPolicy.CamelCase`) に従い、**CamelCase キー** (`id`, `title`, `description`, `status`, `createdAt`, `updatedAt`) を採用する（RD-009 解消）。
+- `TodoStatus` enum は `JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower)` のため、JSON 上は `"open" | "in_progress" | "done"` の文字列。Angular 側も `type TodoStatus = 'open' | 'in_progress' | 'done'` で型付けする。
+- `description` は Lambda 側 `DefaultIgnoreCondition = WhenWritingNull` で null 時に出力されない可能性があるため、Angular 側は `description?: string` で受ける。
+- API レスポンスのフィールド追加に対しては、それ以外の Angular `Todo` フィールドはすべて必須として扱う（追加フィールドのみオプショナル運用）。実 API 仕様の確定検証は `06_side-effect-verification.md` §2 の curl チェックで実施する。
 
 ---
 
@@ -265,5 +285,5 @@ floci-apigateway-csharp/
 | Angular ドメイン型         | 無し           | `Todo`, `TodoCreateRequest`, `ApiErrorResponse`, `UiError` | フロント追加                      |
 | ランタイム設定             | 無し           | `assets/config.json` (`AppConfig`)                      | invoke_url の環境差吸収           |
 | floci `SERVICES`           | s3 無し        | `s3` 追加                                               | フロント成果物配置                |
-| Terraform                  | API + Lambda + SFN + DDB | + S3 bucket + APIGW OPTIONS                  | フロント配信 + CORS               |
+| Terraform                  | API + Lambda + SFN + DDB | + S3 bucket + APIGW OPTIONS (AWS_PROXY → Lambda) | フロント配信 + CORS               |
 | Lambda レスポンスヘッダ辞書 | `Content-Type` のみ | + CORS ヘッダ                                          | ブラウザ直呼び対応                |

@@ -85,7 +85,7 @@ flowchart TD
 | 4 | `GET /todos/{id}` が `Access-Control-Allow-Origin: *` を含む     | `curl -i -X GET` で確認                                  |
 | 5 | エラー応答（4xx / 5xx）にも CORS ヘッダが付く                     | Lambda の例外パスでも `JsonHeaders` 経由で付与            |
 | 6 | ブラウザから preflight → 本リクエストが連続で成功する             | Playwright E2E-3 で必須アサート                           |
-| 7 | R1 fallback（Lambda OPTIONS）が必要になった場合の切替コストが小さい | Terraform の OPTIONS integration を MOCK ↔ AWS_PROXY 切替で対応可能な構造 |
+| 7 | Lambda OPTIONS 標準採用済みのため、API Gateway 側 OPTIONS は AWS_PROXY で Lambda に透過する設計 (RD-006) | Terraform で OPTIONS が AWS_PROXY 統合になっており、MOCK 設定が残っていないこと。`Function.cs` に OPTIONS ハンドラが実装され、`OPTIONS /todos` / `OPTIONS /todos/{id}` が 204 + CORS ヘッダで応答すること（fallback 切替や MOCK 統合は採用しない） |
 
 ### 2.3 パフォーマンス検証
 
@@ -127,6 +127,24 @@ flowchart TD
 | ローカル devcontainer / dood / DinD           | いずれの実行環境でも `web-e2e.sh` が成立する                                        |
 | ロールバック手順                              | `frontend/`, compose nginx, infra OPTIONS+S3, web-* ジョブを独立コミットで revert 可 |
 | `verify-readme-sections.sh`                   | 既存セクション + 追加 Frontend セクションを両方検証                                 |
+
+### 2.7 テスト環境準備状況の事前確認 (test environment readiness、RD-012 解消)
+
+`05_test-plan.md` §1.5 で定義した readiness 一覧を、CI/ローカル双方で `scripts/check-test-env.sh` により事前検証する。下表のいずれかが欠落 / バージョン不一致のとき、該当ジョブは即座に exit 1 する（RD-002 の fail-fast と整合）。
+
+| # | 確認対象                          | 確認コマンド                                          | 期待                                                  | 不足時の対応                                                  |
+|---|-----------------------------------|-------------------------------------------------------|-------------------------------------------------------|---------------------------------------------------------------|
+| 1 | Node.js                           | `node -v`                                             | `v20.11.x`                                             | `nvm install 20.11` / devcontainer 再ビルド                  |
+| 2 | Chromium (Playwright 同梱)        | `npx playwright install --dry-run chromium`           | "is already installed"                                  | `npx playwright install --with-deps chromium`                  |
+| 3 | Playwright                        | `npx playwright --version`                            | `Version 1.45.3`                                       | `npm ci` を再実行                                              |
+| 4 | Docker                            | `docker --version`                                    | `25.0.x` 以降                                          | DinD service 再起動 / devcontainer 修正                       |
+| 5 | DinD (CI のみ)                    | `docker info`（`DOCKER_HOST=tcp://docker:2376`）       | server / client が応答                                  | `.gitlab-ci.yml` の `services` 宣言 / TLS 証明書 mount 確認    |
+| 6 | floci image                       | `docker pull floci/floci:latest`                      | pull 成功                                              | レジストリ疎通確認 / イメージ tag 固定                        |
+| 7 | AWS CLI v2 (`--endpoint-url`専用) | `aws --version`                                       | `aws-cli/2.x`                                          | Playwright image に追加インストール                            |
+| 8 | Terraform                         | `terraform -version`                                  | `Terraform v1.6.6`                                      | tfenv で固定                                                   |
+| 9 | .NET SDK                          | `dotnet --version`                                    | `8.0.x`                                                 | 既存運用                                                       |
+
+`web-unit` / `web-integration` / `web-e2e` のいずれも、ジョブ冒頭で `scripts/check-test-env.sh` を実行し、未充足のまま後続ステップへ進めない（実 AWS への偶発的接続防止 + 環境差分の早期検知）。
 
 ---
 
