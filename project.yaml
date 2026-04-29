@@ -5,7 +5,7 @@ meta:
   target_repo: "floci-apigateway-csharp"
   branch: "feature/FRONTEND-001"
   created_at: "2026-04-29T12:16:26+00:00"
-  updated_at: "2026-04-29T17:29:39+00:00"
+  updated_at: "2026-04-29T17:39:00+00:00"
 setup:
   description:
     overview: |
@@ -611,13 +611,112 @@ verification:
   artifacts: docs/floci-apigateway-csharp/verification/round4/verification-report.md
   completed_at: "2026-04-29T17:26:27+00:00"
 code_review:
-  status: pending
+  status: revision_required
   started_at: "2026-04-29T17:29:15+00:00"
-  round: 1
-  rounds: []
-  review_checklist: {}
-  issues: []
-  artifacts: []
+  round: 2
+  rounds:
+    - round: 1
+      result: revision_required
+      issues: 16
+  review_checklist:
+    design_conformance:
+      status: pass
+    static_analysis:
+      status: pass
+    language_best_practices:
+      status: fail
+      notes: CR-009/CR-010/CR-011
+    security:
+      status: fail
+      notes: CR-011/CR-016
+    tests_ci:
+      status: fail
+      notes: CR-001/CR-002/CR-003/CR-005/CR-006/CR-008/CR-012/CR-013
+    performance:
+      status: skip
+      notes: 計測未実施
+    documentation:
+      status: skip
+      notes: 対象外
+    git_hygiene:
+      status: fail
+      notes: package-lock 別コミット推奨 (Info)
+    mr_requirements:
+      status: skip
+      notes: MR/PR 未発行のため対象外
+  issues:
+    - id: CR-001
+      severity: critical
+      description: 'verification failed/create_mr_pr failed: AC1/AC5/E2E/TC-08 未達。floci OPTIONS 制約解消または合意済み代替環境での AC 実証が必要。'
+      status: open
+    - id: CR-002
+      severity: critical
+      description: E2E-6 が test.skip で実行されず AC5 (E2E-1〜E2E-6 全通過) 未達。WEB_BASE_URL 未設定 fail-fast を実テスト/CI で検証し skip 撤廃。
+      status: open
+    - id: CR-003
+      severity: critical
+      description: E2E-1 が作成 Todo の title 一致を検証していない。ID 表示のみ確認しており AC 検証不足。
+      status: open
+    - id: CR-004
+      severity: major
+      description: Frontend TodoStatus/POST 型が実 Backend と不一致の可能性。status pending/done、POST 応答 {id, executionArn} と整合させる。
+      status: open
+    - id: CR-005
+      severity: major
+      description: CORS HTTP preflight RED テストが invoke_url 未取得時 exit0 skip しゲートとして弱い。必須前提未充足は失敗もしくは明示手動 skip のみに限定。
+      status: open
+    - id: CR-006
+      severity: minor
+      description: GitLab web-unit/web-integration JUnit report path と Karma 出力先不一致の可能性。
+      status: open
+    - id: CR-007
+      severity: major
+      description: compose/docker-compose.yml に no-op env DISABLE_CUSTOM_CORS_APIGATEWAY が残置。
+      file: compose/docker-compose.yml
+      status: open
+    - id: CR-008
+      severity: major
+      description: scripts/web-e2e.sh の terraform state show + awk 抽出が脆い。terraform output -json 等の machine-readable 出力に変更。
+      file: scripts/web-e2e.sh
+      status: open
+    - id: CR-009
+      severity: major
+      description: Lambda OPTIONS 分岐が任意 resource に 204+CORS を返しうる。/todos,/todos/{id} に限定し unknown OPTIONS は 404 にする。
+      status: open
+    - id: CR-010
+      severity: major
+      description: Lambda GET /todos/foo/bar が id foo/bar として通る可能性。resource/id segment を厳格化。
+      status: open
+    - id: CR-011
+      severity: major
+      description: frontend/src/main.ts の innerHTML 使用を createElement/textContent 等に変更し XSS リスクを排除。
+      file: frontend/src/main.ts
+      status: open
+    - id: CR-012
+      severity: major
+      description: frontend/scripts/check-coverage-threshold.js が XML 正規表現でパースしており脆い。json-summary 等構造化形式に変更。
+      file: frontend/scripts/check-coverage-threshold.js
+      status: open
+    - id: CR-013
+      severity: minor
+      description: SkipIfNoFlociTheory の skip 理由/件数のトレース性を改善、または verification 手順に明記。
+      status: open
+    - id: CR-014
+      severity: minor
+      description: infra/outputs.tf frontend_url が localhost:8080 ハードコード。CI との差異をコメント/変数化。
+      file: infra/outputs.tf
+      status: open
+    - id: CR-015
+      severity: minor
+      description: GitLab web-e2e CI のツール install が重い。事前ビルドイメージを検討。
+      status: open
+    - id: CR-016
+      severity: info
+      description: CORS "*" の将来リスク。ALLOWED_ORIGIN env 等で制御可能に。
+      status: open
+  artifacts:
+    - docs/floci-apigateway-csharp/code-review/round-01-summary.md
+  review_method: dual-model (Claude Opus 4.7 + GPT-5.5)
 create_mr_pr:
   status: failed
   started_at: "2026-04-29T17:29:39+00:00"
