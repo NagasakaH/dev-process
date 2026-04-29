@@ -5,7 +5,7 @@ meta:
   target_repo: "floci-apigateway-csharp"
   branch: "feature/FRONTEND-001"
   created_at: "2026-04-29T12:16:26+00:00"
-  updated_at: "2026-04-29T13:15:07+00:00"
+  updated_at: "2026-04-29T13:22:38+00:00"
 setup:
   description:
     overview: |
@@ -152,7 +152,73 @@ design:
   approach: ""
   key_decisions: []
   review:
-    round: 0
-    status: pending
+    round: 1
+    status: conditional
+    latest_verdict: "条件付き承認 (round 1)"
+    completed_at: "2026-04-29T13:22:32+00:00"
+    summary: "設計の方向性は要件に合致するが、配信経路 / E2E fail-fast / CI再現性 / unit-integration分離 / CORS OPTIONS に Major 6 件残存。Critical なし。"
+    artifacts:
+      - "docs/floci-apigateway-csharp/review-design/"
+    issues:
+      - id: RD-001
+        severity: major
+        category: "配信アーキテクチャ整合性"
+        description: "nginx の配信元が S3 sync / host volume mount / S3 fallback で設計書間に矛盾し、受入基準『S3+CloudFront 相当』の正規検証経路が一意に定まらない。ブレスト決定に反する nginx 撤去案も残存。推奨: Angular build を floci S3 に sync→ローカル検証用に nginx 静的配信へ反映、API リバプロなし、fallback は host volume mount のみ。"
+        status: open
+      - id: RD-002
+        severity: major
+        category: "E2Eゲート / 実AWS流出防止"
+        description: "WEB_BASE_URL / AWS_ENDPOINT_URL / API_BASE_URL 未設定時挙動が skip と fail-fast で矛盾し、品質ゲート/実AWS流出防止の検証にならない。shell/globalSetup 共に exit 1/throw で fail-fast 統一すべき。"
+        status: open
+      - id: RD-003
+        severity: major
+        category: "CI再現性 / ブラウザ依存"
+        description: "web-unit/web-integration の CI image が node:20 と Playwright image で揺れ、ChromeHeadlessCI の Chromium 依存が保証されない。mcr.microsoft.com/playwright(Chromium 同梱) に統一し web-lint image も明示。"
+        status: open
+      - id: RD-004
+        severity: major
+        category: "CI再現性 / DinDネットワーク"
+        description: "web-e2e の GitLab DinD 設定 (DOCKER_HOST/TLS/FF_NETWORK_PER_BUILD) と nginx/floci 到達性が未具体化。docker:dind service、DOCKER_HOST=tcp://docker:2375、DOCKER_TLS_CERTDIR=\"\"、FF_NETWORK_PER_BUILD、ポート公開、WEB_BASE_URL=http://docker:8080 の前提を明記すべき。"
+        status: open
+      - id: RD-005
+        severity: major
+        category: "テスト分離設計"
+        description: "unit/integration を分けるための Angular spec 命名・tsconfig/karma/angular.json ターゲット分離・npm scripts が未定義。*.spec.ts と *.integration.spec.ts、karma.conf と karma.integration.conf、npm run test:unit/test:integration を定義すべき。"
+        status: open
+      - id: RD-006
+        severity: major
+        category: "floci互換性 / CORS OPTIONS"
+        description: "APIGW OPTIONS+MOCK 互換が未確認で Lambda OPTIONS fallback が後送り。OPTIONS 成功ステータスも 200/204 で矛盾。Lambda OPTIONS fallback を標準化し 204 に統一する案を推奨。"
+        status: open
+      - id: RD-007
+        severity: minor
+        category: "バージョン固定 / 依存再現性"
+        description: "Angular/Playwright/Node/CI image tag が可変で CI 再現性が弱い。Angular 18 engines.node が package.json に未反映。Node 20.11 系 / Angular 18.x / Playwright 1.45.x など具体バージョンと engines.node を明記。"
+        status: open
+      - id: RD-008
+        severity: minor
+        category: "カバレッジ強制"
+        description: "カバレッジ目標はあるが karma coverageReporter.check.global で CI fail させる設計なし。閾値設定+未達時 exit 1 を web-unit/web-integration に組み込む。"
+        status: open
+      - id: RD-009
+        severity: minor
+        category: "データ契約明確化"
+        description: "実 API の JSON キー命名 (createdAt vs created_at 等) が未確定で Angular Todo 型と実レスポンスがずれる可能性。Lambda JsonOpts/実レスポンスに基づき設計で確定し DTO を合わせる。"
+        status: open
+      - id: RD-010
+        severity: minor
+        category: "README検証仕様"
+        description: "README ローカル起動/テスト/CI 実行方法を verify-readme-sections.sh で検証するとあるが、検証対象見出し一覧が未定義。"
+        status: open
+      - id: RD-011
+        severity: minor
+        category: "API Gateway CORSヘッダ透過"
+        description: "POST/GET の AWS_PROXY レスポンスヘッダ透過に依拠するか method_response で CORS ヘッダ許可するかが未明記。いずれかを設計で明記すべき。"
+        status: open
+      - id: RD-012
+        severity: minor
+        category: "テスト環境準備状況"
+        description: "Node.js 20 / Chromium / Playwright browsers / Docker DinD / floci image / AWS CLI / Terraform などの事前確認手順が設計に不足。test environment readiness として一覧化すべき。"
+        status: open
   artifacts: "docs/floci-apigateway-csharp/design/"
   completed_at: "2026-04-29T13:15:01+00:00"
