@@ -1,0 +1,2 @@
+[OK] test env ready (e2e)
+[FATAL] floci did not become healthy in 60s at http://localhost:4566
