@@ -3,7 +3,7 @@
 ## 検証情報
 
 - プロジェクト: floci-apigateway-csharp
-- 対象コミット: `1090042` (`refs FRONTEND-001 code-review 指摘対応`)
+- 対象コミット: `025f207` (`refs FRONTEND-001 gitlab-ci-local検証でCI定義を修正`)
 - テスト戦略スコープ: unit / integration / E2E
 - 検証結果: ✅ 全通過
 
@@ -17,6 +17,24 @@
 | .NET integration | `AWS_ENDPOINT_URL=http://host.docker.internal:4566 dotnet test tests/TodoApi.IntegrationTests -c Release --no-restore` | ✅ 12/12 PASS |
 | Infra plan assertion | `bash tests/infra/test-frontend-plan.sh` | ✅ 7/7 expected resources + AWS_PROXY 統合確認 PASS |
 | CORS preflight diagnostic | `bash tests/infra/test-cors-preflight-http.sh` | ✅ diagnostic WARN扱い。floci 1.5.9 の OPTIONS ギャップを検出しつつ通常検証は PASS |
+
+## GitLab CI ローカル検証
+
+`gitlab-ci-local` で CI 定義そのものをローカル検証した。
+
+| 対象 | コマンド | 結果 |
+|------|----------|------|
+| Backend E2E job | `npx --yes gitlab-ci-local@latest --privileged --pull-policy if-not-present e2e` | ✅ PASS。warmup 3 Lambda OK、`TodoApi.E2ETests` 6/6 PASS |
+| 残り CI jobs | `npx --yes gitlab-ci-local@latest --privileged --pull-policy if-not-present --concurrency 1 format web-lint unit web-unit integration web-integration web-e2e` | ✅ PASS。format/web-lint/unit/web-unit/integration/web-integration/web-e2e 全通過 |
+
+補足: このローカル Docker は server architecture が arm64 のため、backend `e2e` job でも `scripts/deploy-local.sh` と同じ Lambda architecture 自動判定を使用するよう CI 定義を修正した。GitLab SaaS Runner では amd64 として動作する。
+
+## GitLab CI 実行結果
+
+- **Pipeline**: https://gitlab.com/nagasaka-experimental/floci-apigateway-csharp/-/pipelines/2489878063
+- **対象コミット**: `025f207`
+- **結果**: ✅ success
+- **ジョブ**: `format`, `web-lint`, `unit`, `web-unit`, `integration`, `web-integration`, `e2e`, `web-e2e` の8ジョブすべて success
 
 ## E2Eテスト実行結果
 
@@ -52,6 +70,8 @@
 - Lambda 側の OPTIONS / CORS 契約は維持し、`STRICT_PREFLIGHT=1` で実 AWS / floci 修正版の厳密確認が可能。
 - `apply-state-machine.sh` を floci の `UpdateStateMachine` 未対応に合わせて delete + create で冪等化。
 - `build-frontend.sh` はビルド時のみ `config.json` を注入し、終了後にプレースホルダへ戻す。
+- GitLab CI の `web-unit` / `web-integration` で Playwright image 内 Chromium を `CHROME_BIN` に設定。
+- GitLab CI の `e2e` / `web-e2e` を `gitlab-ci-local` で再現し、DinD、zip、AWS CLI v1/v2、Terraform version check、Lambda architecture 差分を修正。
 
 ## 総合結果
 
