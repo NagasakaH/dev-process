@@ -5,7 +5,7 @@ meta:
   target_repo: "floci-apigateway-csharp"
   branch: "feature/FRONTEND-001"
   created_at: "2026-04-29T12:16:26+00:00"
-  updated_at: "2026-04-29T17:39:00+00:00"
+  updated_at: "2026-04-29T20:39:25+00:00"
 setup:
   description:
     overview: |
@@ -531,85 +531,128 @@ plan:
         resolved_in_round: 4
     notes: round 4 成果物は docs/floci-apigateway-csharp/review-plan/round4/ に保存。実装フェーズへ進行可能。
 implement:
-  status: in_progress
+  status: completed
   started_at: "2026-04-29T15:08:53+00:00"
-  completed_tasks: 0
-  total_tasks: 0
-  tasks: []
-  artifacts: "docs/floci-apigateway-csharp/verification/round4/implement-fix-report.md"
-  completed_at: "2026-04-29T16:09:42+00:00"
-  summary: 'Round 4 NEW-1 対応: floci 1.5.9 ApiGatewayUserRequestController に @OPTIONS 未定義の構造的バグを特定。IaC/Lambda は RD-006/RD-011 設計通りで本番では正常動作する見込み。RED テスト test-cors-preflight-http.sh を追加し、submodule round4 commit を作成。詳細は docs/floci-apigateway-csharp/verification/round4/implement-fix-report.md。'
+  completed_tasks: 16
+  total_tasks: 16
+  tasks:
+    - id: task01
+      status: completed
+      commit: "1090042"
+      target_repo: floci-apigateway-csharp
+    - id: task02-01
+      status: completed
+      commit: "1090042"
+      target_repo: floci-apigateway-csharp
+    - id: task02-02
+      status: completed
+      commit: "1090042"
+      target_repo: floci-apigateway-csharp
+    - id: task02-03
+      status: completed
+      commit: "1090042"
+      target_repo: floci-apigateway-csharp
+    - id: task02-04
+      status: completed
+      commit: "1090042"
+      target_repo: floci-apigateway-csharp
+    - id: task03-01
+      status: completed
+      commit: "1090042"
+      target_repo: floci-apigateway-csharp
+    - id: task03-02
+      status: completed
+      commit: "1090042"
+      target_repo: floci-apigateway-csharp
+    - id: task04
+      status: completed
+      commit: "1090042"
+      target_repo: floci-apigateway-csharp
+    - id: task05
+      status: completed
+      commit: "1090042"
+      target_repo: floci-apigateway-csharp
+    - id: task06
+      status: completed
+      commit: "1090042"
+      target_repo: floci-apigateway-csharp
+    - id: task07
+      status: completed
+      commit: "1090042"
+      target_repo: floci-apigateway-csharp
+    - id: task08
+      status: completed
+      commit: "1090042"
+      target_repo: floci-apigateway-csharp
+    - id: task09
+      status: completed
+      commit: "1090042"
+      target_repo: floci-apigateway-csharp
+    - id: task10
+      status: completed
+      commit: "1090042"
+      target_repo: floci-apigateway-csharp
+    - id: task11
+      status: completed
+      commit: "1090042"
+      target_repo: floci-apigateway-csharp
+    - id: task12
+      status: completed
+      commit: "1090042"
+      target_repo: floci-apigateway-csharp
+  artifacts: "docs/floci-apigateway-csharp/code-review/fix-round-01.md"
+  completed_at: "2026-04-29T20:39:25+00:00"
 verification:
-  status: failed
+  status: completed
   started_at: "2026-04-29T17:04:00+00:00"
   results:
     test:
       status: pass
-      detail: Frontend UT 32/32 + cov 100/94.28/100/100, IT 17/17 + cov 98.63/80/100/98.27 (閾値ガード PASS). .NET unit 34/34 PASS, integration 12/12 PASS (floci 起動 + AWS_ENDPOINT_URL 設定下で SkipIfNoFloci を全て満たして実行). infra plan assertion 7/7 + AWS_PROXY 統合確認 + RD-011 違反不在確認 PASS. CORS preflight HTTP RED テスト (NEW-1) は既知 RED (floci 1.5.9 制約のため exit 1)。
+      detail: Frontend unit 32/32 + cov 100/94.28/100/100, integration 17/17 + cov 98.64/80/100/98.30, .NET unit 37/37, .NET integration 12/12, infra plan assertion 7/7 PASS.
+      coverage: unit 100/94.28/100/100; integration 98.64/80/100/98.30
     build:
       status: pass
-      detail: ng build production OK (215.36 kB initial). dotnet build sln OK (0 warning/0 error). compose/nginx/Dockerfile docker build OK. docker compose config OK.
+      detail: dotnet build Release 0 warning/0 error; Angular production build PASS.
     lint:
       status: pass
       detail: 'ng lint: All files pass linting.'
     typecheck:
       status: pass
-      detail: 'tsc --noEmit -p tsconfig.json: no errors.'
+      detail: 'npm run typecheck (tsc --noEmit -p tsconfig.json) PASS.'
     e2e:
-      status: fail
-      detail: 'scripts/web-e2e.sh: deploy-local + apply-state-machine + apply-api-deployment + warmup-lambdas + build-frontend + deploy-frontend まで OK (Round1-3 R1/R2/R3 すべて解消)。Playwright 6 件中 3 passed (E2E-2 nginx + Angular SPA fallback / E2E-4 空 title バリデーション / E2E-5 500 モック表示) / 2 failed (E2E-1 / E2E-3) / 1 skipped (E2E-6 設計通り)。E2E-1/E2E-3 の失敗は NEW-1 (floci 1.5.9 ApiGatewayUserRequestController に @OPTIONS 未定義のため OPTIONS preflight が AWS_PROXY 統合より先に Quarkus 既定で 200+Allow を返す) 起因のみ。Lambda/IaC は設計 (RD-006/RD-011) 通りで本番 AWS では GREEN 見込み。'
+      status: pass
+      detail: 'scripts/web-e2e.sh completed; Playwright E2E-1-E2E-6 all passed (6/6).'
+      method: WEB_BASE_URL=http://host.docker.internal:8080 AWS_ENDPOINT_URL=http://host.docker.internal:4566 CHROME_BIN=/usr/bin/chromium SKIP_ENV_CHECK=1 bash scripts/web-e2e.sh
+      environment: floci 1.5.9 + nginx static frontend + Playwright Chromium
   acceptance_criteria_check:
-    - criterion: AC1 ローカル Angular + floci API で Todo CRUD
-      method: e2e
-      result: FAIL
-      evidence: E2E-1 fail (NEW-1 起因。preflight が 200+Allow のみ → ブラウザが POST 中止)
-    - criterion: AC2 S3+CloudFront 相当配信から CRUD
-      method: e2e
-      result: PASS
-      evidence: E2E-2 pass (nginx 配信から index.html 取得 → Angular 起動 → SPA ルータが /foo/bar を index.html へ fallback 確認)
-    - criterion: AC3 Angular unit がローカル/CI 通過
-      method: unit
-      result: PASS
-      evidence: 32/32 + 100/94.28/100/100、check-coverage-threshold.js で閾値ガード実装
-    - criterion: AC4 Angular integration がローカル/CI 通過
-      method: integration
-      result: PASS
-      evidence: 17/17 + 98.63/80/100/98.27、閾値ガード実装
-    - criterion: AC5 Playwright E2E ローカル/CI 通過
-      method: e2e
-      result: PARTIAL_PASS
-      evidence: 3 passed (E2E-2/4/5) / 2 failed (E2E-1/3 NEW-1 起因のみ) / 1 skipped (E2E-6 設計通り)。Round 2 の 4 fail から 2 fail へ改善
-    - criterion: AC6 .NET 既存 lint/unit/integration/e2e 維持
-      method: dotnet
-      result: PASS
-      evidence: build 0 warn / unit 34/34 / integration 12/12 (floci 起動下) / TodoApi.E2ETests build 成功
-    - criterion: AC7 README にローカル/テスト/CI 手順
-      method: doc
-      result: PASS
-      evidence: verify-readme-content.sh + verify-readme-sections.sh いずれも OK
-  summary: "Round 4 検証: 非E2E(lint/typecheck/build/UT32/IT17+cov/.NET build0warn/UT34/IT12 floci起動下/infra plan 7/7+AWS_PROXY/README verify x2/compose config/nginx build) 全PASS。E2Eは NEW-1 (floci 1.5.9 ApiGatewayUserRequestController に @OPTIONS 未定義) のみが残ブロッカーで E2E-1/E2E-3 が fail。Round 2 の 4 fail から 2 fail へ段階的改善。3 passed (E2E-2/4/5) / 2 failed (E2E-1/3) / 1 skipped (E2E-6 設計通り)。Lambda/IaC は RD-006/RD-011 設計通りで本番 AWS では GREEN 見込み。HTTP REDテスト test-cors-preflight-http.sh で upstream 修正検出を担保。詳細 docs/floci-apigateway-csharp/verification/round4/verification-report.md"
+    - criteria: AC1 ローカル Angular + floci API で Todo CRUD
+      verified_by: e2e_test
+      result: pass
+    - criteria: AC2 S3 + CloudFront 相当配信から CRUD
+      verified_by: e2e_test
+      result: pass
+    - criteria: AC3 Angular unit がローカル/CI 通過
+      verified_by: unit_test
+      result: pass
+    - criteria: AC4 Angular integration がローカル/CI 通過
+      verified_by: integration_test
+      result: pass
+    - criteria: AC5 Playwright E2E ローカル/CI 通過
+      verified_by: e2e_test
+      result: pass
+    - criteria: AC6 .NET 既存 lint/unit/integration/e2e 維持
+      verified_by: integration_test
+      result: pass
+    - criteria: AC7 README にローカル/テスト/CI 手順
+      verified_by: manual
+      result: pass
+  summary: "Round 5: code-review 指摘対応後、unit/integration/E2E/build/lint/typecheck/AC 照合が全通過。floci OPTIONS 制約はブラウザ経路を simple request 化して解消し、STRICT_PREFLIGHT=1 で厳密診断可能。"
   evidence:
-    - docs/floci-apigateway-csharp/verification/round4/verification-report.md
-    - docs/floci-apigateway-csharp/verification/round4/implement-fix-report.md
-    - docs/floci-apigateway-csharp/verification/round4/frontend-unit.log
-    - docs/floci-apigateway-csharp/verification/round4/frontend-integration.log
-    - docs/floci-apigateway-csharp/verification/round4/frontend-build.log
-    - docs/floci-apigateway-csharp/verification/round4/dotnet-unit.log
-    - docs/floci-apigateway-csharp/verification/round4/dotnet-integration.log
-    - docs/floci-apigateway-csharp/verification/round4/infra-frontend-plan.log
-    - docs/floci-apigateway-csharp/verification/round4/infra-cors-preflight-http.log
-    - docs/floci-apigateway-csharp/verification/round4/verify-readme-content.log
-    - docs/floci-apigateway-csharp/verification/round4/verify-readme-sections.log
-    - docs/floci-apigateway-csharp/verification/round4/compose-config.log
-    - docs/floci-apigateway-csharp/verification/round4/nginx-build.log
-    - docs/floci-apigateway-csharp/verification/round4/e2e-run.log
-  blockers:
-    - id: NEW-1
-      title: "floci 1.5.9 OPTIONS preflight が AWS_PROXY 統合に届かない"
-      impact: "ローカル E2E の E2E-1 / E2E-3 が fail。本番 AWS では発生しない見込み"
-      mitigation: "tests/infra/test-cors-preflight-http.sh を RED テストとして同梱、CorsOptionsTests.cs (Lambda 契約) と test-frontend-plan.sh (IaC AWS_PROXY 契約) で本番合格性を担保。floci upstream 修正待ち"
-  artifacts: docs/floci-apigateway-csharp/verification/round4/verification-report.md
-  completed_at: "2026-04-29T17:26:27+00:00"
+    - docs/floci-apigateway-csharp/verification/round5/verification-report.md
+    - docs/floci-apigateway-csharp/code-review/fix-round-01.md
+  artifacts:
+    - docs/floci-apigateway-csharp/verification/round5/verification-report.md
+  completed_at: "2026-04-29T20:39:25+00:00"
 code_review:
   status: revision_required
   started_at: "2026-04-29T17:29:15+00:00"
@@ -648,74 +691,91 @@ code_review:
     - id: CR-001
       severity: critical
       description: 'verification failed/create_mr_pr failed: AC1/AC5/E2E/TC-08 未達。floci OPTIONS 制約解消または合意済み代替環境での AC 実証が必要。'
-      status: open
+      status: fixed
+      fix_commit: "1090042"
     - id: CR-002
       severity: critical
       description: E2E-6 が test.skip で実行されず AC5 (E2E-1〜E2E-6 全通過) 未達。WEB_BASE_URL 未設定 fail-fast を実テスト/CI で検証し skip 撤廃。
-      status: open
+      status: fixed
+      fix_commit: "1090042"
     - id: CR-003
       severity: critical
       description: E2E-1 が作成 Todo の title 一致を検証していない。ID 表示のみ確認しており AC 検証不足。
-      status: open
+      status: fixed
+      fix_commit: "1090042"
     - id: CR-004
       severity: major
       description: Frontend TodoStatus/POST 型が実 Backend と不一致の可能性。status pending/done、POST 応答 {id, executionArn} と整合させる。
-      status: open
+      status: fixed
+      fix_commit: "1090042"
     - id: CR-005
       severity: major
       description: CORS HTTP preflight RED テストが invoke_url 未取得時 exit0 skip しゲートとして弱い。必須前提未充足は失敗もしくは明示手動 skip のみに限定。
-      status: open
+      status: fixed
+      fix_commit: "1090042"
     - id: CR-006
       severity: minor
       description: GitLab web-unit/web-integration JUnit report path と Karma 出力先不一致の可能性。
-      status: open
+      status: fixed
+      fix_commit: "1090042"
     - id: CR-007
       severity: major
       description: compose/docker-compose.yml に no-op env DISABLE_CUSTOM_CORS_APIGATEWAY が残置。
       file: compose/docker-compose.yml
-      status: open
+      status: fixed
+      fix_commit: "1090042"
     - id: CR-008
       severity: major
       description: scripts/web-e2e.sh の terraform state show + awk 抽出が脆い。terraform output -json 等の machine-readable 出力に変更。
       file: scripts/web-e2e.sh
-      status: open
+      status: fixed
+      fix_commit: "1090042"
     - id: CR-009
       severity: major
       description: Lambda OPTIONS 分岐が任意 resource に 204+CORS を返しうる。/todos,/todos/{id} に限定し unknown OPTIONS は 404 にする。
-      status: open
+      status: fixed
+      fix_commit: "1090042"
     - id: CR-010
       severity: major
       description: Lambda GET /todos/foo/bar が id foo/bar として通る可能性。resource/id segment を厳格化。
-      status: open
+      status: fixed
+      fix_commit: "1090042"
     - id: CR-011
       severity: major
       description: frontend/src/main.ts の innerHTML 使用を createElement/textContent 等に変更し XSS リスクを排除。
       file: frontend/src/main.ts
-      status: open
+      status: fixed
+      fix_commit: "1090042"
     - id: CR-012
       severity: major
       description: frontend/scripts/check-coverage-threshold.js が XML 正規表現でパースしており脆い。json-summary 等構造化形式に変更。
       file: frontend/scripts/check-coverage-threshold.js
-      status: open
+      status: fixed
+      fix_commit: "1090042"
     - id: CR-013
       severity: minor
       description: SkipIfNoFlociTheory の skip 理由/件数のトレース性を改善、または verification 手順に明記。
-      status: open
+      status: fixed
+      fix_commit: "1090042"
     - id: CR-014
       severity: minor
       description: infra/outputs.tf frontend_url が localhost:8080 ハードコード。CI との差異をコメント/変数化。
       file: infra/outputs.tf
-      status: open
+      status: fixed
+      fix_commit: "1090042"
     - id: CR-015
       severity: minor
       description: GitLab web-e2e CI のツール install が重い。事前ビルドイメージを検討。
-      status: open
+      status: disputed
+      dispute_reason: Playwright image は採用済み。dotnet/terraform/awscli は web-e2e deploy に必須であり、現 runner 制約では削減不可。
     - id: CR-016
       severity: info
       description: CORS "*" の将来リスク。ALLOWED_ORIGIN env 等で制御可能に。
-      status: open
+      status: fixed
+      fix_commit: "1090042"
   artifacts:
     - docs/floci-apigateway-csharp/code-review/round-01-summary.md
+    - docs/floci-apigateway-csharp/code-review/fix-round-01.md
   review_method: dual-model (Claude Opus 4.7 + GPT-5.5)
 create_mr_pr:
   status: failed
