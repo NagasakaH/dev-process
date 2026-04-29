@@ -196,7 +196,7 @@ scripts/deploy-local.sh
 # 4. invoke_url を assets/config.json に注入 + Angular ビルド
 scripts/build-frontend.sh
 
-# 5. floci S3 へ成果物配置（fallback: ./frontend/dist の volume mount）
+# 5. floci S3 へ成果物配置（配置経路の検証のみ。ブラウザ配信は nginx host volume mount の唯一標準経路で行う）
 scripts/deploy-frontend.sh
 
 # 6. Playwright 実行
@@ -210,11 +210,18 @@ docker compose -f compose/docker-compose.yml down -v
 #### Playwright 設定要点 (`frontend/playwright.config.ts`)
 
 ```typescript
+// requireEnv: 必須 env が未設定/空なら即 throw。fallback 値は持たない（RD-002 / RD2-003）
+function requireEnv(name: string): string {
+  const v = process.env[name];
+  if (!v) throw new Error(`FATAL: required env ${name} is not set`);
+  return v;
+}
+
 export default defineConfig({
   testDir: './e2e',
   workers: 1,                       // floci 競合回避
   use: {
-    baseURL: process.env.WEB_BASE_URL ?? 'http://localhost:8080',
+    baseURL: requireEnv('WEB_BASE_URL'),
     trace: 'retain-on-failure',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
@@ -293,7 +300,7 @@ flowchart TD
     A -->|IT| I[HttpTestingController 期待値ログ]
     A -->|E2E| E[Playwright trace + console + network]
     E --> E1{CORS 由来?}
-    E1 -->|Yes| C1[OPTIONS の 4xx or ヘッダ欠落 → APIGW or Lambda fallback 検討]
+    E1 -->|Yes| C1[OPTIONS の 4xx or ヘッダ欠落 → AWS_PROXY 統合 Terraform 定義 / Lambda OPTIONS ハンドラ確認]
     E1 -->|No| C2{設定 /assets/config.json?}
     C2 -->|Yes| C3[build-frontend.sh の invoke_url 注入確認]
     C2 -->|No| C4[Lambda / DDB ログ参照 + .NET E2E と比較]
