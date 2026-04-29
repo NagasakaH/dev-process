@@ -95,14 +95,14 @@ test_root_user_switch_preserves_required_environment_names() {
     FAKE_SU_LOG="${su_log}" \
     PROJECT_NAME="dev-process" \
     DOCKER_MODE="dood" \
-    GITLAB_TOKEN="glpat-secret-value" \
+    GITLAB_TOKEN="fake-token-value" \
     GITLAB_URL="https://gitlab.example.com" \
     "${TARGET_SCRIPT}" >/dev/null 2>&1 || status=1
 
   su_args="$(cat "${su_log}")"
   assert_contains "${su_args}" "--whitelist-environment=PROJECT_NAME,LC_ALL,LANG,DOCKER_MODE,GITLAB_TOKEN,GITLAB_URL" \
     "root user switch should preserve development environment variables by name" || status=1
-  assert_not_contains "${su_args}" "glpat-secret-value" \
+  assert_not_contains "${su_args}" "fake-token-value" \
     "root user switch should not put the GitLab token value in su command arguments" || status=1
 
   rm -rf "${temp_dir}"
