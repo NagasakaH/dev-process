@@ -5,7 +5,7 @@ meta:
   target_repo: "floci-apigateway-csharp"
   branch: "feature/FRONTEND-001"
   created_at: "2026-04-29T12:16:26+00:00"
-  updated_at: "2026-04-29T13:22:38+00:00"
+  updated_at: "2026-04-29T13:33:58+00:00"
 setup:
   description:
     overview: |
@@ -148,7 +148,7 @@ investigation:
 design:
   status: completed
   started_at: "2026-04-29T13:14:49+00:00"
-  summary: "Angular18追加に向けた詳細設計を完了。実装方針/IF/データ構造/処理フロー/テスト計画/弊害検証の6書を作成し、CORS/OPTIONS/floci S3/nginx静的配信のリスク軽減策、acceptance_criteria対応表、E2E実行手順、修正前後シーケンス図を反映。"
+  summary: "round1指摘 RD-001〜RD-012 を反映した再設計を完了。配信経路をnginx host volume mount一意（S3 syncは配置検証用）、API GW OPTIONSはAWS_PROXY+Lambda標準で204統一、CI imageをmcr.microsoft.com/playwright:v1.45.3-jammy統一、web-e2eにDinD設定（DOCKER_HOST/TLS/FF_NETWORK_PER_BUILD/WEB_BASE_URL）明記、unit/integrationをファイル名/karma config/tsconfig/npm scriptsで分離、karma coverage check.global強制、JSONキーCamelCase（id/title/createdAt等）確定、Angular18.2/Node20.11/Karma6.4/Playwright1.45.3バージョン固定、必須env未設定時はshell exit1+Playwright globalSetup throwでfail-fast統一、verify-readme-sectionsの検証対象見出し一覧明記、test environment readiness（Node/Chromium/Playwright/Docker DinD/floci/AWS CLI/Terraform）を05/06両方に追記。"
   approach: ""
   key_decisions: []
   review:

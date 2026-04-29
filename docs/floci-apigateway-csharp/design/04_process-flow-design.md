@@ -164,7 +164,8 @@ sequenceDiagram
     Dev->>NG: build-frontend.sh<br/>(invoke_url を assets/config.json に注入 → ng build)
     NG-->>Dev: frontend/dist/
     Dev->>S3: deploy-frontend.sh (aws s3 sync dist/ s3://frontend-bucket/)
-    Dev->>NX: 静的配信反映 (volume mount or reload)
+    Note over Dev,S3: S3 sync は配置検証用。ブラウザ origin にはしない（RD-001 正規経路）
+    Dev->>NX: 同じ frontend/dist を host volume mount で配信（compose 起動時にマウント済み）
 
     Note over Dev,ETN: 既存 .NET E2E は非破壊で並走可能
     Dev->>ETN: dotnet test (既存 E2E)
@@ -177,14 +178,16 @@ sequenceDiagram
     Dev->>DC: down -v (after_script)
 ```
 
-### 3.3 R2 fallback ブランチ
+### 3.3 配信経路の一意性（RD-001 解消）
+
+配信経路は **ng build → frontend/dist → (S3 sync 検証) + nginx host volume mount → ブラウザ** の **唯一経路** に固定する。S3 互換不足時の nginx 撤去 / S3 直接配信などの fallback 分岐は本タスクでは設けない。
 
 ```mermaid
-flowchart TD
-    A[deploy-frontend.sh: aws s3 sync 失敗] --> B{S3 互換不足?}
-    B -->|Yes| C[nginx volume mount fallback<br/>./frontend/dist を直接マウント]
-    B -->|No| D[バケット名 / 権限の typo 修正]
-    C --> E[Playwright 実行へ]
+flowchart LR
+    NG[ng build] --> DIST[frontend/dist/]
+    DIST -->|aws s3 sync (配置検証)| S3[(floci S3: frontend-bucket)]
+    DIST -->|host volume mount<br/>:ro| NX[nginx :8080]
+    NX -->|GET /| BR[Browser]
 ```
 
 ---
@@ -232,16 +235,27 @@ sequenceDiagram
 
 `apiBaseUrl` が空・スキーム不正でも同様に reject（fail-fast）。
 
-### 4.4 AWS_ENDPOINT_URL 未設定
+### 4.4 必須 env 未設定（fail-fast 統一、RD-002 解消）
+
+`AWS_ENDPOINT_URL` / `WEB_BASE_URL` / `API_BASE_URL` が未設定または空文字の場合、shell スクリプトと Playwright `globalSetup` の **両方で fail-fast** する。skip 運用は廃止する。
 
 ```mermaid
 flowchart LR
-    SH[scripts/*.sh] -->|env 未設定| EXIT[exit 1 + メッセージ]
-    NG[ng build] -->|config.json 生成済み| OK
-    PW[Playwright] -->|baseURL 未設定| FAIL[skip + 明示ログ]
+    SH[scripts/*.sh] -->|env 未設定/空| EXIT1[echo FATAL >&2; exit 1]
+    GS[playwright globalSetup] -->|baseURL/AWS_ENDPOINT_URL 未設定/空| THROW[throw new Error<br/>→ Playwright run abort]
+    NG[ng build] -->|config.json apiBaseUrl 空| FAIL2[ConfigService.load reject<br/>→ ビルドは成功するがアプリ起動時に fail-fast]
 ```
 
-実 AWS への到達を防ぐため、shell・Playwright 双方で fail-fast する（DR-001）。
+判定ルール:
+
+| 経路                          | 判定                                                  | 失敗時の挙動                          |
+| ----------------------------- | ----------------------------------------------------- | ------------------------------------- |
+| `scripts/build-frontend.sh`   | `: "${AWS_ENDPOINT_URL:?env required}"` 等で参照      | `set -u` + `${VAR:?}` で exit 1       |
+| `scripts/web-e2e.sh`          | `WEB_BASE_URL` / `AWS_ENDPOINT_URL` 必須              | exit 1                                |
+| `playwright.config.ts` `globalSetup` | `if (!process.env.WEB_BASE_URL) throw new Error(...)` | Playwright run abort（skip しない）   |
+| `playwright.config.ts` `use.baseURL` | `process.env.WEB_BASE_URL` を直接参照（fallback 値を持たない） | 未設定なら globalSetup で abort       |
+
+これにより実 AWS への到達と「skip による品質ゲートのバイパス」を構造的に防ぐ（DR-001）。
 
 ---
 

@@ -11,8 +11,8 @@
 本書は **brainstorming.test_strategy** で確定した範囲（unit / integration / e2e）を全て含み、`acceptance_criteria` と各テスト種別の対応を明示する。
 
 > **事前決定のテスト戦略（再掲）**
-> - **unit**: Karma + Jasmine。Angular component/service/pipe。HttpClient はモック。
-> - **integration**: Karma + Jasmine + HttpTestingController。API クライアント、設定読み込み、フォーム→API 呼び出し境界、エラー表示。
+> - **unit**: Karma + Jasmine。Angular component/service/pipe。HttpClient はモック。`*.spec.ts` を対象（命名規則）。
+> - **integration**: Karma + Jasmine + HttpTestingController。API クライアント、設定読み込み、フォーム→API 呼び出し境界、エラー表示。`*.integration.spec.ts` を対象（命名規則）。
 > - **e2e**: Playwright。floci 起動 → terraform apply → invoke_url 取得 → ng build → S3 sync → nginx 起動 → Playwright 実行。API は nginx 経由にせず floci API Gateway を直接呼び出す。
 
 ---
@@ -29,25 +29,118 @@
 | 既存 .NET    | Unit/Integration/E2E（CORS ヘッダ追加に伴う期待値更新を含む）                        | 既存仕様の変更                                        |
 | 既存 CI ジョブ | リグレッション確認（`web-*` 追加で既存ジョブが落ちないこと）                         | -                                                     |
 
-### 1.2 テストカバレッジ目標
+### 1.2 テストランナー / レポート
+
+| 種別        | フレームワーク                                      | 実行イメージ (CI)                              | レポート形式                                |
+| ----------- | --------------------------------------------------- | ---------------------------------------------- | ------------------------------------------- |
+| 単体        | Karma + Jasmine + ChromeHeadlessCI                  | `mcr.microsoft.com/playwright:v1.45.3-jammy`   | `karma-junit-reporter` → `junit.xml` + coverage |
+| 結合        | Karma + Jasmine + HttpTestingController             | 同上                                           | 同上                                        |
+| E2E         | Playwright (`@playwright/test` 1.45.3)              | 同上 (DinD)                                    | `reporter: [["junit",...], ["html"]]`       |
+| 既存 .NET   | xUnit                                               | 既存                                           | `--logger junit` (既存維持)                 |
+
+> **CI image を Playwright 同梱イメージに統一**（RD-003 解消）。`web-unit` / `web-integration` も `mcr.microsoft.com/playwright:v1.45.3-jammy` を使い、Chromium / 必要 OS パッケージ（fonts, libnss3 等）を追加インストール無しで利用する。`web-lint` のみ ESLint / Prettier しか使わないため `node:20.11-bullseye-slim` を使う。バージョンは `02_interface-api-design.md` §7 と一致させ、可変タグ（`latest`, `v1.45.x` 等）は使わない（RD-007）。
+
+### 1.3 unit / integration の分離設計（RD-005 解消）
+
+| 観点                | unit                                              | integration                                                 |
+| ------------------- | ------------------------------------------------- | ----------------------------------------------------------- |
+| ファイル命名        | `*.spec.ts`（例: `todo-api.service.spec.ts`）     | `*.integration.spec.ts`（例: `todo.flow.integration.spec.ts`） |
+| 配置                | `frontend/src/**` の各モジュール隣接              | 同上（同一ディレクトリ、suffix で区別）                     |
+| Karma config        | `frontend/karma.conf.js`                          | `frontend/karma.integration.conf.js`（`files` の glob を `*.integration.spec.ts` に絞る） |
+| `tsconfig.spec.*`   | `tsconfig.spec.json`（include: `**/*.spec.ts`、`**/*.integration.spec.ts` を exclude） | `tsconfig.spec.integration.json`（include: `**/*.integration.spec.ts`） |
+| `angular.json` target | `test`（karmaConfig: `karma.conf.js`、tsConfig: `tsconfig.spec.json`） | `test-integration`（karmaConfig: `karma.integration.conf.js`、tsConfig: `tsconfig.spec.integration.json`） |
+| npm scripts         | `npm run test:unit` → `ng test --watch=false --browsers=ChromeHeadlessCI` | `npm run test:integration` → `ng run frontend:test-integration --watch=false --browsers=ChromeHeadlessCI` |
+| HttpClient          | `HttpClientTestingModule` でモック化、ネットワーク呼び出しを許さない | `HttpTestingController` で **境界モック**（service↔HttpClient↔mock backend）を再現、コンポーネント↔サービス↔HTTP 境界を検証 |
+| 依存サービス        | 全てモック / spy                                  | 実装サービスを使い、HTTP のみモック                         |
+
+`frontend/package.json` `scripts` 例:
+
+```json
+{
+  "scripts": {
+    "lint": "ng lint",
+    "test:unit": "ng test --watch=false --browsers=ChromeHeadlessCI",
+    "test:integration": "ng run frontend:test-integration --watch=false --browsers=ChromeHeadlessCI",
+    "build": "ng build --configuration=production",
+    "e2e": "playwright test"
+  },
+  "engines": {
+    "node": "^20.11.0",
+    "npm": "^10.0.0"
+  }
+}
+```
+
+CI ジョブ `web-unit` / `web-integration` はそれぞれ上記 npm script を呼ぶ（`02_interface-api-design.md` §7 参照）。
+
+### 1.4 カバレッジ強制（RD-008 解消）
+
+下記閾値を `karma.conf.js` / `karma.integration.conf.js` の `coverageReporter.check.global` に設定し、未達時は Karma が **exit 1** を返して CI ジョブ (`web-unit` / `web-integration`) を fail させる。Lambda 側カバレッジは既存運用を維持し、`JsonHeaders` 変更に伴う期待値更新で破壊しない。
 
 | 項目             | 目標値 | 備考                                                  |
 | ---------------- | ------ | ----------------------------------------------------- |
-| Angular 行       | 80%    | `karma.conf.js` の `coverageReporter` で出力          |
-| Angular 分岐     | 70%    | 同上                                                  |
-| Angular 関数     | 90%    | 同上                                                  |
-| Lambda（既存）   | 既存維持 | `JsonHeaders` 変更に伴う期待値更新で破壊しない        |
+| Angular 行       | 80%    | `coverageReporter.check.global.lines`                 |
+| Angular statements | 80% | `coverageReporter.check.global.statements`            |
+| Angular 分岐     | 70%    | `coverageReporter.check.global.branches`              |
+| Angular 関数     | 90%    | `coverageReporter.check.global.functions`             |
+| Lambda（既存）   | 既存維持 | -                                                    |
 
-### 1.3 テストランナー / レポート
+```javascript
+coverageReporter: {
+  dir: require('path').join(__dirname, './coverage/unit'),
+  subdir: '.',
+  reporters: [
+    { type: 'html' },
+    { type: 'lcovonly' },
+    { type: 'text-summary' },
+    { type: 'cobertura', file: 'cobertura-coverage.xml' },
+  ],
+  check: {
+    global: {
+      statements: 80,
+      branches: 70,
+      functions: 90,
+      lines: 80,
+    },
+  },
+},
+```
 
-| 種別        | フレームワーク                            | レポート形式                                |
-| ----------- | ----------------------------------------- | ------------------------------------------- |
-| 単体        | Karma + Jasmine + ChromeHeadlessCI         | `karma-junit-reporter` → `junit.xml`        |
-| 結合        | Karma + Jasmine + HttpTestingController   | 同上                                        |
-| E2E         | Playwright (`@playwright/test`)            | `reporter: ['junit', 'html']`               |
-| 既存 .NET   | xUnit                                     | `--logger junit` (既存維持)                 |
+### 1.5 テスト環境準備状況 (test environment readiness、RD-012 解消)
 
----
+E2E / integration / unit のいずれかが要求する事前リソースを以下に一覧化する。**実 AWS には絶対に接続しない**ため、AWS は floci のローカルエンドポイント (`http://docker:4566` / `http://localhost:4566`) のみを利用する（DR-001）。
+
+| # | リソース            | バージョン / 取得元                                       | 確認コマンド                                          | 不足時の代替                                              |
+|---|---------------------|----------------------------------------------------------|-------------------------------------------------------|-----------------------------------------------------------|
+| 1 | Node.js             | 20.11.x LTS（`engines.node ^20.11.0`）                    | `node -v`                                             | `nvm install 20.11` / devcontainer 再ビルド               |
+| 2 | npm                 | 10.x（Node 20.11 同梱）                                   | `npm -v`                                              | Node 同梱版で十分                                          |
+| 3 | Chromium            | Playwright 同梱版（v1.45.3）                              | `npx playwright install --dry-run chromium`           | `npx playwright install chromium`                          |
+| 4 | Playwright browsers | 1.45.3（Chromium のみ）                                   | `ls ~/.cache/ms-playwright/`                          | `npx playwright install --with-deps chromium`              |
+| 5 | Docker              | 25.0.x 以降                                                | `docker --version`                                    | devcontainer 起動 / dood 経由                              |
+| 6 | Docker Compose v2   | 2.24 以降                                                  | `docker compose version`                              | `apt install docker-compose-plugin`                        |
+| 7 | DinD service (CI)   | `docker:25.0.3-dind`                                      | `.gitlab-ci.yml` `services` 宣言で起動                | -                                                         |
+| 8 | floci image         | `floci/floci:latest`（既存）                              | `docker pull floci/floci:latest`                      | -                                                         |
+| 9 | AWS CLI             | v2 系（floci 接続用、`--endpoint-url` 指定）              | `aws --version`                                       | `apt install awscli` / Playwright image に追加インストール |
+|10 | Terraform           | 1.6.6（既存）                                              | `terraform -version`                                  | tfenv で固定                                               |
+|11 | .NET SDK            | 8.0.x（既存）                                              | `dotnet --version`                                    | 既存運用                                                   |
+
+readiness チェックは `scripts/check-test-env.sh`（plan で新設）で集約し、ローカル / CI とも E2E 実行前に呼ぶ。チェック失敗時は exit 1 で fail-fast する（RD-002 と整合）。
+
+### 1.6 README 検証対象見出し一覧（RD-010 解消）
+
+`scripts/verify-readme-sections.sh` は `README.md` に以下の見出しが **全て存在すること** を `grep -F` で機械検証し、欠落時は exit 1 を返す。`web-lint` ステージで実行する。
+
+| # | 見出し（`README.md` 内の文字列、完全一致） | 必須 |
+|---|---------------------------------------------|------|
+| 1 | `## Frontend`                               | ✅   |
+| 2 | `### Frontend ローカル起動`                 | ✅   |
+| 3 | `### Frontend ローカルテスト`               | ✅   |
+| 4 | `### Frontend E2E テスト`                   | ✅   |
+| 5 | `### Frontend CI 実行手順`                  | ✅   |
+| 6 | `### Frontend 環境変数 (WEB_BASE_URL / AWS_ENDPOINT_URL / API_BASE_URL)` | ✅ |
+
+既存セクション（`## ローカル起動`, `## テスト`, `## CI` 等）も同 script の検証対象に残し、回帰を防ぐ。
+
 
 ## 2. 新規テストケース
 
@@ -85,8 +178,8 @@
 | E2E-2 | nginx 静的配信 / SPA fallback        | `http://localhost:8080/foo/bar` (任意のパス) を直接開く                                                                                                      | 200 + `index.html` が返り、Angular ルータが処理                                           | 高     |
 | E2E-3 | **CORS 成立アサート**                | UI から `POST /todos` を実行し、ブラウザに `console.error` が出ない / Network タブ的に preflight 204 + 本リクエスト 201                                      | preflight が 204、本リクエストが 201。Playwright の `page.on('console', ...)` でエラー無 | 高     |
 | E2E-4 | 4xx エラー UI 表示                   | title を空で送信                                                                                                                                             | UI にエラー文言（API の `errors[0]`）が表示される                                          | 中     |
-| E2E-5 | 5xx エラー UI 表示                   | （任意・skipable）floci の Lambda を一時的に落として 5xx を再現                                                                                              | UI に "サーバエラーが発生しました" 表示。skip 時はログにスキップ理由出力                  | 低     |
-| E2E-6 | 実 AWS 接続防止                      | `AWS_ENDPOINT_URL` 未設定で `scripts/web-e2e.sh` を実行                                                                                                      | 実 AWS に到達せず、明確なエラーで exit                                                    | 高     |
+| E2E-5 | 5xx エラー UI 表示                   | floci の Lambda を一時的に停止して 5xx を再現（`docker compose stop floci-lambda` 等）                                                                        | UI に "サーバエラーが発生しました" 表示。**skip は禁止**、再現失敗時は exit 1 で fail-fast（RD-002） | 中     |
+| E2E-6 | 実 AWS 接続防止                      | `AWS_ENDPOINT_URL` 未設定で `scripts/web-e2e.sh` を実行                                                                                                      | shell が即座に **exit 1** を返し（RD-002 の必須 env チェック）、Playwright が起動しないこと。skip / 例外握りつぶし禁止 | 高     |
 
 #### E2E 実行手順（ローカル / CI 共通）
 
@@ -144,7 +237,7 @@ export default defineConfig({
 | `tests/TodoApi.UnitTests/ApiHandlerRoutingTests.cs` 等   | レスポンスヘッダ期待値に `Access-Control-Allow-Origin: *` 等を追加 | `JsonHeaders` 拡張に伴うリグレッション防止           |
 | `tests/TodoApi.IntegrationTests/*`                       | OPTIONS 経路の最低 1 ケース追加（`OPTIONS /todos` → 204 + CORS） | API Gateway OPTIONS の追加検証                        |
 | `tests/TodoApi.E2ETests/*`                               | 既存ケースは無修正で pass を確認（CORS ヘッダ付与は後方互換）   | フロント追加でも .NET E2E が壊れないことを保証        |
-| `scripts/verify-readme-sections.sh`                      | 新セクション "Frontend" を検証対象に追加                       | README 整合性                                         |
+| `scripts/verify-readme-sections.sh`                      | 検証対象見出しを §1.6 の表（Frontend 6 項目）に拡張し、欠落時 exit 1（RD-010） | README 整合性                                         |
 | `.gitlab-ci.yml`                                         | `web-lint / web-unit / web-integration / web-e2e` 追加         | CI でフロントテストを実行                             |
 
 ---

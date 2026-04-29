@@ -16,12 +16,12 @@
 
 ### 1.1 エンドポイント一覧
 
-| メソッド | パス          | 状態        | 説明                                  |
-| -------- | ------------- | ----------- | ------------------------------------- |
-| POST     | `/todos`      | 既存・変更なし | Todo 作成                             |
-| GET      | `/todos/{id}` | 既存・変更なし | Todo 取得                             |
-| OPTIONS  | `/todos`      | **新規追加** | CORS preflight                        |
-| OPTIONS  | `/todos/{id}` | **新規追加** | CORS preflight                        |
+| メソッド | パス          | 状態        | 統合タイプ      | 説明                                  |
+| -------- | ------------- | ----------- | --------------- | ------------------------------------- |
+| POST     | `/todos`      | 既存・変更なし | AWS_PROXY (Lambda) | Todo 作成                             |
+| GET      | `/todos/{id}` | 既存・変更なし | AWS_PROXY (Lambda) | Todo 取得                             |
+| OPTIONS  | `/todos`      | **新規追加** | **AWS_PROXY (Lambda)** | CORS preflight（Lambda が 204 を返す） |
+| OPTIONS  | `/todos/{id}` | **新規追加** | **AWS_PROXY (Lambda)** | CORS preflight（Lambda が 204 を返す） |
 
 invoke_url 構造（既存）:
 
@@ -59,6 +59,8 @@ Access-Control-Expose-Headers: Content-Type
 
 ### 1.3 OPTIONS（CORS preflight）
 
+成功ステータスは **204 No Content に統一** する（200 は採用しない）。
+
 ```http
 HTTP/1.1 204 No Content
 Access-Control-Allow-Origin: *
@@ -67,7 +69,7 @@ Access-Control-Allow-Headers: Content-Type
 Access-Control-Max-Age: 600
 ```
 
-ボディ無し。
+ボディ無し。Lambda 側 `ApiHandler` が `req.HttpMethod == "OPTIONS"` を判定して返す（後述 §2.3）。
 
 ---
 
@@ -77,22 +79,22 @@ Access-Control-Max-Age: 600
 
 | ヘッダ                          | 値                       | 適用範囲                              | 設定箇所                                              |
 | ------------------------------- | ------------------------ | ------------------------------------- | ----------------------------------------------------- |
-| `Access-Control-Allow-Origin`   | `*`                      | 全レスポンス（成功 / エラー / OPTIONS） | Lambda `JsonHeaders` + APIGW OPTIONS 統合レスポンス   |
-| `Access-Control-Allow-Methods`  | `GET, POST, OPTIONS`     | OPTIONS preflight                     | APIGW OPTIONS 統合レスポンス                          |
-| `Access-Control-Allow-Headers`  | `Content-Type`           | OPTIONS preflight                     | APIGW OPTIONS 統合レスポンス                          |
-| `Access-Control-Max-Age`        | `600`                    | OPTIONS preflight                     | APIGW OPTIONS 統合レスポンス                          |
+| `Access-Control-Allow-Origin`   | `*`                      | 全レスポンス（成功 / エラー / OPTIONS） | Lambda `JsonHeaders`（POST/GET/OPTIONS 全て）         |
+| `Access-Control-Allow-Methods`  | `GET, POST, OPTIONS`     | OPTIONS preflight                     | Lambda OPTIONS ハンドラ（preflight 専用ヘッダ）       |
+| `Access-Control-Allow-Headers`  | `Content-Type`           | OPTIONS preflight                     | Lambda OPTIONS ハンドラ                               |
+| `Access-Control-Max-Age`        | `600`                    | OPTIONS preflight                     | Lambda OPTIONS ハンドラ                               |
 | `Access-Control-Expose-Headers` | `Content-Type` (任意)    | 全レスポンス                          | Lambda `JsonHeaders`                                  |
 
 > 認証スコープ外のため `*` を採用。本番化時は限定 Origin に変更（out_of_scope）。
 
 ### 2.2 実装方針
 
-- **Lambda 側**: `Function.cs` の `JsonHeaders` 共通辞書に CORS ヘッダを追加。`BadRequest` / `NotFound` / 200 / 201 / 500 全レスポンスで自動的に付与される。
-- **API Gateway 側**: Terraform で `/todos`, `/todos/{id}` に `aws_api_gateway_method`（OPTIONS, MOCK integration）と `aws_api_gateway_method_response` / `aws_api_gateway_integration_response` を追加。
+- **Lambda 側（標準・唯一の経路）**: `Function.cs` の `JsonHeaders` 共通辞書に CORS ヘッダを追加。`BadRequest` / `NotFound` / 200 / 201 / 500 の全 POST/GET レスポンスで自動的に付与される。
+- **API Gateway 側**: Terraform で `/todos`, `/todos/{id}` に `aws_api_gateway_method`（`OPTIONS`, authorization=`NONE`）と `aws_api_gateway_integration`（`type = "AWS_PROXY"` で Lambda へ統合）を追加。**MOCK 統合は採用しない**（floci 互換性の不確実性を回避）。
 
-### 2.3 R1 fallback: Lambda OPTIONS 受け案
+### 2.3 Lambda OPTIONS ハンドラ（標準）
 
-floci の APIGW OPTIONS+MOCK が動かない場合、Terraform の OPTIONS メソッドを `aws_api_gateway_integration` で **AWS_PROXY (Lambda)** に切替え、`Function.cs` 側で:
+`ApiHandler` 冒頭で OPTIONS をハンドルし、`204 No Content` + CORS preflight ヘッダを返す。これが本タスクの **唯一の OPTIONS 実装** であり、fallback ではない。
 
 ```csharp
 if (req.HttpMethod == "OPTIONS")
@@ -105,7 +107,9 @@ if (req.HttpMethod == "OPTIONS")
 }
 ```
 
-を `ApiHandler` 冒頭で処理する fallback を併記する（実装は実装フェーズで切替判断）。
+### 2.4 API Gateway での CORS ヘッダ透過方針（RD-011 解消）
+
+POST / GET / OPTIONS いずれも `aws_api_gateway_integration.type = "AWS_PROXY"` を使用するため、**Lambda が返したレスポンスヘッダはそのまま透過** される。したがって `aws_api_gateway_method_response.response_parameters` での `Access-Control-Allow-*` ヘッダ宣言は **不要**（依拠経路: AWS_PROXY 透過）。`AWS_PROXY` 透過に依拠する旨を Terraform の該当リソースのコメントに明記し、将来 `MOCK` / `HTTP_PROXY` に変更する場合のみ `method_response` / `integration_response` を導入する。
 
 ---
 
@@ -133,8 +137,15 @@ export class TodoApiService {
 }
 
 // frontend/src/app/models/todo.ts
-export interface Todo { id: string; title: string; status?: string; created_at?: string; }
-export interface TodoCreateRequest { title: string; }
+export interface Todo {
+  id: string;
+  title: string;
+  description?: string;
+  status: 'open' | 'in_progress' | 'done';
+  createdAt: string;   // ISO8601 文字列（Lambda JsonOpts: CamelCase）
+  updatedAt: string;   // ISO8601 文字列
+}
+export interface TodoCreateRequest { title: string; description?: string; }
 export interface ApiErrorResponse { errors?: string[]; error?: string; }
 ```
 
@@ -202,12 +213,12 @@ EOF
 
 | スクリプト                       | 入力                                                   | 出力                                          | 説明                                                          |
 | -------------------------------- | ------------------------------------------------------ | --------------------------------------------- | ------------------------------------------------------------- |
-| `scripts/build-frontend.sh`      | env: `AWS_ENDPOINT_URL`, `AWS_*`                       | `frontend/dist/` 配下の成果物                 | invoke_url を `assets/config.json` に注入し `ng build`        |
+| `scripts/build-frontend.sh`      | env: `AWS_ENDPOINT_URL` (必須), `AWS_*` (test 値必須)  | `frontend/dist/` 配下の成果物                 | invoke_url を `assets/config.json` に注入し `ng build` |
 | `scripts/deploy-frontend.sh`     | env 同上、引数: `BUCKET=frontend-bucket`               | floci S3 上のオブジェクト                     | `aws s3 sync frontend/dist/ s3://$BUCKET/`                    |
-| `scripts/web-e2e.sh`             | env 同上                                               | `frontend/test-results/` (junit) + Playwright HTML | 上記 2 本 + nginx up + `npx playwright test` を 1 コマンド化  |
+| `scripts/web-e2e.sh`             | env: `WEB_BASE_URL` (必須), `AWS_ENDPOINT_URL` (必須) | `frontend/test-results/` (junit) + Playwright HTML | 上記 2 本 + nginx up + `npx playwright test` を 1 コマンド化  |
 | `scripts/verify-readme-sections.sh` (更新) | -                                            | exit 0/1                                      | README に Frontend セクションが存在するか検証                 |
 
-すべて `set -euo pipefail` を使い、`AWS_ENDPOINT_URL` 未設定時は exit 1。
+すべて `set -euo pipefail` を使い、必須 env（`AWS_ENDPOINT_URL` / `WEB_BASE_URL` / `API_BASE_URL`）が **未設定** または **空文字** の場合は **`echo "[FATAL] env XXX is required" >&2; exit 1` で fail-fast** する（RD-002 解消、skip 運用は廃止）。
 
 ---
 
@@ -236,19 +247,73 @@ nginx:
   networks: [floci-net]
   volumes:
     - ./compose/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-    - ./frontend/dist:/usr/share/nginx/html:ro   # ※ S3 fallback 時のみ
+    - ./frontend/dist:/usr/share/nginx/html:ro   # 正規経路: build 成果物を host volume mount で配信
 ```
+
+> nginx の document root は **常に `./frontend/dist` を host volume mount** する（RD-001 正規経路）。S3 sync は配置検証のため別途実行するが、nginx origin にはしない。
 
 ---
 
 ## 7. GitLab CI ジョブ I/F
 
-| ジョブ            | stage         | image                                          | キャッシュ                                                | 主要コマンド                                                                                                                                  |
-| ----------------- | ------------- | ---------------------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `web-lint`        | `lint`        | `node:20-alpine`                               | `frontend/node_modules`, `~/.npm`                         | `cd frontend && npm ci && npm run lint`                                                                                                       |
-| `web-unit`        | `unit`        | `node:20` (Chromium 同梱の `mcr.../playwright` でも可) | 同上                                                      | `cd frontend && npm ci && npm test -- --watch=false --browsers=ChromeHeadlessCI --reporters=junit`                                            |
-| `web-integration` | `integration` | 同上                                           | 同上                                                      | `cd frontend && npm ci && npm run test:integration`（HttpTestingController spec を別パターンで実行）                                          |
-| `web-e2e`         | `e2e`         | `mcr.microsoft.com/playwright:v1.45.x-jammy`   | `frontend/node_modules`, `~/.npm`, `~/.cache/ms-playwright` | DinD で `docker compose up -d floci nginx` → `scripts/deploy-local.sh` → `scripts/build-frontend.sh` → `scripts/deploy-frontend.sh` → `scripts/web-e2e.sh` |
+すべて Node / Chromium / Playwright のバージョンを **固定タグ** で利用し、CI 再現性を保証する（RD-003 / RD-007 解消）。
+
+| ジョブ            | stage         | image                                                | キャッシュ                                                | 主要コマンド                                                                                                                                  |
+| ----------------- | ------------- | ---------------------------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `web-lint`        | `lint`        | `node:20.11-bullseye-slim`                           | `frontend/node_modules`, `~/.npm`                         | `apt-get install -y --no-install-recommends git ca-certificates`（必要時） → `cd frontend && npm ci && npm run lint`                          |
+| `web-unit`        | `unit`        | `mcr.microsoft.com/playwright:v1.45.3-jammy`         | `frontend/node_modules`, `~/.npm`                         | `cd frontend && npm ci && npm run test:unit -- --watch=false --browsers=ChromeHeadlessCI --reporters=junit,coverage`                          |
+| `web-integration` | `integration` | `mcr.microsoft.com/playwright:v1.45.3-jammy`         | 同上                                                      | `cd frontend && npm ci && npm run test:integration -- --watch=false --browsers=ChromeHeadlessCI --reporters=junit,coverage`                   |
+| `web-e2e`         | `e2e`         | `mcr.microsoft.com/playwright:v1.45.3-jammy`         | `frontend/node_modules`, `~/.npm`, `~/.cache/ms-playwright` | DinD service で `docker compose up -d floci nginx` → `scripts/deploy-local.sh` → `scripts/build-frontend.sh` → `scripts/deploy-frontend.sh` → `scripts/web-e2e.sh` |
+
+> `mcr.microsoft.com/playwright:v1.45.3-jammy` は **Chromium / Firefox / WebKit と必要な OS パッケージ（fonts, libnss3 等）が同梱** されているため、`web-unit` / `web-integration` / `web-e2e` すべてで Karma の `ChromeHeadlessCI` および Playwright が追加インストール無しに動作する。`web-lint` は ESLint / Prettier しか実行しないため軽量な `node:20.11-bullseye-slim` を使用する。
+
+### 7.1 web-e2e の DinD 設定（RD-004 解消）
+
+`web-e2e` ジョブは GitLab Runner の Docker-in-Docker (DinD) を必須とする。`.gitlab-ci.yml` には以下を必ず明記する。
+
+```yaml
+web-e2e:
+  stage: e2e
+  image: mcr.microsoft.com/playwright:v1.45.3-jammy
+  services:
+    - name: docker:25.0.3-dind
+      alias: docker
+      command: ["--tls=false"]
+  variables:
+    DOCKER_HOST: "tcp://docker:2375"
+    DOCKER_TLS_CERTDIR: ""        # TLS を無効化（CI のみ。実 AWS は使わない前提）
+    FF_NETWORK_PER_BUILD: "true"  # service コンテナと job コンテナを同一 user-defined network に配置
+    WEB_BASE_URL: "http://docker:8080"   # nginx は DinD 上で 8080 公開、job からは alias `docker` で到達
+    AWS_ENDPOINT_URL: "http://docker:4566"
+    AWS_ACCESS_KEY_ID: "test"
+    AWS_SECRET_ACCESS_KEY: "test"
+    AWS_DEFAULT_REGION: "us-east-1"
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends docker.io docker-compose-plugin awscli
+    - docker info   # DinD 接続確認（失敗時 fail-fast）
+  script:
+    - docker compose -f compose/docker-compose.yml up -d floci nginx
+    - scripts/wait-floci-healthy.sh
+    - scripts/deploy-local.sh
+    - scripts/build-frontend.sh
+    - scripts/deploy-frontend.sh
+    - scripts/web-e2e.sh
+  after_script:
+    - docker compose -f compose/docker-compose.yml down -v || true
+  artifacts:
+    when: always
+    paths: [frontend/test-results/, frontend/playwright-report/]
+    reports:
+      junit: frontend/test-results/junit.xml
+```
+
+ポイント:
+
+- `docker:25.0.3-dind` を service として起動し、`alias: docker` で job コンテナから `tcp://docker:2375` 到達を保証する。
+- `DOCKER_TLS_CERTDIR: ""` で TLS を無効化（DinD 側 `--tls=false` と一致させる）。
+- `FF_NETWORK_PER_BUILD: "true"` を有効化し、`docker compose` が起動する `floci-net` と service コンテナが **同一 user-defined network** に乗ることを保証する。これにより job コンテナから nginx の `docker:8080` / floci の `docker:4566` が解決可能になる。
+- nginx の `8080` は `compose/docker-compose.yml` で `ports: ["8080:8080"]` 公開済み。Playwright は `WEB_BASE_URL=http://docker:8080` で起動し、ジョブ内から DinD 越しに到達する。
+- 必須 env (`WEB_BASE_URL`, `AWS_ENDPOINT_URL`) が空の場合 `scripts/web-e2e.sh` が exit 1（RD-002）。
 
 `artifacts:reports:junit` を全ジョブで設定し、既存 .NET ジョブと同形にする。
 
@@ -260,6 +325,6 @@ nginx:
 | ----------------------------- | -------------------- | ------------------------------------------------------- | --------------------------------- |
 | `/todos`, `/todos/{id}` メソッド | POST/GET             | POST/GET + **OPTIONS**                                  | CORS preflight 対応               |
 | Lambda レスポンスヘッダ       | `Content-Type` のみ  | `Content-Type` + `Access-Control-Allow-Origin: *` ほか | ブラウザからの直接呼び出し許可    |
-| Lambda OPTIONS ハンドラ       | 無し                 | （fallback として）OPTIONS → 204 + CORS                | floci OPTIONS 互換非対応時の予備 |
+| Lambda OPTIONS ハンドラ       | 無し                 | （標準）OPTIONS → 204 + CORS（AWS_PROXY 統合）         | floci 互換性確保 / MOCK 不採用     |
 | Angular 公開 I/F              | 無し                 | `TodoApiService.create/get`, `ConfigService.load`      | 新規追加                          |
 | ランタイム設定                | 無し                 | `assets/config.json` (`apiBaseUrl`)                    | invoke_url の環境差吸収           |
