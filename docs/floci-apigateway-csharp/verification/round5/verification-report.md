@@ -3,7 +3,7 @@
 ## 検証情報
 
 - プロジェクト: floci-apigateway-csharp
-- 対象コミット: `025f207` (`refs FRONTEND-001 gitlab-ci-local検証でCI定義を修正`)
+- 対象コミット: `9c0a4c3` (`refs FRONTEND-001 code-review round2 指摘対応`)
 - テスト戦略スコープ: unit / integration / E2E
 - 検証結果: ✅ 全通過
 
@@ -26,13 +26,14 @@
 |------|----------|------|
 | Backend E2E job | `npx --yes gitlab-ci-local@latest --privileged --pull-policy if-not-present e2e` | ✅ PASS。warmup 3 Lambda OK、`TodoApi.E2ETests` 6/6 PASS |
 | 残り CI jobs | `npx --yes gitlab-ci-local@latest --privileged --pull-policy if-not-present --concurrency 1 format web-lint unit web-unit integration web-integration web-e2e` | ✅ PASS。format/web-lint/unit/web-unit/integration/web-integration/web-e2e 全通過 |
+| Round 2 web-e2e recheck | `npx --yes gitlab-ci-local@latest --privileged --pull-policy if-not-present web-e2e` | ✅ PASS。Playwright 6/6 PASS、`frontend/test-results/junit.xml` 生成確認 |
 
 補足: このローカル Docker は server architecture が arm64 のため、backend `e2e` job でも `scripts/deploy-local.sh` と同じ Lambda architecture 自動判定を使用するよう CI 定義を修正した。GitLab SaaS Runner では amd64 として動作する。
 
 ## GitLab CI 実行結果
 
-- **Pipeline**: https://gitlab.com/nagasaka-experimental/floci-apigateway-csharp/-/pipelines/2489878063
-- **対象コミット**: `025f207`
+- **Pipeline**: https://gitlab.com/nagasaka-experimental/floci-apigateway-csharp/-/pipelines/2489915868
+- **対象コミット**: `9c0a4c3`
 - **結果**: ✅ success
 - **ジョブ**: `format`, `web-lint`, `unit`, `web-unit`, `integration`, `web-integration`, `e2e`, `web-e2e` の8ジョブすべて success
 
@@ -72,6 +73,7 @@
 - `build-frontend.sh` はビルド時のみ `config.json` を注入し、終了後にプレースホルダへ戻す。
 - GitLab CI の `web-unit` / `web-integration` で Playwright image 内 Chromium を `CHROME_BIN` に設定。
 - GitLab CI の `e2e` / `web-e2e` を `gitlab-ci-local` で再現し、DinD、zip、AWS CLI v1/v2、Terraform version check、Lambda architecture 差分を修正。
+- Round 2 指摘対応として、破壊的 AWS 操作を local/floci endpoint のみに制限し、Playwright JUnit artifact を `frontend/test-results/junit.xml` に生成するよう修正。
 
 ## 総合結果
 
