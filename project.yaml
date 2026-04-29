@@ -5,7 +5,7 @@ meta:
   target_repo: "floci-apigateway-csharp"
   branch: "feature/FRONTEND-001"
   created_at: "2026-04-29T12:16:26+00:00"
-  updated_at: "2026-04-30T12:00:00+00:00"
+  updated_at: "2026-04-29T14:52:15+00:00"
 setup:
   description:
     overview: |
@@ -350,14 +350,15 @@ plan:
   artifacts: "docs/floci-apigateway-csharp/plan/"
   completed_at: "2026-04-29T14:07:45+00:00"
   review:
-    round: 2
+    round: 3
     status: conditional
     latest_verdict: conditional
-    completed_at: "2026-04-29T14:37:38+00:00"
-    summary: 'round 2 レビュー実施。round 1 の RP-001〜RP-018 はすべて resolved。round 2 では RP2-001 (Major: web-e2e e2e プロファイルと CI 提供ツール不整合) と RP2-002〜RP2-007 (Minor 6件) を新規検出。ゼロトレランス方針により conditional とし、全件修正後 round 3 で再確認する。'
+    completed_at: "2026-04-29T14:52:15+00:00"
+    summary: 'round 3 レビュー実施。RP2-001〜RP2-006 は resolved。RP2-007 は design/02 で resolved だが design/05 のコードブロックに不整合が残るため新規 ID RP3-001 として再指摘 (Major)。さらに check-test-env 呼び出し位置の揺れを RP3-002 (Minor) として新規検出。ゼロトレランス方針により conditional とし、修正後 round 4 で再確認する。'
     artifacts:
       - docs/floci-apigateway-csharp/review-plan/
       - docs/floci-apigateway-csharp/review-plan/round2/
+      - docs/floci-apigateway-csharp/review-plan/round3/
     issues:
       - id: RP-001
         severity: critical
@@ -509,3 +510,13 @@ plan:
         description: "plan は deploy-local 後に apply-api-deployment/warmup を必須化したが、design の DinD 手順に未反映。 | 対応方針: design の web-e2e 手順を task07/task10 と同順序に更新する。 | 関連ファイル: docs/floci-apigateway-csharp/design/02_interface-api-design.md"
         status: resolved
         resolved_in_round: 3
+      - id: RP3-001
+        severity: major
+        category: 設計-計画整合性 / web-e2e実行順
+        description: 'design/05_test-plan.md §2.3 の E2E 実行手順が、wait-floci-healthy/deploy-local/apply-api-deployment/warmup/build/deploy を個別実行した後に web-e2e.sh を呼ぶ構成になっている。一方 task07/design02/task10 では web-e2e.sh が同処理を内部実行する唯一エントリポイントであり、design05 の手順は二重実行と解釈分岐を招く。 | 対応方針: design05 §2.3 を `docker compose up -d floci nginx` → `bash scripts/web-e2e.sh` → `docker compose down -v` の3行のみへ修正し、wait/deploy/apply/warmup/build/deploy は web-e2e.sh の内部処理として別表/コメントに移す。 | 関連ファイル: docs/floci-apigateway-csharp/design/05_test-plan.md'
+        status: open
+      - id: RP3-002
+        severity: minor
+        category: CI手順記述の整合性 / check-test-env重複
+        description: 'task10 は web-e2e script を check-test-env + compose up + web-e2e.sh の3行とする一方、design02 は compose up + web-e2e.sh の2行。さらに before_script と web-e2e.sh 内部でも check-test-env が呼ばれる可能性があり、手順が揺れている。 | 対応方針: check-test-env の呼び出し位置を before_script のみに固定し、script は compose up + web-e2e.sh の2行に統一する。web-e2e.sh 内部での check-test-env はローカル実行保証用に残すなら意図を明記、またはCIでは SKIP_ENV_CHECK=1 等で二重チェックを避ける設計を記載。 | 関連ファイル: docs/floci-apigateway-csharp/plan/task10.md, docs/floci-apigateway-csharp/design/02_interface-api-design.md, docs/floci-apigateway-csharp/plan/task07.md'
+        status: open
