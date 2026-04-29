@@ -5,7 +5,7 @@ meta:
   target_repo: "floci-apigateway-csharp"
   branch: "feature/FRONTEND-001"
   created_at: "2026-04-29T12:16:26+00:00"
-  updated_at: "2026-04-29T15:36:44+00:00"
+  updated_at: "2026-04-29T15:57:24+00:00"
 setup:
   description:
     overview: |
@@ -539,3 +539,58 @@ implement:
   artifacts: "docs/floci-apigateway-csharp/implement/execution-log.md"
   completed_at: "2026-04-29T15:36:44+00:00"
   summary: 全16タスク (task01〜task12) をfeature/FRONTEND-001ブランチで実装完了。HEAD=5e8c034
+verification:
+  status: failed
+  started_at: "2026-04-29T15:56:55+00:00"
+  results:
+    test:
+      status: fail
+      detail: Frontend unit 17/17 + integration 6/6 SUCCESS, but coverage thresholds (statements:80/branches:70/functions:90/lines:80) NOT MET. .NET unit 34/34 OK, integration 2 passed/9 skipped (env).
+    build:
+      status: pass
+      detail: ng build production OK (215.36 kB initial). dotnet build solution OK (0 warnings/errors).
+    lint:
+      status: pass
+      detail: 'ng lint: All files pass linting.'
+    typecheck:
+      status: pass
+      detail: 'tsc --noEmit -p tsconfig.json: no errors.'
+    e2e:
+      status: blocked
+      detail: 'scripts/web-e2e.sh: floci+terraform OK, but warmup-lambdas.sh fails (api-handler 120s timeout / handler assembly resolution). Additionally nginx sidecar bind mount fails in docker-out-of-docker dev container.'
+  acceptance_criteria_check:
+    - criterion: AC1 ローカル Angular + floci API で Todo CRUD
+      method: e2e
+      result: BLOCKED
+      evidence: B1 nginx mount / B2 lambda init
+    - criterion: AC2 S3+CloudFront 相当配信から CRUD
+      method: e2e
+      result: BLOCKED
+      evidence: B1
+    - criterion: AC3 Angular unit がローカル/CI 通過
+      method: unit
+      result: PARTIAL_PASS
+      evidence: 17/17 PASS but coverage <80%
+    - criterion: AC4 Angular integration がローカル/CI 通過
+      method: integration
+      result: PARTIAL_PASS
+      evidence: 6/6 PASS but coverage <80%
+    - criterion: AC5 Playwright E2E ローカル/CI 通過
+      method: e2e
+      result: BLOCKED
+      evidence: B1/B2
+    - criterion: AC6 .NET 既存 lint/unit/integration/e2e 維持
+      method: dotnet
+      result: PARTIAL_PASS
+      evidence: build OK, unit 34/34 OK, integration 2/11 (9 skip), e2e not run
+    - criterion: AC7 README にローカル/テスト/CI 手順
+      method: doc
+      result: NOT_VERIFIED
+      evidence: verify-readme-* not invoked
+  summary: "Lint/build/型チェック/unit 17/17/integration 6/6 のテスト本体 PASS。フロントエンドカバレッジ閾値 (80/70/90/80) 未達 (Statements 69.33% 等)。E2E は B1 (nginx bind mount) と B2 (api-handler Lambda init 失敗) により Playwright 未到達 BLOCKED。詳細 docs/floci-apigateway-csharp/verification/verification-report.md"
+  evidence:
+    - docs/floci-apigateway-csharp/verification/verification-report.md
+    - docs/floci-apigateway-csharp/verification/deploy-local.log
+    - docs/floci-apigateway-csharp/verification/e2e-run.log
+  artifacts: docs/floci-apigateway-csharp/verification/verification-report.md
+  completed_at: "2026-04-29T15:57:02+00:00"
