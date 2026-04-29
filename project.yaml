@@ -5,7 +5,7 @@ meta:
   target_repo: "floci-apigateway-csharp"
   branch: "feature/FRONTEND-001"
   created_at: "2026-04-29T12:16:26+00:00"
-  updated_at: "2026-04-29T12:59:12+00:00"
+  updated_at: "2026-04-29T13:05:10+00:00"
 setup:
   description:
     overview: |
@@ -137,3 +137,11 @@ human_checkpoints:
     status: pending
     current_round: 0
     rounds: []
+investigation:
+  status: completed
+  started_at: "2026-04-29T13:05:05+00:00"
+  summary: "frontend追加に向けた既存リポジトリの詳細調査を実施。アーキテクチャ/データ構造/依存/既存パターン/統合ポイント/リスクの6カテゴリを網羅し、CORS追加点・floci S3/OPTIONS互換リスク・Playwright/Karma+Jasmine/CIジョブ追加方針を整理。"
+  key_findings: []
+  risks: []
+  artifacts: "docs/floci-apigateway-csharp/investigation/"
+  completed_at: "2026-04-29T13:05:10+00:00"
