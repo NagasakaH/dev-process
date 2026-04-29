@@ -5,7 +5,7 @@ meta:
   target_repo: "floci-apigateway-csharp"
   branch: "feature/FRONTEND-001"
   created_at: "2026-04-29T12:16:26+00:00"
-  updated_at: "2026-04-29T13:45:36+00:00"
+  updated_at: "2026-04-29T13:50:43+00:00"
 setup:
   description:
     overview: |
@@ -152,26 +152,29 @@ design:
   approach: ""
   key_decisions: []
   review:
-    round: 2
-    status: conditional
-    latest_verdict: "条件付き承認 (round 2)"
-    completed_at: "2026-04-29T13:40:18+00:00"
-    summary: "round 1 Major 6件中 4件 resolved / 2件 mostly resolved・1件 unresolved。round 2 で Major 1件 (CORS OPTIONS 自己矛盾) と Minor 5件 (配信fallback / fail-fast / DinD / CORS表現 / Angular pin) を統合指摘。Critical なし。"
+    round: 3
+    status: approved
+    latest_verdict: "承認 (round 3)"
+    completed_at: "2026-04-29T13:50:43+00:00"
+    summary: "round 2 指摘 RD2-001〜RD2-006 (Major 1 / Minor 5) はすべて resolved。重点確認事項 (OPTIONS 一意性 / S3-nginx 配信経路 / Playwright fail-fast / DinD 2375・TLS無効 / Angular ~18.2.0) も矛盾なく満たし、新規 Minor 以上の指摘なし。ゼロトレランス方針下で承認。"
     artifacts:
       - docs/floci-apigateway-csharp/review-design/
       - docs/floci-apigateway-csharp/review-design/07_review-summary.md
       - docs/floci-apigateway-csharp/review-design/07_review-summary-round2.md
+      - docs/floci-apigateway-csharp/review-design/07_review-summary-round3.md
     issues:
       - id: RD-001
         severity: major
         category: "配信アーキテクチャ整合性"
         description: "nginx の配信元が S3 sync / host volume mount / S3 fallback で設計書間に矛盾し、受入基準『S3+CloudFront 相当』の正規検証経路が一意に定まらない。ブレスト決定に反する nginx 撤去案も残存。推奨: Angular build を floci S3 に sync→ローカル検証用に nginx 静的配信へ反映、API リバプロなし、fallback は host volume mount のみ。 [round 2 note: round 2: mostly resolved。fallback 表記残り (RD2-002) として再指摘。]"
-        status: open
+        status: resolved
+        resolved_in_round: 3
       - id: RD-002
         severity: major
         category: "E2Eゲート / 実AWS流出防止"
         description: "WEB_BASE_URL / AWS_ENDPOINT_URL / API_BASE_URL 未設定時挙動が skip と fail-fast で矛盾し、品質ゲート/実AWS流出防止の検証にならない。shell/globalSetup 共に exit 1/throw で fail-fast 統一すべき。 [round 2 note: round 2: mostly resolved。playwright.config.ts baseURL fallback 残り (RD2-003) として再指摘。]"
-        status: open
+        status: resolved
+        resolved_in_round: 3
       - id: RD-003
         severity: major
         category: "CI再現性 / ブラウザ依存"
@@ -182,7 +185,8 @@ design:
         severity: major
         category: "CI再現性 / DinDネットワーク"
         description: "web-e2e の GitLab DinD 設定 (DOCKER_HOST/TLS/FF_NETWORK_PER_BUILD) と nginx/floci 到達性が未具体化。docker:dind service、DOCKER_HOST=tcp://docker:2375、DOCKER_TLS_CERTDIR=\"\"、FF_NETWORK_PER_BUILD、ポート公開、WEB_BASE_URL=http://docker:8080 の前提を明記すべき。 [round 2 note: round 2: mostly resolved。DinD readiness 2376/TLS 前提残り (RD2-004) として再指摘。]"
-        status: open
+        status: resolved
+        resolved_in_round: 3
       - id: RD-005
         severity: major
         category: "テスト分離設計"
@@ -193,12 +197,14 @@ design:
         severity: major
         category: "floci互換性 / CORS OPTIONS"
         description: "APIGW OPTIONS+MOCK 互換が未確認で Lambda OPTIONS fallback が後送り。OPTIONS 成功ステータスも 200/204 で矛盾。Lambda OPTIONS fallback を標準化し 204 に統一する案を推奨。 [round 2 note: round 2: unresolved。Lambda OPTIONS 標準化に対し MOCK/fallback 言及残り (RD2-001/RD2-005)。]"
-        status: open
+        status: resolved
+        resolved_in_round: 3
       - id: RD-007
         severity: minor
         category: "バージョン固定 / 依存再現性"
         description: "Angular/Playwright/Node/CI image tag が可変で CI 再現性が弱い。Angular 18 engines.node が package.json に未反映。Node 20.11 系 / Angular 18.x / Playwright 1.45.x など具体バージョンと engines.node を明記。 [round 2 note: round 2: unresolved。Angular pin が ~18.2.0 と ^18.0.0 で不一致 (RD2-006)。]"
-        status: open
+        status: resolved
+        resolved_in_round: 3
       - id: RD-008
         severity: minor
         category: "カバレッジ強制"
@@ -227,36 +233,43 @@ design:
         severity: minor
         category: "テスト環境準備状況"
         description: "Node.js 20 / Chromium / Playwright browsers / Docker DinD / floci image / AWS CLI / Terraform などの事前確認手順が設計に不足。test environment readiness として一覧化すべき。 [round 2 note: round 2: mostly resolved。DinD readiness ポート不整合 (RD2-004) と統合。]"
-        status: open
+        status: resolved
+        resolved_in_round: 3
       - id: RD2-001
         severity: major
         category: CORS/OPTIONS経路の一意性
         description: 'Lambda OPTIONS (AWS_PROXY, 204) を唯一標準経路とする設計に修正したはずだが、01_implementation-approach / 06_side-effect-verification 等に APIGW MOCK 統合や fallback 検討の記述が残り、設計が自己矛盾している。MOCK 言及と Lambda fallback 表記を完全削除/却下案化し、OPTIONS は AWS_PROXY→Lambda(204) のみと明記統一する。 [files: docs/floci-apigateway-csharp/design/01_implementation-approach.md, docs/floci-apigateway-csharp/design/06_side-effect-verification.md, docs/floci-apigateway-csharp/design/05_test-plan.md]'
-        status: open
+        status: resolved
+        resolved_in_round: 3
       - id: RD2-002
         severity: minor
         category: 配信アーキテクチャ整合性
         description: '05_test-plan の E2E 手順コメントに『fallback: ./frontend/dist の volume mount』が残り、nginx host volume mount を正規配信経路とする決定と矛盾する。fallback 表記を削除し、S3 sync は配置検証のみ・ブラウザ配信は nginx host volume mount の正規経路と記載する。 [files: docs/floci-apigateway-csharp/design/05_test-plan.md]'
-        status: open
+        status: resolved
+        resolved_in_round: 3
       - id: RD2-003
         severity: minor
         category: fail-fast方針
         description: "E2E は未設定時 fail-fast 方針だが、Playwright 設定例に process.env.WEB_BASE_URL ?? 'http://localhost:8080' の localhost フォールバックが残る。requireEnv('WEB_BASE_URL') など必須参照に変更しフォールバック値を削除する。 [files: docs/floci-apigateway-csharp/design/05_test-plan.md]"
-        status: open
+        status: resolved
+        resolved_in_round: 3
       - id: RD2-004
         severity: minor
         category: DinDネットワーク整合性
         description: 'DinD readiness で DOCKER_HOST=tcp://docker:2376 / TLS 証明書前提が残り、他設計の 2375/TLS 無効と不整合。2375 / DOCKER_TLS_CERTDIR="" / --tls=false に統一し TLS 証明書前提を削除する。 [files: docs/floci-apigateway-csharp/design/06_side-effect-verification.md]'
-        status: open
+        status: resolved
+        resolved_in_round: 3
       - id: RD2-005
         severity: minor
         category: CORS OPTIONS表現統一
         description: '05_test-plan の切り分けフローに『Lambda fallback 検討』表記が残り、Lambda OPTIONS は標準経路で fallback ではないという設計に反する。fallback の語を削除し、AWS_PROXY 統合 Terraform 定義 / Lambda OPTIONS ハンドラ確認に統一する。 [files: docs/floci-apigateway-csharp/design/05_test-plan.md]'
-        status: open
+        status: resolved
+        resolved_in_round: 3
       - id: RD2-006
         severity: minor
         category: バージョン固定
         description: 'Angular バージョン方針が ~18.2.0 と ^18.0.0 で不一致。Angular は ~18.2.0 に統一し全設計に反映する。 [files: docs/floci-apigateway-csharp/design/01_implementation-approach.md]'
-        status: open
+        status: resolved
+        resolved_in_round: 3
   artifacts: "docs/floci-apigateway-csharp/design/"
   completed_at: "2026-04-29T13:15:01+00:00"
