@@ -120,9 +120,11 @@ run_up_command() {
 
   temp_dir="$(mktemp -d)"
   state_file="${temp_dir}/container-name"
+  mkdir -p "${temp_dir}/home"
   write_fake_docker "${temp_dir}/docker"
 
   PATH="${temp_dir}:${PATH}" \
+    HOME="${temp_dir}/home" \
     FAKE_DOCKER_LOG="${log_file}" \
     FAKE_DOCKER_STATE="${state_file}" \
     FAKE_TMUX_FAIL="${tmux_fail}" \
@@ -166,6 +168,8 @@ test_up_runs_container_detached_then_enters_tmux() {
     "up should forward the GitHub token environment name into the container" || status=1
   assert_not_contains "${log_output}" "fake-token-value" \
     "up should not put token values in docker run arguments" || status=1
+  assert_not_contains "${log_output}" "skip:" \
+    "up should not pass optional mount skip messages to docker run" || status=1
 
   rm -rf "${temp_dir}"
   return "${status}"
