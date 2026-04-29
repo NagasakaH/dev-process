@@ -5,7 +5,7 @@ meta:
   target_repo: "floci-apigateway-csharp"
   branch: "feature/FRONTEND-001"
   created_at: "2026-04-29T12:16:26+00:00"
-  updated_at: "2026-04-29T13:40:18+00:00"
+  updated_at: "2026-04-29T13:45:36+00:00"
 setup:
   description:
     overview: |
@@ -148,7 +148,7 @@ investigation:
 design:
   status: completed
   started_at: "2026-04-29T13:14:49+00:00"
-  summary: "round1指摘 RD-001〜RD-012 を反映した再設計を完了。配信経路をnginx host volume mount一意（S3 syncは配置検証用）、API GW OPTIONSはAWS_PROXY+Lambda標準で204統一、CI imageをmcr.microsoft.com/playwright:v1.45.3-jammy統一、web-e2eにDinD設定（DOCKER_HOST/TLS/FF_NETWORK_PER_BUILD/WEB_BASE_URL）明記、unit/integrationをファイル名/karma config/tsconfig/npm scriptsで分離、karma coverage check.global強制、JSONキーCamelCase（id/title/createdAt等）確定、Angular18.2/Node20.11/Karma6.4/Playwright1.45.3バージョン固定、必須env未設定時はshell exit1+Playwright globalSetup throwでfail-fast統一、verify-readme-sectionsの検証対象見出し一覧明記、test environment readiness（Node/Chromium/Playwright/Docker DinD/floci/AWS CLI/Terraform）を05/06両方に追記。"
+  summary: "round1指摘 RD-001〜RD-012 を反映した再設計を完了。配信経路をnginx host volume mount一意（S3 syncは配置検証用）、API GW OPTIONSはAWS_PROXY+Lambda標準で204統一、CI imageをmcr.microsoft.com/playwright:v1.45.3-jammy統一、web-e2eにDinD設定（DOCKER_HOST/TLS/FF_NETWORK_PER_BUILD/WEB_BASE_URL）明記、unit/integrationをファイル名/karma config/tsconfig/npm scriptsで分離、karma coverage check.global強制、JSONキーCamelCase（id/title/createdAt等）確定、Angular18.2/Node20.11/Karma6.4/Playwright1.45.3バージョン固定、必須env未設定時はshell exit1+Playwright globalSetup throwでfail-fast統一、verify-readme-sectionsの検証対象見出し一覧明記、test environment readiness（Node/Chromium/Playwright/Docker DinD/floci/AWS CLI/Terraform）を05/06両方に追記。 round2指摘 RD2-001〜RD2-006 を反映: APIGW MOCK統合言及とLambda fallback表記を全文書から削除/却下案化（OPTIONSはAWS_PROXY→Lambda 204のみ）、05_test-plan E2E手順から fallback: ./frontend/dist volume mount コメント削除、Playwright config例を requireEnv('WEB_BASE_URL') 必須参照に変更してlocalhost:8080 fallback除去、06 DinD readinessを2375/DOCKER_TLS_CERTDIR=\"\"/--tls=false に統一しTLS証明書前提を削除、05切り分けフローからLambda fallback検討表記をAWS_PROXY統合Terraform定義/Lambda OPTIONSハンドラ確認に置換、Angularピンを~18.2.0に統一（^18.0.0除去）。review status はround3未実施のためconditionalのまま。"
   approach: ""
   key_decisions: []
   review:

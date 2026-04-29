@@ -85,7 +85,7 @@ flowchart TD
 | 4 | `GET /todos/{id}` が `Access-Control-Allow-Origin: *` を含む     | `curl -i -X GET` で確認                                  |
 | 5 | エラー応答（4xx / 5xx）にも CORS ヘッダが付く                     | Lambda の例外パスでも `JsonHeaders` 経由で付与            |
 | 6 | ブラウザから preflight → 本リクエストが連続で成功する             | Playwright E2E-3 で必須アサート                           |
-| 7 | Lambda OPTIONS 標準採用済みのため、API Gateway 側 OPTIONS は AWS_PROXY で Lambda に透過する設計 (RD-006) | Terraform で OPTIONS が AWS_PROXY 統合になっており、MOCK 設定が残っていないこと。`Function.cs` に OPTIONS ハンドラが実装され、`OPTIONS /todos` / `OPTIONS /todos/{id}` が 204 + CORS ヘッダで応答すること（fallback 切替や MOCK 統合は採用しない） |
+| 7 | Lambda OPTIONS 標準採用済みのため、API Gateway 側 OPTIONS は AWS_PROXY で Lambda に透過する設計 (RD-006) | Terraform で OPTIONS が AWS_PROXY 統合になっており、APIGW MOCK 統合（却下案）が残っていないこと。`Function.cs` に OPTIONS ハンドラが実装され、`OPTIONS /todos` / `OPTIONS /todos/{id}` が 204 + CORS ヘッダで応答すること（fallback 切替や MOCK 統合は採用しない） |
 
 ### 2.3 パフォーマンス検証
 
@@ -113,7 +113,7 @@ flowchart TD
 | ------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | ブラウザ                              | Chromium（Playwright 標準）で OK。Firefox/Webkit は将来追加余地                                |
 | floci バージョン                      | 既存 `floci/floci:latest` を継続使用。`SERVICES` への `s3` 追加が許容されること                |
-| Terraform バージョン                  | 既存 1.6.6 で OPTIONS / MOCK / S3 リソースが apply 可能であること                              |
+| Terraform バージョン                  | 既存 1.6.6 で OPTIONS (AWS_PROXY) / S3 リソースが apply 可能であること                         |
 | Node.js / Angular                     | Node 20 LTS / Angular 18 LTS の `engines` を満たすこと                                         |
 | 既存 README 構造                      | 追加セクションは末尾追記とし、既存セクションのアンカー / 順序を変えない                        |
 | 後方互換（API レスポンス）            | 既存クライアント（CLI / .NET E2E）にとって追加ヘッダは透過、ボディ無変更                       |
@@ -138,7 +138,7 @@ flowchart TD
 | 2 | Chromium (Playwright 同梱)        | `npx playwright install --dry-run chromium`           | "is already installed"                                  | `npx playwright install --with-deps chromium`                  |
 | 3 | Playwright                        | `npx playwright --version`                            | `Version 1.45.3`                                       | `npm ci` を再実行                                              |
 | 4 | Docker                            | `docker --version`                                    | `25.0.x` 以降                                          | DinD service 再起動 / devcontainer 修正                       |
-| 5 | DinD (CI のみ)                    | `docker info`（`DOCKER_HOST=tcp://docker:2376`）       | server / client が応答                                  | `.gitlab-ci.yml` の `services` 宣言 / TLS 証明書 mount 確認    |
+| 5 | DinD (CI のみ)                    | `docker info`（`DOCKER_HOST=tcp://docker:2375` / `DOCKER_TLS_CERTDIR=""` / `--tls=false`） | server / client が応答（TLS 無効・ポート 2375）         | `.gitlab-ci.yml` の `services` で `docker:dind` を `command: ["--tls=false"]` で起動し、`DOCKER_HOST=tcp://docker:2375` / `DOCKER_TLS_CERTDIR=""` を variables に設定（TLS 証明書 mount は不要） |
 | 6 | floci image                       | `docker pull floci/floci:latest`                      | pull 成功                                              | レジストリ疎通確認 / イメージ tag 固定                        |
 | 7 | AWS CLI v2 (`--endpoint-url`専用) | `aws --version`                                       | `aws-cli/2.x`                                          | Playwright image に追加インストール                            |
 | 8 | Terraform                         | `terraform -version`                                  | `Terraform v1.6.6`                                      | tfenv で固定                                                   |
@@ -184,7 +184,7 @@ flowchart LR
 
 | リスク ID | 検証で担保する項目                                              |
 | --------- | --------------------------------------------------------------- |
-| R1        | 2.2 OPTIONS 検証 #1〜#2、E2E-3、Lambda fallback 切替コスト #7   |
+| R1        | 2.2 OPTIONS 検証 #1〜#2、E2E-3、AWS_PROXY 統合 Terraform 定義 / Lambda OPTIONS ハンドラ確認 #7   |
 | R2        | 2.6 ロールバック、§3 検証順序の D（terraform plan）             |
 | R3        | 2.2 全項目（特に E2E-3 のブラウザ起点 preflight 成立）          |
 | R4        | 2.3 `web-e2e` 所要時間目標 + キャッシュ設定確認                |

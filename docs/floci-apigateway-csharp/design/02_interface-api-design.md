@@ -109,7 +109,7 @@ if (req.HttpMethod == "OPTIONS")
 
 ### 2.4 API Gateway での CORS ヘッダ透過方針（RD-011 解消）
 
-POST / GET / OPTIONS いずれも `aws_api_gateway_integration.type = "AWS_PROXY"` を使用するため、**Lambda が返したレスポンスヘッダはそのまま透過** される。したがって `aws_api_gateway_method_response.response_parameters` での `Access-Control-Allow-*` ヘッダ宣言は **不要**（依拠経路: AWS_PROXY 透過）。`AWS_PROXY` 透過に依拠する旨を Terraform の該当リソースのコメントに明記し、将来 `MOCK` / `HTTP_PROXY` に変更する場合のみ `method_response` / `integration_response` を導入する。
+POST / GET / OPTIONS いずれも `aws_api_gateway_integration.type = "AWS_PROXY"` を使用するため、**Lambda が返したレスポンスヘッダはそのまま透過** される。したがって `aws_api_gateway_method_response.response_parameters` での `Access-Control-Allow-*` ヘッダ宣言は **不要**（依拠経路: AWS_PROXY 透過）。`AWS_PROXY` 透過に依拠する旨を Terraform の該当リソースのコメントに明記する。本タスクでは APIGW MOCK / HTTP_PROXY 統合への切替は行わない（却下案、本書 §2.2 / `01_implementation-approach.md` §2 参照）。
 
 ---
 

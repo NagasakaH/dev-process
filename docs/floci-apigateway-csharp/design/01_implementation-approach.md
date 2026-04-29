@@ -50,7 +50,7 @@ npm と Playwright browsers をキャッシュする。
 | @playwright/test 1.45.3                 | ブラウザ E2E 標準。`mcr.microsoft.com/playwright:v1.45.3-jammy` 固定タグで CI 再現性確保                  | CI は Chromium 単一に限定（キャッシュ肥大回避）            |
 | nginx 1.27-alpine                       | 軽量・SPA fallback (`try_files`) 設定が容易。compose に sidecar として追加                                 | API リバースプロキシは行わない                             |
 | floci S3                                | `aws s3 sync` で静的成果物を配置できるエンドポイント                                                       | `compose/docker-compose.yml` の `SERVICES` に `s3` を追加  |
-| API Gateway OPTIONS (Terraform, AWS_PROXY → Lambda) | CORS preflight に対応。**floci の APIGW MOCK 統合互換性が不確実**なため、本設計では Lambda OPTIONS を **標準** とし、成功ステータスを **204 No Content** に統一 | MOCK 統合は本タスクでは採用しない                           |
+| API Gateway OPTIONS (Terraform, AWS_PROXY → Lambda) | CORS preflight は AWS_PROXY 統合で Lambda OPTIONS ハンドラに透過する **唯一標準経路**。成功ステータスは **204 No Content** に統一 | APIGW MOCK 統合は採用しない（却下案）                       |
 | `Function.cs` の `JsonHeaders` 拡張     | 既存共通辞書を CORS 対応版に統一更新することで全レスポンスに CORS ヘッダを付与                             | 既存 Unit テストの期待値を TDD で先に更新                  |
 | `assets/config.json` ランタイム設定     | terraform output の invoke_url を CI/ローカルで切り替え可能にするため                                      | ビルド時に shell で生成、ブラウザは APP_INITIALIZER で fetch |
 | GitLab CI `.node` テンプレート          | 既存 `.dotnet` テンプレートと同形にし、フロント追加の `extends` を最小化                                   | キャッシュキーは `frontend/package-lock.json` baseline     |
@@ -75,7 +75,7 @@ npm と Playwright browsers をキャッシュする。
 - **ブレスト決定事項を全て満たす**: Angular 18 LTS / nginx 静的配信のみ / API 直呼び / CORS 追加 / Karma+Jasmine + Playwright / GitLab CI の `web-*` ジョブ追加。
 - **本番想定構成（S3+CloudFront+API Gateway）と論理一致**: ローカル/CI で同形のため、将来本番デプロイ時の差分が「CloudFront 設定追加と CORS Origin の限定」程度で済む。
 - **既存資産の非破壊**: `frontend/` 配下に閉じ、既存 `.NET` ビルド・テスト・CI ジョブには干渉しない。CORS 対応のみ既存 `JsonHeaders` を更新するが、TDD で既存テストを先に拡張するため安全。
-- **リスクへの備え**: floci の OPTIONS / S3 / CORS 互換に懸念があるため、本書 §4 と `06_side-effect-verification.md` に **Lambda OPTIONS fallback** と **nginx ボリュームマウント fallback** を予備案として明記する。
+- **リスクへの備え**: floci の OPTIONS / S3 / CORS 互換に懸念があるが、本タスクでは fallback 経路は設けず、Lambda OPTIONS（AWS_PROXY 統合・204）と nginx host volume mount 配信の **唯一標準経路** に一意化する。代替案（APIGW MOCK 統合 / S3 直接配信 / nginx 撤去）はいずれも **却下案** として §2 / §4 に明示する。
 
 ---
 
@@ -85,7 +85,7 @@ npm と Playwright browsers をキャッシュする。
 
 | リスクID | リスク                                              | 設計上の軽減策                                                                                                                                                                                  |
 | -------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| R1       | floci の API Gateway OPTIONS / MOCK 互換性          | **MOCK 統合は採用せず、Lambda OPTIONS（AWS_PROXY 統合）を標準化** する。`Function.cs` の `ApiHandler` 冒頭で `req.HttpMethod == "OPTIONS"` のとき `204 No Content + CORS preflight ヘッダ` を返す（`02_interface-api-design.md` §2.3）。Terraform は `/todos`, `/todos/{id}` の OPTIONS を AWS_PROXY → Lambda で 1 経路に統一。 |
+| R1       | floci の API Gateway OPTIONS 互換性                 | **OPTIONS は AWS_PROXY 統合で Lambda へ透過する唯一標準経路** に一意化する（APIGW MOCK 統合は却下案）。`Function.cs` の `ApiHandler` 冒頭で `req.HttpMethod == "OPTIONS"` のとき `204 No Content + CORS preflight ヘッダ` を返す（`02_interface-api-design.md` §2.3）。Terraform は `/todos`, `/todos/{id}` の OPTIONS を AWS_PROXY → Lambda で 1 経路に統一。fallback 切替は設けない。 |
 | R2       | floci S3 の静的ホスティング互換性                   | 配信は **nginx host volume mount による静的配信に一意化**。S3 は「ビルド成果物の配置検証先」として `aws s3 sync` のみ実行し、ブラウザ origin にしない（`04_process-flow-design.md` §3）。fallback / 代替経路は設けない。 |
 | R3       | CORS preflight 不足                                 | Lambda の全レスポンス（POST/GET/OPTIONS）で `JsonHeaders` 経由で CORS ヘッダを付与。AWS_PROXY 統合の **レスポンスヘッダ透過** に依拠する（`02_interface-api-design.md` §2.4）。Playwright E2E に「CORS 成立アサート」テストを必須ケースとして含める（`05_test-plan.md` §2.3 E2E-3）。 |
 | R4       | E2E 所要時間増                                      | npm / Playwright / docker layer の 3 系統キャッシュを `.gitlab-ci.yml` に明示。Chromium 単一ブラウザに限定。`web-e2e` のみ `e2e` stage に集約し並列度を抑制                                     |
@@ -102,7 +102,7 @@ npm と Playwright browsers をキャッシュする。
 | ------------------------------------- | ------------------------------------------------------------------------------ |
 | 実 AWS 接続禁止 (DR-001)              | `assets/config.json` には floci 内 URL のみを書き込む。`AWS_*=test` を維持     |
 | nginx は静的配信のみ                  | `nginx.conf` は `try_files $uri /index.html;` のみ。`proxy_pass` は使わない    |
-| Angular 18 LTS 固定                   | `package.json` で `^18.0.0` ピン                                               |
+| Angular 18 LTS 固定                   | `package.json` で `~18.2.0` ピン                                               |
 | 既存 `.NET` CI ジョブ非破壊           | フロント追加は **新ジョブ追加のみ**。既存ジョブの YAML 変更は最小化            |
 | CloudFront 相当機能は実装しない       | floci 未対応のため。本番化は out_of_scope                                      |
 | `frontend/` 配下に閉じる              | リポジトリ root に余計なファイルを置かない（`Makefile` 拡張等は最小限）        |
@@ -114,7 +114,7 @@ npm と Playwright browsers をキャッシュする。
 | ファイル                                | 修正内容                                                                                       |
 | --------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | `src/TodoApi.Lambda/Function.cs`        | `JsonHeaders` に `Access-Control-Allow-*` を追加（または専用ヘルパで一元化）                   |
-| `infra/main.tf` (or 新規 `frontend.tf`) | `/todos`, `/todos/{id}` に `OPTIONS` メソッド + MOCK 統合 + S3 bucket（フロント配信用）追加    |
+| `infra/main.tf` (or 新規 `frontend.tf`) | `/todos`, `/todos/{id}` に `OPTIONS` メソッド + AWS_PROXY 統合（Lambda 透過）+ S3 bucket（成果物配置検証用）追加 |
 | `infra/outputs.tf`                      | `frontend_bucket`, `frontend_url`（nginx ベース URL の組み立てヒント）を追加                   |
 | `compose/docker-compose.yml`            | `SERVICES` に `s3` 追加、`nginx` サービス追加（floci-net 参加、port 8080）                     |
 | `.gitlab-ci.yml`                        | `.node` テンプレート + `web-lint / web-unit / web-integration / web-e2e` ジョブ追加            |
