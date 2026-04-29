@@ -5,7 +5,7 @@ meta:
   target_repo: "floci-apigateway-csharp"
   branch: "feature/FRONTEND-001"
   created_at: "2026-04-29T12:16:26+00:00"
-  updated_at: "2026-04-29T23:01:13+00:00"
+  updated_at: "2026-04-29T23:04:00+00:00"
 setup:
   description:
     overview: |
@@ -778,10 +778,12 @@ code_review:
     - docs/floci-apigateway-csharp/code-review/round-01-summary.md
     - docs/floci-apigateway-csharp/code-review/fix-round-01.md
   review_method: dual-model (Claude Opus 4.7 + GPT-5.5)
+  mr_pr_url: https://gitlab.com/nagasaka-experimental/floci-apigateway-csharp/-/merge_requests/2
 create_mr_pr:
-  status: failed
+  status: completed
   started_at: "2026-04-29T17:29:39+00:00"
-  completed_at: "2026-04-29T17:29:39+00:00"
+  completed_at: "2026-04-29T23:04:00+00:00"
   mode: code
   platform: gitlab
-  mr_pr_urls: []
+  mr_pr_urls:
+    - https://gitlab.com/nagasaka-experimental/floci-apigateway-csharp/-/merge_requests/2
