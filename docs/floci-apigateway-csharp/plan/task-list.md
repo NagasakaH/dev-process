@@ -6,10 +6,22 @@
 | ------------ | ------------------------------------------------------------------ |
 | ステータス   | completed                                                          |
 | 完了日時     | 2026-04-29T14:05:00+00:00                                          |
-| サマリー     | floci-apigateway-csharp に Angular 18 SPA 追加 / CORS / nginx 静的配信 / S3 配置検証 / GitLab CI web-* / Playwright E2E / リグレッションを 16 タスクに分割。並列化は4フェーズで最大並列度4。 |
+| 再計画日時   | 2026-04-30T00:00:00+00:00 (round 2: review-plan round 1 の RP-001〜RP-018 を反映) |
+| サマリー     | floci-apigateway-csharp に Angular 18 SPA 追加 / CORS / nginx 静的配信 / S3 配置検証 / GitLab CI web-* / Playwright E2E / リグレッションを 16 タスクに分割。並列化は8グループで最大並列度5。**本ファイルが依存関係の正本** (RP-003)。`parent-agent-prompt.md` および各 `taskXX.md` の前提条件は本ファイルと同一でなければならない。 |
 | 総タスク数   | 16                                                                 |
 | 成果物パス   | `docs/floci-apigateway-csharp/plan/`                               |
 | 対象リポジトリ | floci-apigateway-csharp                                          |
+
+> **依存関係の正本ルール (RP-003)**: 「タスク一覧」テーブルの `前提条件` 列と「依存関係グラフ (Mermaid)」が **正本** である。`parent-agent-prompt.md` の Mermaid および各 `taskXX.md` の冒頭 `前提条件` を本ファイルに **必ず一致させる** こと。差異が発生した場合は本ファイルが優先する。round 2 では下記 grep で矛盾検知する:
+> ```bash
+> # 矛盾検知チェック (CI/手動)
+> for f in docs/floci-apigateway-csharp/plan/task*.md; do
+>   id=$(basename "$f" .md)
+>   prereq_in_task=$(grep -E '^\| 前提条件' "$f" | head -1)
+>   prereq_in_list=$(grep -E "^\\| ${id} " docs/floci-apigateway-csharp/plan/task-list.md)
+>   echo "$id :: TASK[$prereq_in_task] LIST[$prereq_in_list]"
+> done
+> ```
 
 ## タスク一覧
 
@@ -17,22 +29,22 @@
 | ------------ | ------------------------------------------------------------------ | --------------------------------------- | ------------------------------------------------- | -------- | ---------- |
 | task01       | Angular 18.2 frontend スキャフォールド                              | なし                                    | 不可                                              | 1.0h     | pending    |
 | task02-01    | Lambda CORS (`JsonHeaders` 拡張 + OPTIONS ハンドラ)+既存UT期待値更新| なし                                    | 可（task02-02 / task02-03 / task02-04 / task05）  | 1.0h     | pending    |
-| task02-02    | Terraform OPTIONS(AWS_PROXY)+ S3 frontend bucket + outputs         | なし                                    | 可（task02-01 / task02-03 / task02-04 / task05）  | 1.0h     | pending    |
+| task02-02    | Terraform OPTIONS(AWS_PROXY)+ S3 frontend bucket + outputs         | なし                                    | 可（task02-01 / task02-03 / task02-04 / task05）  | 1.5h     | pending    |
 | task02-03    | compose nginx sidecar + `SERVICES`に`s3`追加 + `default.conf`      | なし                                    | 可（task02-01 / task02-02 / task02-04 / task05）  | 0.5h     | pending    |
 | task02-04    | Angular ドメイン型 (`Todo` / `TodoCreateRequest` / `ApiErrorResponse` / `UiError` / `AppConfig`) | task01    | 可（task02-01 / task02-02 / task02-03 / task05）  | 0.5h     | pending    |
-| task05       | Karma unit/integration 分離設定 + tsconfig.spec.* + angular.json target + npm scripts + coverage 閾値 | task01 | 可（task02-01〜task02-04）                        | 0.75h    | pending    |
-| task03-01    | `ConfigService.load` + バリデーション + `APP_INITIALIZER` 登録      | task02-04                               | 可（task03-02）                                   | 0.75h    | pending    |
+| task05       | Karma unit/integration 分離設定 + tsconfig.spec.* + angular.json target + npm scripts + 最終 coverage 閾値 (RP-006) | task01 | 可（task02-01〜task02-04）                        | 0.75h    | pending    |
+| task03-01    | `ConfigService.load` + バリデーション (APP_INITIALIZER 登録は task04 へ移管 / RP-005) | task02-04                               | 可（task03-02）                                   | 0.75h    | pending    |
 | task03-02    | `TodoApiService` (`create` / `get` / エラー整形)                    | task02-04                               | 可（task03-01）                                   | 0.75h    | pending    |
-| task04       | `TodoComponent` + `AppComponent` + `main.ts` bootstrap (DI / APP_INITIALIZER) | task03-01, task03-02              | 不可                                              | 1.0h     | pending    |
-| task07       | scripts: `build-frontend.sh` / `deploy-frontend.sh` / `web-e2e.sh` / `check-test-env.sh` | task02-02, task02-03         | 可（task04 / task09）                             | 1.0h     | pending    |
+| task04       | `TodoComponent` + `AppComponent` + `main.ts` bootstrap (DI / APP_INITIALIZER / config-error 表示) (RP-005 / RP-012) | task03-01, task03-02              | 不可                                              | 1.0h     | pending    |
+| task07       | scripts: `build-frontend.sh` / `deploy-frontend.sh` / `web-e2e.sh` / `check-test-env.sh` (ジョブ別プロファイル) / `wait-floci-healthy.sh` (新規) | task01, task02-02, task02-03 (RP-009 / RP-001 / RP-011) | 可（task04 / task09）                             | 1.25h    | pending    |
 | task09       | .NET `TodoApi.IntegrationTests` に `OPTIONS /todos` 204+CORS ケース追加 | task02-01, task02-02                | 可（task04 / task07）                             | 0.5h     | pending    |
-| task06       | 結合テスト IT-1〜IT-6 (`HttpTestingController`)                     | task04, task05                          | 可（task08 / task10直前 順序）                    | 1.0h     | pending    |
-| task08       | Playwright config + `e2e/todo.spec.ts` (E2E-1〜E2E-6)               | task04, task07                          | 可（task06）                                      | 1.5h     | pending    |
-| task10       | `.gitlab-ci.yml` `web-lint` / `web-unit` / `web-integration` / `web-e2e` (DinD 設定込み) 追加 | task05, task07, task08         | 不可                                              | 1.0h     | pending    |
-| task11       | `README.md` Frontend セクション追記 + `scripts/verify-readme-sections.sh` 更新 | task07, task10                  | 不可                                              | 0.5h     | pending    |
-| task12       | 弊害検証・リグレッション (.NET全テスト再実行 / curl OPTIONS / `dotnet format` / パフォーマンス / CI 全 stage グリーン確認) | task06, task08, task09, task10, task11 | 不可     | 1.0h     | pending    |
+| task06       | 結合テスト IT-1〜IT-6 (`HttpTestingController`)（テスト追加のみ / RP-012） | task04, task05                          | 可（task08 / task10直前 順序）                    | 1.0h     | pending    |
+| task08       | Playwright config + `e2e/todo.spec.ts` (E2E-1〜E2E-6、5xx は page.route() / RP-007) | task02-01, task04, task07 (RP-004) | 可（task06）                                      | 2.0h     | pending    |
+| task10       | `.gitlab-ci.yml` `web-lint` / `web-unit` / `web-integration` / `web-e2e` (DinD 設定込み, check-test-env プロファイル使用) 追加 | task05, task07, task08         | 不可                                              | 1.0h     | pending    |
+| task11       | `README.md` Frontend セクション追記 + `scripts/verify-readme-sections.sh` 更新 (baseline+順序 / RP-015) | task07, task10                  | 不可                                              | 0.5h     | pending    |
+| task12       | 弊害検証・リグレッション (.NET全テスト再実行 / curl OPTIONS / `dotnet format` / パフォーマンス / coverage grep / 順序検証 / SHA特定 / __demo__ 削除確認 / CI 全 stage グリーン確認) | task06, task08, task09, task10, task11 | 不可     | 1.5h     | pending    |
 
-**推定総時間**: 約 13.75h（並列化により実時間は約 7〜8h を想定）
+**推定総時間**: 約 14.5h（並列化前。20〜30% バッファ込み RP-013 → 名目 18〜20h、並列化により実時間は約 8〜9h を想定）
 
 ## 依存関係グラフ
 
@@ -77,6 +89,7 @@ graph TD
 
     task01 --> t0204
     task01 --> task05
+    task01 --> task07
     t0204 --> t0301
     t0204 --> t0302
     t0301 --> task04
@@ -85,6 +98,7 @@ graph TD
     t0203 --> task07
     t0201 --> task09
     t0202 --> task09
+    t0201 --> task08
     task04 --> task06
     task05 --> task06
     task04 --> task08
@@ -107,7 +121,9 @@ graph TD
 - **Group 2 (並列5)**: task02-01 / task02-02 / task02-03 / task02-04 / task05
 - **Group 3 (並列2)**: task03-01 / task03-02
 - **Group 4 (並列3)**: task04 / task07 / task09
+   - 注: task07 は task01 + task02-02 + task02-03 完了後に開始可能 (RP-009)
 - **Group 5 (並列2)**: task06 / task08
+   - 注: task08 は task02-01 + task04 + task07 完了後に開始可能 (RP-004)
 - **Group 6 (単独)**: task10
 - **Group 7 (単独)**: task11
 - **Group 8 (単独)**: task12

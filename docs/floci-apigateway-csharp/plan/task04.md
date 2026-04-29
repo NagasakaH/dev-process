@@ -23,7 +23,9 @@
 
 ## 目的
 
-`TodoComponent` (フォーム + 取得フォーム + 結果表示 + エラー表示) と `AppComponent` (ルート、`TodoComponent` を直接配置) を実装。`main.ts` で `bootstrapApplication` + `provideHttpClient()` + `APP_INITIALIZER (ConfigService.load)` を登録する。
+`TodoComponent` (フォーム + 取得フォーム + 結果表示 + エラー表示) と `AppComponent` (ルート、`TodoComponent` を直接配置) を実装。`main.ts` で `bootstrapApplication` + `provideHttpClient()` + `APP_INITIALIZER (ConfigService.load)` を登録し、`bootstrapApplication(...).catch(...)` で「設定読み込みエラー」フォールバック DOM を描画する。
+
+> **責務境界 (RP-005 / RP-012)**: `APP_INITIALIZER` 登録、`main.ts` の bootstrap catch フォールバック、AppComponent の config-error 表示用ロジック (例: `BehaviorSubject<'config-error'>` 購読 / DOM 表示) は **すべて本タスク (task04)** が担当する。task06 (結合テスト) は本タスクで実装された UI を **検証するだけ** とし、AppComponent / main.ts のコード修正は行わない。
 
 ## 実装ステップ (TDD)
 
@@ -74,6 +76,8 @@
 - [ ] UT-8 / UT-9 / UT-10 が pass
 - [ ] `npm run build` が成功
 - [ ] `[innerHTML]` 不使用、Angular 標準エスケープのみ
+- [ ] `APP_INITIALIZER` 登録および `bootstrapApplication(...).catch(...)` の config-error フォールバックが本タスクで実装される (RP-005 / RP-012)
+- [ ] AppComponent 側の config-error 購読 / 表示ロジックが本タスクで完結する (task06 はテスト追加のみ)
 - [ ] result.md 作成
 
 ## コミット

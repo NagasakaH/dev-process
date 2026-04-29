@@ -30,11 +30,11 @@
 1. `frontend/` ディレクトリを新規作成（リポジトリルート直下）
 2. Angular 18.2 LTS の standalone components 構成で scaffold:
    - `frontend/package.json`（`~18.2.0` ピン、`engines.node: "^20.11.0"`、`engines.npm: "^10.0.0"`）
-   - `frontend/angular.json`（`projects.frontend.architect.test` のみ仮設定。`test-integration` は task05 で追加）
+   - `frontend/angular.json`（**project 名は `frontend` で固定**、`projects.frontend.architect.build.options.outputPath = { "base": "dist", "browser": "" }` を設定し成果物を **`frontend/dist/index.html`** 直下に出力する。`projects.frontend.architect.test` のみ仮設定。`test-integration` は task05 で追加）— RP-002 配信成果物パス統一
    - `frontend/tsconfig.json` / `frontend/tsconfig.app.json`
    - `frontend/src/index.html` / `src/main.ts`（最小 bootstrap、`AppComponent` は仮プレースホルダ）
    - `frontend/src/styles.css`
-3. ESLint (`@angular-eslint`) を導入し `frontend/.eslintrc.json` を追加
+3. ESLint (`@angular-eslint`) を導入し **`frontend/eslint.config.js` (ESLint flat config)** を追加（Angular 18 推奨、RP-017）。legacy `.eslintrc.json` は採用しない
 4. npm scripts スケルトン: `lint` / `build` / `test:unit` / `test:integration` / `e2e`（中身は後続タスクで実装、`exit 0` でも可）
 5. `frontend/.gitignore` に `node_modules/` `dist/` `coverage/` `playwright-report/` `test-results/` `.angular/` を追加
 6. `frontend/README.md` に「scaffold のみ。詳細は task01 以降」と最小記載
@@ -49,7 +49,7 @@
 | `frontend/src/index.html`              | 新規   |
 | `frontend/src/main.ts`                 | 新規   |
 | `frontend/src/styles.css`              | 新規   |
-| `frontend/.eslintrc.json`              | 新規   |
+| `frontend/eslint.config.js`            | 新規 (flat config / RP-017) |
 | `frontend/.gitignore`                  | 新規   |
 | `frontend/README.md`                   | 新規   |
 
@@ -65,7 +65,8 @@
 ### REFACTOR
 - `package-lock.json` をコミットに含め CI 再現性を担保
 - `engines` フィールドの整合確認（`node ^20.11.0`, `npm ^10.0.0`）
-- ESLint ルールを Angular 標準セットに合わせる
+- ESLint flat config (`eslint.config.js`) を Angular 18 標準セットに合わせる (RP-017)
+- `outputPath` の `{ base: "dist", browser: "" }` 設定により成果物が `frontend/dist/index.html` に出ることを `ng build` 後に確認 (RP-002)
 
 ## 完了条件
 
@@ -73,6 +74,8 @@
 - [ ] `cd frontend && npm ci && npm run build` がローカルで成功
 - [ ] `npm run lint` がローカルで成功（コード未実装でも 0 件）
 - [ ] `frontend/.gitignore` が node_modules / dist / coverage 等を除外
+- [ ] `eslint.config.js` (flat config) が存在し、`.eslintrc.json` を作成しない (RP-017)
+- [ ] `ng build` 後 `test -f frontend/dist/index.html` が真 (RP-002)
 - [ ] result.md を `docs/floci-apigateway-csharp/plan/result-task01.md` に作成
 
 ## コミット

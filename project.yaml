@@ -280,7 +280,7 @@ design:
 plan:
   status: completed
   started_at: "2026-04-29T14:07:23+00:00"
-  summary: "16 タスク (Angular scaffold / CORS / Terraform OPTIONS / nginx / Karma分離 / Angular サービス・コンポーネント / scripts / Playwright E2E / .NET IT追加 / GitLab CI / README / 弊害検証) を 8 並列グループに分割。E2E は task08 (Playwright) と task10 (CI web-e2e DinD) で対応。"
+  summary: "16 タスク (Angular scaffold / CORS / Terraform OPTIONS / nginx / Karma分離 / Angular サービス・コンポーネント / scripts / Playwright E2E / .NET IT追加 / GitLab CI / README / 弊害検証) を 8 並列グループに分割。E2E は task08 (Playwright) と task10 (CI web-e2e DinD) で対応。round 2 (2026-04-30): review-plan round 1 の RP-001〜RP-018 (Critical 1 / Major 9 / Minor 8) 全 18 件を再計画に反映済み。task07 前提に task01 / task08 前提に task02-01 を追加、check-test-env プロファイル化、APP_INITIALIZER 責務を task04 に集約、最終 coverage 閾値固定、E2E 5xx を Playwright route mock 化、apply-api-deployment + warmup-lambdas 順序固定など。推定総時間 約 13.75h → 約 14.5h (バッファ込み)。"
   total_tasks: 16
   tasks:
     - id: task01
@@ -354,7 +354,7 @@ plan:
     status: rejected
     latest_verdict: rejected
     completed_at: "2026-04-29T14:17:59+00:00"
-    summary: round 1 レビュー実施。Critical 1 / Major 9 / Minor 8 の計18件を検出し差し戻し（rejected）。check-test-env.sh の責務矛盾により CI が成立しない Critical を最優先で是正必要。
+    summary: round 1 レビュー実施。Critical 1 / Major 9 / Minor 8 の計18件を検出し差し戻し（rejected）。round 2 (2026-04-30) で全 18 件を計画ドキュメントに反映済み。各 issue.status は addressed 済み。再レビューは review-plan round 2 で実施予定。
     artifacts:
       - docs/floci-apigateway-csharp/review-plan/
     issues:
@@ -362,89 +362,89 @@ plan:
         severity: critical
         category: "CI実行可能性 / check-test-env責務"
         description: "web-lint を含む全 web-* ジョブで scripts/check-test-env.sh 実行必須だが、同スクリプトが docker/terraform/dotnet まで必須化しており node:20.11-bullseye-slim 前提の web-lint と矛盾する。計画のままではCIが成立しない。 | 対応方針: check-test-env.sh をジョブ別プロファイル化（lint/unit/integration/e2e）し、web-lint は Node/npm 等の最小チェックに限定。E2Eのみ docker/terraform/aws/dotnet 等を要求する。 | 関連ファイル: docs/floci-apigateway-csharp/plan/task07.md, docs/floci-apigateway-csharp/plan/task10.md"
-        status: open
+        status: resolved
       - id: RP-002
         severity: major
         category: "配信成果物パス整合性"
         description: "ビルド成果物パスが frontend/dist/frontend/browser/ と frontend/dist/ で不一致。nginx mount/S3 sync/deploy scripts の整合が崩れる。 | 対応方針: Angular project 名/outputPath/browser 出力を一意に固定し、task01 完了条件、task02-03 nginx mount、task07 deploy-frontend.sh、task10 e2e 手順の全記述を同一パスに統一する。 | 関連ファイル: docs/floci-apigateway-csharp/plan/task01.md, docs/floci-apigateway-csharp/plan/task02-03.md, docs/floci-apigateway-csharp/plan/task07.md, docs/floci-apigateway-csharp/plan/task10.md"
-        status: open
+        status: resolved
       - id: RP-003
         severity: major
         category: "依存関係の正確性 / 正本不一致"
         description: "task-list と parent-agent-prompt で依存関係が不一致。task02-01/02/03 の task01 依存有無など実行順の解釈が割れる。 | 対応方針: task-list を依存関係の正本と定義し、parent-agent-prompt と各 taskXX の前提条件を同期。矛盾検知チェックリストを追加する。 | 関連ファイル: docs/floci-apigateway-csharp/plan/task-list.md, docs/floci-apigateway-csharp/plan/parent-agent-prompt.md"
-        status: open
+        status: resolved
       - id: RP-004
         severity: major
         category: "E2E前提漏れ / CORS依存"
         description: "task08 の前提に task02-01（Lambda CORS/OPTIONS）が含まれておらず、E2E-3 CORS成立の前提が保証されない。 | 対応方針: task08 前提条件へ task02-01 を追加し、依存グラフ/並列グループを更新する。 | 関連ファイル: docs/floci-apigateway-csharp/plan/task08.md, docs/floci-apigateway-csharp/plan/task-list.md"
-        status: open
+        status: resolved
       - id: RP-005
         severity: major
         category: "APP_INITIALIZER責務境界"
         description: "task03-01 のタイトル/目的に APP_INITIALIZER 登録があるが、実装ステップ/対象ファイル/完了条件には登録手順がなく、実際は task04 main.ts 側で扱われる。責務境界が矛盾。 | 対応方針: task03-01 は ConfigService 実装のみへ寄せ、APP_INITIALIZER 登録は task04 に一本化するか、逆に task03-01 に main.ts/app.config.ts と登録テストを含める。 | 関連ファイル: docs/floci-apigateway-csharp/plan/task03-01.md, docs/floci-apigateway-csharp/plan/task04.md"
-        status: open
+        status: resolved
       - id: RP-006
         severity: major
         category: "coverage閾値運用"
         description: "task05 で一時的に低い coverage 閾値を許容しており、本番閾値へ戻すタスク/検証が明示されていない。 | 対応方針: 暫定閾値運用を禁止し、最初から最終閾値（80/70/90/80）を設定。task12 に grep 等で閾値を検証する手順を追加する。 | 関連ファイル: docs/floci-apigateway-csharp/plan/task05.md, docs/floci-apigateway-csharp/plan/task12.md"
-        status: open
+        status: resolved
       - id: RP-007
         severity: major
         category: "E2E 5xx 再現性"
         description: "task08 の E2E-5 で floci Lambda を docker compose stop して 5xx 再現とあるが、動的 Lambda コンテナ/on-demand 実行では確実性がない。 | 対応方針: 確実な再現手段に置換する。推奨: Playwright page.route() で API 応答を 500 に書き換え、UIエラー表示を検証する。実API障害再現は別タスク/将来案に分離。 | 関連ファイル: docs/floci-apigateway-csharp/plan/task08.md"
-        status: open
+        status: resolved
       - id: RP-008
         severity: major
         category: "web-e2e 実行順 / API deployment"
         description: "task10 web-e2e 手順に apply-api-deployment.sh / warmup-lambdas.sh の保証がなく、invoke_url取得やAPI応答が flaky になる。 | 対応方針: deploy-local.sh が内包するか明記し、web-e2e script に apply-api-deployment.sh と warmup-lambdas.sh を deploy-local.sh 後に組み込む。build-frontend.sh は invoke_url 取得失敗時 fail-fast。 | 関連ファイル: docs/floci-apigateway-csharp/plan/task10.md, docs/floci-apigateway-csharp/plan/task07.md"
-        status: open
+        status: resolved
       - id: RP-009
         severity: major
         category: "task07 暗黙依存"
         description: "task07 は frontend build と dist path に依存するが前提に task01 がない。cherry-pick順で単独失敗しうる。 | 対応方針: task07 の前提条件に task01 を追加し、依存グラフ/並列グループを更新する。 | 関連ファイル: docs/floci-apigateway-csharp/plan/task07.md, docs/floci-apigateway-csharp/plan/task-list.md"
-        status: open
+        status: resolved
       - id: RP-010
         severity: major
         category: "インフラTDD RED強度"
         description: "task02-02 の RED が terraform validate で always-pass に近く、失敗テストになっていない。 | 対応方針: terraform plan -json + jq 等で S3/OPTIONS/AWS_PROXY/response headers の未定義を assertion する RED スクリプトを追加するか、OPTIONS IntegrationTest を task02-02 のRED完了条件へ紐付ける。 | 関連ファイル: docs/floci-apigateway-csharp/plan/task02-02.md"
-        status: open
+        status: resolved
       - id: RP-011
         severity: minor
         category: "wait-floci script責務"
         description: "task07 注記で wait-floci-healthy.sh が曖昧だが、task10 は明確に呼び出す。 | 対応方針: task07 対象ファイル/完了条件に scripts/wait-floci-healthy.sh 新規追加を明記。未起動時 timeout exit 1 のREDも含める。 | 関連ファイル: docs/floci-apigateway-csharp/plan/task07.md, docs/floci-apigateway-csharp/plan/task10.md"
-        status: open
+        status: resolved
       - id: RP-012
         severity: minor
         category: "UIエラー表示責務"
         description: "task06 が AppComponent 側の本体コード修正余地を残しており、テストタスクに実装責務が漏れている。 | 対応方針: config-error 表示の実装責務を task04 に移し、task06 はテスト追加のみとする。 | 関連ファイル: docs/floci-apigateway-csharp/plan/task06.md, docs/floci-apigateway-csharp/plan/task04.md"
-        status: open
+        status: resolved
       - id: RP-013
         severity: minor
         category: "見積もりバッファ"
         description: "見積もりにバッファがなく、task02-02/task08/task12 が過少。 | 対応方針: 20〜30% のバッファを明記し、該当タスクを増やす。 | 関連ファイル: docs/floci-apigateway-csharp/plan/task-list.md"
-        status: open
+        status: resolved
       - id: RP-014
         severity: minor
         category: "fail-fast 検証順"
         description: "task12 の AWS_ENDPOINT_URL 空検証が WEB_BASE_URL 未設定で先に落ちる可能性。 | 対応方針: WEB_BASE_URL=http://localhost:8080 AWS_ENDPOINT_URL= scripts/web-e2e.sh で検証するよう修正。 | 関連ファイル: docs/floci-apigateway-csharp/plan/task12.md"
-        status: open
+        status: resolved
       - id: RP-015
         severity: minor
         category: "README検証強度"
         description: "README見出し検証が grep-F だけで階層/順序を担保しない可能性。 | 対応方針: 既存見出し baseline と新規見出し位置/順序チェックを追加。 | 関連ファイル: docs/floci-apigateway-csharp/plan/task11.md, docs/floci-apigateway-csharp/plan/task12.md"
-        status: open
+        status: resolved
       - id: RP-016
         severity: minor
         category: "コミットSHA特定"
         description: "task12 の dry-run revert 対象 SHA 特定方法が未定義。 | 対応方針: git log --grep 等で task02-01 コミットを特定する手順を追加。 | 関連ファイル: docs/floci-apigateway-csharp/plan/task12.md"
-        status: open
+        status: resolved
       - id: RP-017
         severity: minor
         category: "ESLint config形式"
         description: "task01 が Angular 18 で legacy .eslintrc.json を採用しており根拠不明。 | 対応方針: eslint.config.js flat config 採用へ変更、または legacy 採用理由を明記。推奨は flat config。 | 関連ファイル: docs/floci-apigateway-csharp/plan/task01.md"
-        status: open
+        status: resolved
       - id: RP-018
         severity: minor
         category: "demo spec削除保証"
         description: "task05 の __demo__ 削除が後続統合で漏れる可能性。 | 対応方針: 完了条件に `test ! -d frontend/src/app/__demo__` を追加し、親エージェント検証ゲートにも含める。 | 関連ファイル: docs/floci-apigateway-csharp/plan/task05.md"
-        status: open
+        status: resolved

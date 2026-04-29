@@ -12,7 +12,9 @@
 | submodule     | `submodules/floci-apigateway-csharp/`    |
 | タスク総数    | 16                                       |
 | 並列グループ  | 8                                        |
-| 推定総所要時間 | 約 13.75h (並列化前)                     |
+| 推定総所要時間 | 約 14.5h (並列化前 / round 2 再見積もり、20〜30% バッファ込み RP-013) |
+
+> **依存関係の正本** (RP-003): `task-list.md` が正本。本ファイルの Mermaid と表は `task-list.md` と一致させること。差異検出時は `task-list.md` を優先する。
 
 ## 依存関係 (Mermaid)
 
@@ -35,11 +37,9 @@ graph TD
   task11[task11: README + verify]
   task12[task12: 弊害検証]
 
-  task01 --> task02_01
-  task01 --> task02_02
-  task01 --> task02_03
   task01 --> task02_04
   task01 --> task05
+  task01 --> task07
   task02_04 --> task03_01
   task02_04 --> task03_02
   task03_01 --> task04
@@ -48,6 +48,7 @@ graph TD
   task02_03 --> task07
   task02_01 --> task09
   task02_02 --> task09
+  task02_01 --> task08
   task04 --> task06
   task05 --> task06
   task04 --> task08
@@ -66,16 +67,16 @@ graph TD
 
 ## 実行順序 (8 グループ)
 
-| グループ | タスク                                             | 並列度 | 想定時間 |
-| -------- | -------------------------------------------------- | ------ | -------- |
-| G1       | task01                                             | 1      | 1.0h     |
-| G2       | task02-01, task02-02, task02-03, task02-04, task05 | 5      | 1.5h     |
-| G3       | task03-01, task03-02                               | 2      | 0.75h    |
-| G4       | task04, task07, task09                             | 3      | 1.0h     |
-| G5       | task06, task08                                     | 2      | 1.5h     |
-| G6       | task10                                             | 1      | 1.0h     |
-| G7       | task11                                             | 1      | 0.5h     |
-| G8       | task12                                             | 1      | 1.0h     |
+| グループ | タスク                                             | 並列度 | 想定時間 | 備考                                                |
+| -------- | -------------------------------------------------- | ------ | -------- | --------------------------------------------------- |
+| G1       | task01                                             | 1      | 1.0h     |                                                     |
+| G2       | task02-01, task02-02, task02-03, task02-04, task05 | 5      | 1.5h     | task02-02 は 1.5h (RP-013)                          |
+| G3       | task03-01, task03-02                               | 2      | 0.75h    |                                                     |
+| G4       | task04, task07, task09                             | 3      | 1.25h    | task07 は task01+task02-02+task02-03 完了が必要 (RP-009) / task07 1.25h (RP-013) |
+| G5       | task06, task08                                     | 2      | 2.0h     | task08 は task02-01+task04+task07 完了が必要 (RP-004) / task08 2.0h (RP-013) |
+| G6       | task10                                             | 1      | 1.0h     |                                                     |
+| G7       | task11                                             | 1      | 0.5h     |                                                     |
+| G8       | task12                                             | 1      | 1.5h     | RP-013                                              |
 
 > 並列度は dev-container の CPU/メモリに合わせて適宜調整。初期は最大 3 並列を推奨。
 
@@ -151,14 +152,14 @@ git branch -D FRONTEND-001-task02-01
 
 | グループ | 検証コマンド                                                              |
 | -------- | ------------------------------------------------------------------------- |
-| G1       | `cd frontend && npm ci && npm run build`                                  |
-| G2       | `dotnet test tests/TodoApi.UnitTests`, `terraform validate`, `docker compose config` |
+| G1       | `cd frontend && npm ci && npm run build` （`frontend/dist/index.html` 出力 / RP-002 確認）|
+| G2       | `dotnet test tests/TodoApi.UnitTests`, `terraform validate`, `bash tests/infra/test-frontend-plan.sh` (RP-010), `docker compose config` |
 | G3       | `cd frontend && npm run test:unit`                                        |
-| G4       | `cd frontend && npm run test:unit`, `dotnet test tests/TodoApi.IntegrationTests` |
-| G5       | `npm run test:integration`, `npx playwright test` (devcontainer内 floci 起動済み) |
+| G4       | `cd frontend && npm run test:unit`, `dotnet test tests/TodoApi.IntegrationTests`, `bash scripts/check-test-env.sh e2e` (RP-001) |
+| G5       | `npm run test:integration`, `npx playwright test` (devcontainer内 floci 起動済み)、`test ! -d frontend/src/app/__demo__` (RP-018) |
 | G6       | `glab ci lint` または `gitlab-ci-lint .gitlab-ci.yml`                     |
-| G7       | `bash scripts/verify-readme-sections.sh`                                  |
-| G8       | task12.md の Step 1〜9 を完走                                             |
+| G7       | `bash scripts/verify-readme-sections.sh` (baseline + 順序、RP-015)        |
+| G8       | task12.md の Step 1〜9 を完走 (coverage grep / SHA特定 / __demo__削除 含む) |
 
 各ゲートで失敗 → そのグループのタスクへ差し戻し、修正 commit を再 cherry-pick。
 

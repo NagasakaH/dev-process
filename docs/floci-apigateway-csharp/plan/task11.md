@@ -32,9 +32,13 @@
 
 ### GREEN
 3. `scripts/verify-readme-sections.sh`:
-   - 既存の検証対象見出し (例: `## ローカル起動`, `## テスト`, `## CI`) を保持
+   - 既存の検証対象見出し (例: `## ローカル起動`, `## テスト`, `## CI`) を **baseline 配列** として保持し、現状の `README.md` における出現順序 (行番号昇順) と一致するか検証する (RP-015)
    - 新規必須見出し 6 件を追加 (`## Frontend`, `### Frontend ローカル起動`, `### Frontend ローカルテスト`, `### Frontend E2E テスト`, `### Frontend CI 実行手順`, `### Frontend 環境変数 (WEB_BASE_URL / AWS_ENDPOINT_URL / API_BASE_URL)`)
-   - 検証ロジックは `grep -F -q` で完全一致、欠落時 `exit 1`
+   - 検証ロジック (RP-015 強化):
+     - 各見出しを `grep -nF -- "<heading>" README.md` で行番号取得（完全一致）
+     - 全件存在しなければ `exit 1`
+     - baseline + 新規見出しを期待順序の配列にマージし、取得した行番号が **狭義単調増加** であることを確認。順序違反時 `exit 1`
+     - 階層チェック: `### Frontend *` は `## Frontend` の行番号より後ろ、かつ次の `## ` 行より前にあること
 4. `README.md` に下記 6 見出しを追記:
    - `## Frontend` 概要
    - `### Frontend ローカル起動` (`scripts/deploy-local.sh` → `scripts/build-frontend.sh` → `scripts/deploy-frontend.sh` → `docker compose up -d nginx` → http://localhost:8080)
@@ -58,8 +62,8 @@
 ## 完了条件
 
 - [ ] `bash scripts/verify-readme-sections.sh` が exit 0
-- [ ] 既存セクションの順序が変わっていない
-- [ ] `## Frontend` 配下 6 見出しが全て存在
+- [ ] 既存セクションの順序が変わっていない（baseline 配列と行番号順一致を script で検証、RP-015）
+- [ ] `## Frontend` 配下 6 見出しが全て存在し、期待順序で並んでいる (RP-015)
 - [ ] result.md 作成
 
 ## コミット

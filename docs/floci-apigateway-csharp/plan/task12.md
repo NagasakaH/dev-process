@@ -7,7 +7,7 @@
 | タスク識別子   | task12                                      |
 | 前提条件       | task06, task08, task09, task10, task11      |
 | 並列実行可否   | 不可                                        |
-| 推定所要時間   | 1.0h                                        |
+| 推定所要時間   | 1.5h（20〜30% バッファ込み、RP-013）        |
 | 優先度         | 高                                          |
 
 ## 作業環境
@@ -49,7 +49,7 @@
 
 ### Step 4: セキュリティ検証 (§2.4)
 17. `frontend/src/assets/config.json` (生成後) に floci 内 URL のみ含まれること
-18. `AWS_ENDPOINT_URL=` 空で `web-e2e.sh` → exit 1 (実 AWS 到達防止)
+18. `WEB_BASE_URL=http://localhost:8080 AWS_ENDPOINT_URL= scripts/web-e2e.sh` を実行 → `AWS_ENDPOINT_URL` 未設定起因で exit 1（実 AWS 到達防止、`WEB_BASE_URL` を先に満たすことで fail-fast 順序を保証、RP-014）
 19. `[innerHTML]` 不使用を `git grep '\[innerHTML\]' frontend/` で確認 (XSS)
 
 ### Step 5: 互換性 / インフラ検証 (§2.5, §2.6)
@@ -57,18 +57,29 @@
 21. floci `floci/floci:latest` + Terraform 1.6.6 + Node 20 LTS / Angular 18 LTS の前提が `engines` / image tag で固定
 22. README 既存セクション順序が無変更 (`git diff README.md` で確認)
 23. `docker compose down -v` でボリューム残留無し
+24. **`__demo__` 削除確認**: `test ! -d frontend/src/app/__demo__` が exit 0 (RP-018)
+25. **coverage 閾値検証**: 両 karma config に最終閾値が設定されていることを grep で機械検証 (RP-006)
+   ```bash
+   grep -E 'statements:\s*80'  frontend/karma.conf.js frontend/karma.integration.conf.js
+   grep -E 'branches:\s*70'    frontend/karma.conf.js frontend/karma.integration.conf.js
+   grep -E 'functions:\s*90'   frontend/karma.conf.js frontend/karma.integration.conf.js
+   grep -E 'lines:\s*80'       frontend/karma.conf.js frontend/karma.integration.conf.js
+   ```
+   いずれか欠落で **fail**
 
 ### Step 6: テスト環境準備 (§2.7)
-24. `scripts/check-test-env.sh` → exit 0 (全 readiness OK)
+26. `scripts/check-test-env.sh e2e` → exit 0 (e2e プロファイルで全 readiness OK、RP-001)
+27. `scripts/check-test-env.sh lint` → exit 0 (Node のみで成立、docker/aws/terraform/dotnet 不要、RP-001)
 
 ### Step 7: CI 全 stage グリーン確認 (§3 H)
-25. GitLab MR の pipeline で 既存 `.dotnet` (lint/unit/integration/e2e) + 新 `web-*` (lint/unit/integration/e2e) の **全ジョブ** が green であること
+28. GitLab MR の pipeline で 既存 `.dotnet` (lint/unit/integration/e2e) + 新 `web-*` (lint/unit/integration/e2e) の **全ジョブ** が green であること
 
 ### Step 8: README 検証 (§3 I)
-26. `bash scripts/verify-readme-sections.sh` → exit 0
+29. `bash scripts/verify-readme-sections.sh` → exit 0 (baseline + 順序チェック、RP-015)
 
 ### Step 9: ロールバック dry-run (§4)
-27. `git revert --no-commit <task02-01 commit>` をローカル dry-run で実施し、CORS 変更のみ revert 可能なことを確認 (実際には revert を残さない)
+30. task02-01 のコミット SHA を `git log --grep='task02-01' --pretty=format:'%H %s' feature/FRONTEND-001` で特定 (RP-016)。複数該当時は最新の cherry-pick 後 SHA を採用
+31. `git revert --no-commit <task02-01 commit SHA>` をローカル dry-run で実施し、CORS 変更のみ revert 可能なことを確認 (実際には revert を残さない。`git reset --hard HEAD` で破棄)
 
 ## 成果物
 
@@ -82,7 +93,10 @@
 
 - [ ] `06_side-effect-verification.md` §2 の全項目 pass
 - [ ] §3 検証順序のすべてのチェックが完了
-- [ ] §4 ロールバック手順が dry-run で再現可能と確認
+- [ ] §4 ロールバック手順が dry-run で再現可能と確認（task02-01 SHA を `git log --grep` で特定、RP-016）
+- [ ] coverage 閾値 (statements:80 / branches:70 / functions:90 / lines:80) が両 karma config で grep 検証 pass (RP-006)
+- [ ] `WEB_BASE_URL=http://localhost:8080 AWS_ENDPOINT_URL= scripts/web-e2e.sh` が exit 1 で AWS_ENDPOINT_URL 未設定検出 (RP-014)
+- [ ] `test ! -d frontend/src/app/__demo__` が真 (RP-018)
 - [ ] acceptance_criteria 全 7 項目に対応するテストが実通過 (§5 対応表)
 - [ ] result-task12.md 作成
 
