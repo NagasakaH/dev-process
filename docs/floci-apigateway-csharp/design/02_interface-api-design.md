@@ -263,7 +263,7 @@ nginx:
 | `web-lint`        | `lint`        | `node:20.11-bullseye-slim`                           | `frontend/node_modules`, `~/.npm`                         | `apt-get install -y --no-install-recommends git ca-certificates`（必要時） → `cd frontend && npm ci && npm run lint`                          |
 | `web-unit`        | `unit`        | `mcr.microsoft.com/playwright:v1.45.3-jammy`         | `frontend/node_modules`, `~/.npm`                         | `cd frontend && npm ci && npm run test:unit -- --watch=false --browsers=ChromeHeadlessCI --reporters=junit,coverage`                          |
 | `web-integration` | `integration` | `mcr.microsoft.com/playwright:v1.45.3-jammy`         | 同上                                                      | `cd frontend && npm ci && npm run test:integration -- --watch=false --browsers=ChromeHeadlessCI --reporters=junit,coverage`                   |
-| `web-e2e`         | `e2e`         | `mcr.microsoft.com/playwright:v1.45.3-jammy`         | `frontend/node_modules`, `~/.npm`, `~/.cache/ms-playwright` | DinD service で `docker compose up -d floci nginx` → `scripts/deploy-local.sh` → `scripts/build-frontend.sh` → `scripts/deploy-frontend.sh` → `scripts/web-e2e.sh` |
+| `web-e2e`         | `e2e`         | `mcr.microsoft.com/playwright:v1.45.3-jammy`         | `frontend/node_modules`, `~/.npm`, `~/.cache/ms-playwright` | DinD service で `bash scripts/check-test-env.sh e2e` → `docker compose up -d floci nginx` → `bash scripts/web-e2e.sh` のみ実行（`web-e2e.sh` 内で `wait-floci-healthy.sh` → `deploy-local.sh` → `apply-api-deployment.sh` → `warmup-lambdas.sh` → `build-frontend.sh` → `deploy-frontend.sh` → `npx playwright test` の順に内部実行 / RP-008 / RP2-002 / RP2-007） |
 
 > `mcr.microsoft.com/playwright:v1.45.3-jammy` は **Chromium / Firefox / WebKit と必要な OS パッケージ（fonts, libnss3 等）が同梱** されているため、`web-unit` / `web-integration` / `web-e2e` すべてで Karma の `ChromeHeadlessCI` および Playwright が追加インストール無しに動作する。`web-lint` は ESLint / Prettier しか実行しないため軽量な `node:20.11-bullseye-slim` を使用する。
 
@@ -289,15 +289,23 @@ web-e2e:
     AWS_SECRET_ACCESS_KEY: "test"
     AWS_DEFAULT_REGION: "us-east-1"
   before_script:
-    - apt-get update && apt-get install -y --no-install-recommends docker.io docker-compose-plugin awscli
+    - apt-get update && apt-get install -y --no-install-recommends docker.io docker-compose-plugin awscli unzip curl gnupg ca-certificates
+    # RP2-001: Terraform 1.6.6 を固定インストール（check-test-env.sh e2e が要求）
+    - curl -fsSL -o /tmp/tf.zip https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip
+    - unzip -o /tmp/tf.zip -d /usr/local/bin && terraform -version | head -1 | grep -q '1.6.6'
+    # RP2-001: .NET SDK 8.0 を固定インストール（check-test-env.sh e2e が要求）
+    - curl -fsSL https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb -o /tmp/ms.deb
+    - dpkg -i /tmp/ms.deb && apt-get update && apt-get install -y --no-install-recommends dotnet-sdk-8.0
+    - dotnet --list-sdks | grep -q '^8\.'
     - docker info   # DinD 接続確認（失敗時 fail-fast）
+    - bash scripts/check-test-env.sh e2e   # node/docker/aws/terraform/dotnet readiness を fail-fast 検証
   script:
+    # RP2-002: web-e2e.sh が唯一のエントリポイント。compose up と check 以外は web-e2e.sh 内に集約する
     - docker compose -f compose/docker-compose.yml up -d floci nginx
-    - scripts/wait-floci-healthy.sh
-    - scripts/deploy-local.sh
-    - scripts/build-frontend.sh
-    - scripts/deploy-frontend.sh
-    - scripts/web-e2e.sh
+    - bash scripts/web-e2e.sh
+    # web-e2e.sh は内部で wait-floci-healthy.sh → deploy-local.sh → apply-api-deployment.sh
+    #   → warmup-lambdas.sh → build-frontend.sh → deploy-frontend.sh → npx playwright test
+    #   の順に実行する（RP-008 / RP2-007）。CI 側からこれらを直接呼ばないこと（二重実行禁止）。
   after_script:
     - docker compose -f compose/docker-compose.yml down -v || true
   artifacts:
@@ -314,6 +322,8 @@ web-e2e:
 - `FF_NETWORK_PER_BUILD: "true"` を有効化し、`docker compose` が起動する `floci-net` と service コンテナが **同一 user-defined network** に乗ることを保証する。これにより job コンテナから nginx の `docker:8080` / floci の `docker:4566` が解決可能になる。
 - nginx の `8080` は `compose/docker-compose.yml` で `ports: ["8080:8080"]` 公開済み。Playwright は `WEB_BASE_URL=http://docker:8080` で起動し、ジョブ内から DinD 越しに到達する。
 - 必須 env (`WEB_BASE_URL`, `AWS_ENDPOINT_URL`) が空の場合 `scripts/web-e2e.sh` が exit 1（RD-002）。
+- **(RP2-001)** Playwright image には terraform / dotnet が同梱されないため、`before_script` で **Terraform 1.6.6 と .NET SDK 8.0 を固定インストール**する。これにより `check-test-env.sh e2e` プロファイル（node/docker/aws/terraform/dotnet を要求）が CI 上で成立する。
+- **(RP2-002 / RP2-007)** `script:` は `compose up` と `web-e2e.sh` の 2 行のみ。`wait-floci-healthy.sh` / `deploy-local.sh` / `apply-api-deployment.sh` / `warmup-lambdas.sh` / `build-frontend.sh` / `deploy-frontend.sh` は **`web-e2e.sh` 内部に集約**して二重実行を排除する（task07 / task10 と同順序）。
 
 `artifacts:reports:junit` を全ジョブで設定し、既存 .NET ジョブと同形にする。
 

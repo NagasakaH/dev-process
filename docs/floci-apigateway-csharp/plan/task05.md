@@ -23,6 +23,8 @@
 
 `*.spec.ts` (unit) と `*.integration.spec.ts` (integration) を、karma config / tsconfig.spec / angular.json target / npm scripts レベルで分離する。`coverageReporter.check.global` で **最初から最終閾値** (statements:80 / branches:70 / functions:90 / lines:80) を強制し、未達時 CI fail させる (RD-005 / RD-008 / RP-006)。**暫定的な低閾値運用は禁止**。
 
+> **(RP2-004) 本タスクの GREEN 判定スコープ**: 本タスクは **karma config / tsconfig.spec / angular.json target / npm scripts の構成検証のみ** で GREEN 判定する。`__demo__` 一時 spec は削除済み前提なので coverage 0% で `npm run test:unit` を実行すると閾値で必ず fail するため、**実 `npm run test:unit` / `npm run test:integration` の coverage 閾値ゲートは本タスクの GREEN 条件にしない**。実行は task06 (結合テスト追加) 完了後の **後続統合ゲート（task06 完了後の Group 5 / G5 verification、および task10 の `web-unit` / `web-integration` ジョブ）** で初めて要求する。本タスク内では `ng config -g` / `ng test --help` / 設定ファイルの存在・内容検証 (`grep` / `node -e "require('./karma.conf.js')"` 相当) で構成の妥当性のみを確認する。
+
 ## 実装ステップ (TDD: RED-GREEN-REFACTOR)
 
 ### RED
@@ -53,7 +55,13 @@
    }
    ```
 9. `karma-jasmine` / `karma-chrome-launcher` / `karma-junit-reporter` / `karma-coverage` / `jasmine-core` を devDependency に追加
-10. `__demo__/*.spec.ts` を **本タスク内で必ず削除** したうえで `cd frontend && npm run test:unit` / `npm run test:integration` を実行する。後続タスクが追加する実 spec によって閾値を満たす形にすること。**閾値の一時引き下げは禁止 (RP-006)**。`__demo__` を残したままでは coverage が 0% で fail するため、本タスク GREEN 完了は「実 spec を 1 件以上含めるか、`__demo__` 削除後に dummy 状態でのテスト構成検証 (`ng test --dry-run` 相当) のみで判定」とする
+10. `__demo__/*.spec.ts` を **本タスク内で必ず削除** する。**(RP2-004)** 削除後は **karma config / tsconfig.spec / angular.json target / npm scripts の構成検証のみ** で GREEN 判定する（実 `npm run test:unit` / `npm run test:integration` の coverage 閾値ゲートは task06 完了後の後続統合ゲートで実施）。本タスク内の構成検証手段:
+    - `node -e "const c=require('./frontend/karma.conf.js'); c({set:o=>console.log(JSON.stringify(o.coverageReporter.check.global))})"` 相当で global 閾値が `statements:80 / branches:70 / functions:90 / lines:80` であることを確認
+    - `jq -e '.projects.frontend.architect.test.builder' frontend/angular.json` および `architect["test-integration"]` の存在を確認
+    - `jq -e '.scripts["test:unit"], .scripts["test:integration"], .scripts.lint, .scripts.build, .scripts.e2e' frontend/package.json` がすべて非 null
+    - `tsconfig.spec.json` の include/exclude が `**/*.integration.spec.ts` を排他に分離している
+    - `ng test --help` (or `ng run frontend:test --help`) の exit 0 のみを許容
+    > `ng test --dry-run` 相当を「正式な GREEN 手段」として扱わない（RP2-004）。閾値の一時引き下げ・暫定運用は引き続き禁止 (RP-006)。
 
 ### REFACTOR
 11. `__demo__` ディレクトリが消えていることを `test ! -d frontend/src/app/__demo__` で検証 (RP-018)
@@ -73,11 +81,14 @@
 
 ## 完了条件
 
-- [ ] `npm run test:unit` がローカルで成功 (ChromeHeadlessCI)
-- [ ] `npm run test:integration` がローカルで成功
+- [ ] **(RP2-004)** karma config の `coverageReporter.check.global` が statements:80 / branches:70 / functions:90 / lines:80 で設定されていることを `node -e` で検証 (構成検証のみ)
+- [ ] **(RP2-004)** `frontend/angular.json` に `architect.test` と `architect.test-integration` が存在し、それぞれ `karma.conf.js` / `karma.integration.conf.js` を参照
+- [ ] **(RP2-004)** `frontend/package.json` の `scripts` に `lint` / `test:unit` / `test:integration` / `build` / `e2e` がすべて定義
+- [ ] **(RP2-004)** `tsconfig.spec.json` が `**/*.integration.spec.ts` を `exclude` し、`tsconfig.spec.integration.json` が `**/*.integration.spec.ts` のみ `include` する
 - [ ] coverage 閾値設定が **最初から最終値** (statements:80 / branches:70 / functions:90 / lines:80) で両 karma config に存在 (RP-006、暫定低閾値禁止)
 - [ ] `*.spec.ts` と `*.integration.spec.ts` が確実に分離される
 - [ ] `test ! -d frontend/src/app/__demo__` が真（`__demo__` ディレクトリが存在しない、RP-018）
+- [ ] **(RP2-004)** 実 `npm run test:unit` / `npm run test:integration` の coverage 閾値ゲート判定は **後続統合ゲート (task06 完了後の G5 verification および task10 の `web-unit` / `web-integration` ジョブ)** で実施することを result.md に明記し、本タスクでは構成検証のみで完了
 - [ ] result.md 作成
 
 ## コミット
