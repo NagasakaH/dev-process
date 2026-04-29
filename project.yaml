@@ -5,7 +5,7 @@ meta:
   target_repo: "floci-apigateway-csharp"
   branch: "feature/FRONTEND-001"
   created_at: "2026-04-29T12:16:26+00:00"
-  updated_at: "2026-04-29T13:05:10+00:00"
+  updated_at: "2026-04-29T13:15:07+00:00"
 setup:
   description:
     overview: |
@@ -145,3 +145,14 @@ investigation:
   risks: []
   artifacts: "docs/floci-apigateway-csharp/investigation/"
   completed_at: "2026-04-29T13:05:10+00:00"
+design:
+  status: completed
+  started_at: "2026-04-29T13:14:49+00:00"
+  summary: "Angular18追加に向けた詳細設計を完了。実装方針/IF/データ構造/処理フロー/テスト計画/弊害検証の6書を作成し、CORS/OPTIONS/floci S3/nginx静的配信のリスク軽減策、acceptance_criteria対応表、E2E実行手順、修正前後シーケンス図を反映。"
+  approach: ""
+  key_decisions: []
+  review:
+    round: 0
+    status: pending
+  artifacts: "docs/floci-apigateway-csharp/design/"
+  completed_at: "2026-04-29T13:15:01+00:00"
