@@ -168,6 +168,12 @@ cmd_up() {
   mount_flags=$(build_mounts)
   local locale_flags
   locale_flags=$(locale_env_flags)
+  local forwarded_env_flags=(
+    -e "DOCKER_MODE=${DOCKER_MODE}"
+    -e GITLAB_TOKEN
+    -e GITLAB_URL
+    -e GITHUB_TOKEN
+  )
 
   # Docker mode specific flags
   local docker_flags=()
@@ -219,6 +225,7 @@ cmd_up() {
     --label "docker-mode=${DOCKER_MODE}" \
     ${locale_flags} \
     -e "PROJECT_NAME=${PROJECT_NAME}" \
+    "${forwarded_env_flags[@]}" \
     "${docker_flags[@]}" \
     ${mount_flags} \
     "${IMAGE_NAME}"
