@@ -5,7 +5,7 @@ meta:
   target_repo: "floci-apigateway-csharp"
   branch: "feature/FRONTEND-001"
   created_at: "2026-04-29T12:16:26+00:00"
-  updated_at: "2026-04-29T16:23:45+00:00"
+  updated_at: "2026-04-29T16:44:45+00:00"
 setup:
   description:
     overview: |
@@ -531,14 +531,14 @@ plan:
         resolved_in_round: 4
     notes: round 4 成果物は docs/floci-apigateway-csharp/review-plan/round4/ に保存。実装フェーズへ進行可能。
 implement:
-  status: completed
+  status: in_progress
   started_at: "2026-04-29T15:08:53+00:00"
   completed_tasks: 0
   total_tasks: 0
   tasks: []
-  artifacts: "docs/floci-apigateway-csharp/implement/execution-log.md"
+  artifacts: "docs/floci-apigateway-csharp/verification/round3/implement-fix-report.md"
   completed_at: "2026-04-29T16:09:42+00:00"
-  summary: 'verification round 1 差し戻し対応: フロント coverage 閾値達成 (unit 100/94/100/100, integration 98/80/100/98)、karma 閾値ガード追加、nginx mount fix (image bake)、warmup-lambdas リトライ強化、LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT 180'
+  summary: 'Round2 R1/R2/R3 + state machine 冪等化を修正。lint/unit(32/32)/integration(17/17)/build/nginx build PASS。E2E は 3 PASS / 1 SKIP / 2 FAIL (CORS preflight 未設定 - 別ブロッカー)。submodule commit 23aa139, parent 1a3d4de'
 verification:
   status: failed
   started_at: "2026-04-29T15:56:55+00:00"
