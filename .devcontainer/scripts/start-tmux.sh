@@ -47,7 +47,7 @@ if [ "$(id -u)" = "0" ] && id "$RUN_USER" &>/dev/null; then
   fi
 
   exec su -l "$RUN_USER" \
-    --whitelist-environment=PROJECT_NAME,LC_ALL,LANG,DOCKER_MODE,GITLAB_TOKEN,GITLAB_URL \
+    --whitelist-environment=PROJECT_NAME,LC_ALL,LANG,DOCKER_MODE,GITLAB_TOKEN,GITLAB_URL,GITHUB_TOKEN \
     -c "$0 $*"
 fi
 
