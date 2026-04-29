@@ -24,7 +24,7 @@ docs/
 - ベースSHA: {base_sha}
 - ヘッドSHA: {head_sha}
 - レビュー日時: {timestamp}
-- レビュアー: Opus 4.6 + Codex 5.3 → Opus 4.6 統合
+- レビュアー: Opus 4.7 + GPT-5.5 → Opus 4.7 統合
 
 ## 意図グループ情報
 - グループ名: {group_name}
@@ -52,7 +52,7 @@ docs/
 ### 🟠 Major
 - **CR-001**: API/インターフェース互換性
   - カテゴリ: 設計準拠性
-  - 出典: Both（Opus 4.6 + Codex 5.3）
+  - 出典: Both（Opus 4.7 + GPT-5.5）
   - 説明: {問題の詳細}
   - 該当ファイル: {file_path}:{line_number}
   - 修正提案: {具体的な修正内容}
