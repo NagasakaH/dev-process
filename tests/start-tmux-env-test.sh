@@ -97,13 +97,16 @@ test_root_user_switch_preserves_required_environment_names() {
     DOCKER_MODE="dood" \
     GITLAB_TOKEN="fake-token-value" \
     GITLAB_URL="https://gitlab.example.com" \
+    GITHUB_TOKEN="fake-github-token-value" \
     "${TARGET_SCRIPT}" >/dev/null 2>&1 || status=1
 
   su_args="$(cat "${su_log}")"
-  assert_contains "${su_args}" "--whitelist-environment=PROJECT_NAME,LC_ALL,LANG,DOCKER_MODE,GITLAB_TOKEN,GITLAB_URL" \
+  assert_contains "${su_args}" "--whitelist-environment=PROJECT_NAME,LC_ALL,LANG,DOCKER_MODE,GITLAB_TOKEN,GITLAB_URL,GITHUB_TOKEN" \
     "root user switch should preserve development environment variables by name" || status=1
   assert_not_contains "${su_args}" "fake-token-value" \
     "root user switch should not put the GitLab token value in su command arguments" || status=1
+  assert_not_contains "${su_args}" "fake-github-token-value" \
+    "root user switch should not put the GitHub token value in su command arguments" || status=1
 
   rm -rf "${temp_dir}"
   return "${status}"

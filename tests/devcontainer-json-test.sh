@@ -22,6 +22,9 @@ if "GITLAB_TOKEN" in container_env:
 if "GITLAB_URL" in container_env:
     errors.append("containerEnv.GITLAB_URL should not be used; mount ~/.config/skills instead")
 
+if "GITHUB_TOKEN" in container_env:
+    errors.append("containerEnv.GITHUB_TOKEN should not be used; preserve the environment name via su whitelist instead")
+
 if container_env.get("DOCKER_MODE") != "dood":
     errors.append("containerEnv.DOCKER_MODE must be dood for host Docker based E2E")
 
