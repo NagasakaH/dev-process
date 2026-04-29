@@ -46,7 +46,9 @@ if [ "$(id -u)" = "0" ] && id "$RUN_USER" &>/dev/null; then
     chmod 666 /var/run/docker.sock 2>/dev/null || true
   fi
 
-  exec su -l "$RUN_USER" -c "PROJECT_NAME='${PROJECT_NAME}' LC_ALL=C.UTF-8 LANG=C.UTF-8 $0 $*"
+  exec su -l "$RUN_USER" \
+    --whitelist-environment=PROJECT_NAME,LC_ALL,LANG,DOCKER_MODE,GITLAB_TOKEN,GITLAB_URL \
+    -c "$0 $*"
 fi
 
 if ! tmux has-session -t "$SESSION_NAME" 2>/dev/null; then

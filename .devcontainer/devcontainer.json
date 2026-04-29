@@ -32,8 +32,13 @@
     "./mssql-mcp": {}
   },
   "mounts": [
-    "source=${localEnv:HOME}/.aws,target=/home/vscode/.aws,type=bind,consistency=cached"
+    "source=${localEnv:HOME}/.aws,target=/home/vscode/.aws,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.config/skills,target=/home/vscode/.config/skills,type=bind,consistency=cached"
   ],
+  "userEnvProbe": "loginInteractiveShell",
+  "containerEnv": {
+    "DOCKER_MODE": "dood"
+  },
   "customizations": {
     "vscode": {
       "extensions": [
