@@ -5,7 +5,7 @@ meta:
   target_repo: "floci-apigateway-csharp"
   branch: "feature/FRONTEND-001"
   created_at: "2026-04-29T12:16:26+00:00"
-  updated_at: "2026-04-29T13:52:13+00:00"
+  updated_at: "2026-04-29T14:07:45+00:00"
 setup:
   description:
     overview: |
@@ -277,3 +277,75 @@ design:
         resolved_in_round: 3
   artifacts: "docs/floci-apigateway-csharp/design/"
   completed_at: "2026-04-29T13:15:01+00:00"
+plan:
+  status: completed
+  started_at: "2026-04-29T14:07:23+00:00"
+  summary: "16 タスク (Angular scaffold / CORS / Terraform OPTIONS / nginx / Karma分離 / Angular サービス・コンポーネント / scripts / Playwright E2E / .NET IT追加 / GitLab CI / README / 弊害検証) を 8 並列グループに分割。E2E は task08 (Playwright) と task10 (CI web-e2e DinD) で対応。"
+  total_tasks: 16
+  tasks:
+    - id: task01
+      title: Angular 18.2 frontend スキャフォールド
+      status: pending
+      target_repo: floci-apigateway-csharp
+    - id: task02-01
+      title: Lambda CORS (JsonHeaders + OPTIONS) + 既存UT期待値更新
+      status: pending
+      target_repo: floci-apigateway-csharp
+    - id: task02-02
+      title: Terraform OPTIONS (AWS_PROXY) + S3 frontend bucket + outputs
+      status: pending
+      target_repo: floci-apigateway-csharp
+    - id: task02-03
+      title: compose nginx sidecar + SERVICES に s3 追加
+      status: pending
+      target_repo: floci-apigateway-csharp
+    - id: task02-04
+      title: Angular ドメイン型 (Todo / TodoCreateRequest / ApiErrorResponse / UiError / AppConfig)
+      status: pending
+      target_repo: floci-apigateway-csharp
+    - id: task05
+      title: Karma unit/integration 分離 + tsconfig.spec.* + coverage 閾値強制
+      status: pending
+      target_repo: floci-apigateway-csharp
+    - id: task03-01
+      title: ConfigService.load + バリデーション + APP_INITIALIZER
+      status: pending
+      target_repo: floci-apigateway-csharp
+    - id: task03-02
+      title: TodoApiService (create/get/エラー整形)
+      status: pending
+      target_repo: floci-apigateway-csharp
+    - id: task04
+      title: TodoComponent + AppComponent + main.ts bootstrap
+      status: pending
+      target_repo: floci-apigateway-csharp
+    - id: task07
+      title: scripts (build-frontend / deploy-frontend / web-e2e / check-test-env)
+      status: pending
+      target_repo: floci-apigateway-csharp
+    - id: task09
+      title: .NET TodoApi.IntegrationTests に OPTIONS 204+CORS ケース追加
+      status: pending
+      target_repo: floci-apigateway-csharp
+    - id: task06
+      title: Angular 結合テスト IT-1〜IT-6 (HttpTestingController)
+      status: pending
+      target_repo: floci-apigateway-csharp
+    - id: task08
+      title: Playwright config + e2e/todo.spec.ts (E2E-1〜E2E-6)
+      status: pending
+      target_repo: floci-apigateway-csharp
+    - id: task10
+      title: .gitlab-ci.yml web-lint/unit/integration/e2e (DinD 設定込み)
+      status: pending
+      target_repo: floci-apigateway-csharp
+    - id: task11
+      title: README Frontend セクション追記 + verify-readme-sections.sh 更新
+      status: pending
+      target_repo: floci-apigateway-csharp
+    - id: task12
+      title: 弊害検証・リグレッション
+      status: pending
+      target_repo: floci-apigateway-csharp
+  artifacts: "docs/floci-apigateway-csharp/plan/"
+  completed_at: "2026-04-29T14:07:45+00:00"
