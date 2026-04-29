@@ -5,7 +5,7 @@ meta:
   target_repo: "floci-apigateway-csharp"
   branch: "feature/FRONTEND-001"
   created_at: "2026-04-29T12:16:26+00:00"
-  updated_at: "2026-04-29T14:57:16+00:00"
+  updated_at: "2026-04-29T15:04:58+00:00"
 setup:
   description:
     overview: |
@@ -280,7 +280,7 @@ design:
 plan:
   status: completed
   started_at: "2026-04-29T14:07:23+00:00"
-  summary: "16 タスク (Angular scaffold / CORS / Terraform OPTIONS / nginx / Karma分離 / Angular サービス・コンポーネント / scripts / Playwright E2E / .NET IT追加 / GitLab CI / README / 弊害検証) を 8 並列グループに分割。E2E は task08 (Playwright) と task10 (CI web-e2e DinD) で対応。round 2 (2026-04-30): review-plan round 1 の RP-001〜RP-018 (Critical 1 / Major 9 / Minor 8) 全 18 件を再計画に反映済み。task07 前提に task01 / task08 前提に task02-01 を追加、check-test-env プロファイル化、APP_INITIALIZER 責務を task04 に集約、最終 coverage 閾値固定、E2E 5xx を Playwright route mock 化、apply-api-deployment + warmup-lambdas 順序固定など。推定総時間 約 13.75h → 約 14.5h (バッファ込み)。 round3 修正 (2026-04-30): review-plan round2 の RP2-001〜RP2-007 を反映。task10 web-e2e before_script に terraform 1.6.6 / dotnet-sdk-8.0 固定インストールを追加 (RP2-001)、web-e2e.sh を唯一のエントリポイント化し CI script を check-test-env + compose up + web-e2e.sh の3行に簡略化 (RP2-002)、task02-02 の RED を tests/infra/test-frontend-plan.sh のみに集約し cross-task RED を task09 完了条件へ移管 (RP2-003)、task05 の GREEN 判定を karma config / npm scripts 構成検証のみに限定し実 npm run test:unit は後続統合ゲート (G3/G5/web-unit) で実行する旨を明記 (RP2-004)、jq クエリを .change.resource.addr に統一し期待件数/未マッチ件数の明示出力を完了条件化 (RP2-005)。design 側は 05_test-plan の E2E-5 を Playwright page.route() 方式に統一して docker compose stop を却下案として明記 (RP2-006)、02_interface-api-design の web-e2e DinD 手順を task07/task10 と同順序 (web-e2e.sh が wait-floci-healthy → deploy-local → apply-api-deployment → warmup-lambdas → build-frontend → deploy-frontend → playwright を内部実行) に整合 (RP2-007)。review.status は round3 未実施のため conditional のまま。 round4 修正 (2026-04-30): review-plan round3 の RP3-001 / RP3-002 を反映。design/05 §2.3 の E2E 実行手順を compose up → web-e2e.sh → compose down の3行のみに簡略化し、wait-floci-healthy/deploy-local/apply-api-deployment/warmup-lambdas/build-frontend/deploy-frontend は web-e2e.sh の内部処理として参照表に分離 (RP3-001)。task10 web-e2e の script を docker compose up + web-e2e.sh の2行に統一し、check-test-env は before_script のみで実行、CI variables で SKIP_ENV_CHECK=1 を export して web-e2e.sh 内部の重複チェックを抑止する設計に統一 (RP3-002)。task07 web-e2e.sh は SKIP_ENV_CHECK=1 時に内部 check-test-env をスキップする条件分岐を追加、design/02 §7 表と §7.1 ジョブ定義例にも 2行 script + SKIP_ENV_CHECK=1 を反映。review.status は round4 未実施のため conditional のまま。"
+  summary: "16 タスク (Angular scaffold / CORS / Terraform OPTIONS / nginx / Karma分離 / Angular サービス・コンポーネント / scripts / Playwright E2E / .NET IT追加 / GitLab CI / README / 弊害検証) を 8 並列グループに分割。E2E は task08 (Playwright) と task10 (CI web-e2e DinD) で対応。round 2 (2026-04-30): review-plan round 1 の RP-001〜RP-018 (Critical 1 / Major 9 / Minor 8) 全 18 件を再計画に反映済み。task07 前提に task01 / task08 前提に task02-01 を追加、check-test-env プロファイル化、APP_INITIALIZER 責務を task04 に集約、最終 coverage 閾値固定、E2E 5xx を Playwright route mock 化、apply-api-deployment + warmup-lambdas 順序固定など。推定総時間 約 13.75h → 約 14.5h (バッファ込み)。 round3 修正 (2026-04-30): review-plan round2 の RP2-001〜RP2-007 を反映。task10 web-e2e before_script に terraform 1.6.6 / dotnet-sdk-8.0 固定インストールを追加 (RP2-001)、web-e2e.sh を唯一のエントリポイント化し CI script を check-test-env + compose up + web-e2e.sh の3行に簡略化 (RP2-002)、task02-02 の RED を tests/infra/test-frontend-plan.sh のみに集約し cross-task RED を task09 完了条件へ移管 (RP2-003)、task05 の GREEN 判定を karma config / npm scripts 構成検証のみに限定し実 npm run test:unit は後続統合ゲート (G3/G5/web-unit) で実行する旨を明記 (RP2-004)、jq クエリを .change.resource.addr に統一し期待件数/未マッチ件数の明示出力を完了条件化 (RP2-005)。design 側は 05_test-plan の E2E-5 を Playwright page.route() 方式に統一して docker compose stop を却下案として明記 (RP2-006)、02_interface-api-design の web-e2e DinD 手順を task07/task10 と同順序 (web-e2e.sh が wait-floci-healthy → deploy-local → apply-api-deployment → warmup-lambdas → build-frontend → deploy-frontend → playwright を内部実行) に整合 (RP2-007)。round3 review は conditional として完了。 round4 修正 (2026-04-30): review-plan round3 の RP3-001 / RP3-002 を反映。design/05 §2.3 の E2E 実行手順を compose up → web-e2e.sh → compose down の3行のみに簡略化し、wait-floci-healthy/deploy-local/apply-api-deployment/warmup-lambdas/build-frontend/deploy-frontend は web-e2e.sh の内部処理として参照表に分離 (RP3-001)。task10 web-e2e の script を docker compose up + web-e2e.sh の2行に統一し、check-test-env は before_script のみで実行、CI variables で SKIP_ENV_CHECK=1 を export して web-e2e.sh 内部の重複チェックを抑止する設計に統一 (RP3-002)。task07 web-e2e.sh は SKIP_ENV_CHECK=1 時に内部 check-test-env をスキップする条件分岐を追加、design/02 §7 表と §7.1 ジョブ定義例にも 2行 script + SKIP_ENV_CHECK=1 を反映。review-plan round4 は Codex / Opus とも approved、実装フェーズへ進行可能。"
   total_tasks: 16
   tasks:
     - id: task01
@@ -350,15 +350,16 @@ plan:
   artifacts: "docs/floci-apigateway-csharp/plan/"
   completed_at: "2026-04-29T14:07:45+00:00"
   review:
-    round: 3
-    status: conditional
-    latest_verdict: conditional
-    completed_at: "2026-04-29T14:52:15+00:00"
-    summary: 'round 3 レビュー実施。RP2-001〜RP2-006 は resolved。RP2-007 は design/02 で resolved だが design/05 のコードブロックに不整合が残るため新規 ID RP3-001 として再指摘 (Major)。さらに check-test-env 呼び出し位置の揺れを RP3-002 (Minor) として新規検出。ゼロトレランス方針により conditional とし、修正後 round 4 で再確認する。'
+    round: 4
+    status: approved
+    latest_verdict: 承認 (approved)
+    completed_at: "2026-04-29T15:04:22+00:00"
+    summary: 'review-plan round 4 は Codex / Opus とも approved。RP3-001 / RP3-002 は resolved、Minor 以上の新規指摘なし。RP4-001 Info は task-list.md に反映済み。'
     artifacts:
       - docs/floci-apigateway-csharp/review-plan/
       - docs/floci-apigateway-csharp/review-plan/round2/
       - docs/floci-apigateway-csharp/review-plan/round3/
+      - docs/floci-apigateway-csharp/review-plan/round4/
     issues:
       - id: RP-001
         severity: critical
@@ -514,9 +515,18 @@ plan:
         severity: major
         category: 設計-計画整合性 / web-e2e実行順
         description: 'design/05_test-plan.md §2.3 の E2E 実行手順が、wait-floci-healthy/deploy-local/apply-api-deployment/warmup/build/deploy を個別実行した後に web-e2e.sh を呼ぶ構成になっている。一方 task07/design02/task10 では web-e2e.sh が同処理を内部実行する唯一エントリポイントであり、design05 の手順は二重実行と解釈分岐を招く。 | 対応方針: design05 §2.3 を `docker compose up -d floci nginx` → `bash scripts/web-e2e.sh` → `docker compose down -v` の3行のみへ修正し、wait/deploy/apply/warmup/build/deploy は web-e2e.sh の内部処理として別表/コメントに移す。 | 関連ファイル: docs/floci-apigateway-csharp/design/05_test-plan.md'
-        status: open
+        status: resolved
+        resolved_in_round: 4
       - id: RP3-002
         severity: minor
         category: CI手順記述の整合性 / check-test-env重複
         description: 'task10 は web-e2e script を check-test-env + compose up + web-e2e.sh の3行とする一方、design02 は compose up + web-e2e.sh の2行。さらに before_script と web-e2e.sh 内部でも check-test-env が呼ばれる可能性があり、手順が揺れている。 | 対応方針: check-test-env の呼び出し位置を before_script のみに固定し、script は compose up + web-e2e.sh の2行に統一する。web-e2e.sh 内部での check-test-env はローカル実行保証用に残すなら意図を明記、またはCIでは SKIP_ENV_CHECK=1 等で二重チェックを避ける設計を記載。 | 関連ファイル: docs/floci-apigateway-csharp/plan/task10.md, docs/floci-apigateway-csharp/design/02_interface-api-design.md, docs/floci-apigateway-csharp/plan/task07.md'
-        status: open
+        status: resolved
+        resolved_in_round: 4
+      - id: RP4-001
+        severity: info
+        category: ドキュメント変更履歴 / changelog 完全性
+        description: task-list.md のサマリーに round 4 で反映した RP3-001 / RP3-002 の対応点が未記載で、実装・レビュー時の追跡性が下がる。
+        status: resolved
+        resolved_in_round: 4
+    notes: round 4 成果物は docs/floci-apigateway-csharp/review-plan/round4/ に保存。実装フェーズへ進行可能。
