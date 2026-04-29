@@ -1,0 +1,131 @@
+
+Running 6 tests using 1 worker
+
+[1A[2K[1/6] [chromium] › todo.spec.ts:4:7 › Todo flow E2E › E2E-1: title を作成し ID を控えて GET で同じ title が表示される
+[1A[2K  1) [chromium] › todo.spec.ts:4:7 › Todo flow E2E › E2E-1: title を作成し ID を控えて GET で同じ title が表示される 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      [2m- waiting for getByTestId('title-input')[22m
+
+
+      4 |   test('E2E-1: title を作成し ID を控えて GET で同じ title が表示される', async ({ page }) => {
+      5 |     await page.goto('/');
+    > 6 |     await page.getByTestId('title-input').fill(`buy milk ${Date.now()}`);
+        |                                           ^
+      7 |     await page.getByTestId('submit-btn').click();
+      8 |     const created = await page.getByTestId('created').textContent();
+      9 |     expect(created).toMatch(/作成しました:/);
+
+        at /workspaces/dev-process/submodules/editable/floci-apigateway-csharp/frontend/e2e/todo.spec.ts:6:43
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/todo-Todo-flow-E2E-E2E-1-t-5372c-D-を控えて-GET-で同じ-title-が表示される-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/todo-Todo-flow-E2E-E2E-1-t-5372c-D-を控えて-GET-で同じ-title-が表示される-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K[2/6] [chromium] › todo.spec.ts:18:7 › Todo flow E2E › E2E-2: /foo/bar を直接開いても Angular ルータが index.html を返す
+[1A[2K  2) [chromium] › todo.spec.ts:18:7 › Todo flow E2E › E2E-2: /foo/bar を直接開いても Angular ルータが index.html を返す 
+
+    Error: [31mTimed out 5000ms waiting for [39m[2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m()[22m
+
+    Locator: locator('app-root')
+    Expected: visible
+    Received: <element(s) not found>
+    Call log:
+      [2m- expect.toBeVisible with timeout 5000ms[22m
+    [2m  - waiting for locator('app-root')[22m
+
+
+      19 |     const resp = await page.goto('/foo/bar');
+      20 |     expect(resp?.status()).toBeLessThan(400);
+    > 21 |     await expect(page.locator('app-root')).toBeVisible();
+         |                                            ^
+      22 |   });
+      23 |
+      24 |   test('E2E-3: console.error が出ず OPTIONS=204 / POST=201 が観測される', async ({ page }) => {
+
+        at /workspaces/dev-process/submodules/editable/floci-apigateway-csharp/frontend/e2e/todo.spec.ts:21:44
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/todo-Todo-flow-E2E-E2E-2-f-25db8-Angular-ルータが-index-html-を返す-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/todo-Todo-flow-E2E-E2E-2-f-25db8-Angular-ルータが-index-html-を返す-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K[3/6] [chromium] › todo.spec.ts:24:7 › Todo flow E2E › E2E-3: console.error が出ず OPTIONS=204 / POST=201 が観測される
+[1A[2K  3) [chromium] › todo.spec.ts:24:7 › Todo flow E2E › E2E-3: console.error が出ず OPTIONS=204 / POST=201 が観測される 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      [2m- waiting for getByTestId('title-input')[22m
+
+
+      36 |
+      37 |     await page.goto('/');
+    > 38 |     await page.getByTestId('title-input').fill(`cors ${Date.now()}`);
+         |                                           ^
+      39 |     await page.getByTestId('submit-btn').click();
+      40 |     await expect(page.getByTestId('created')).toBeVisible();
+      41 |
+
+        at /workspaces/dev-process/submodules/editable/floci-apigateway-csharp/frontend/e2e/todo.spec.ts:38:43
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/todo-Todo-flow-E2E-E2E-3-c-bb325-OPTIONS-204-POST-201-が観測される-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/todo-Todo-flow-E2E-E2E-3-c-bb325-OPTIONS-204-POST-201-が観測される-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K[4/6] [chromium] › todo.spec.ts:48:7 › Todo flow E2E › E2E-4: title 空送信で errors[0] が UI に表示される
+[1A[2K[5/6] [chromium] › todo.spec.ts:67:7 › Todo flow E2E › E2E-5: POST /todos のレスポンスを 500 にモックすると "サーバエラーが発生しました" が表示される
+[1A[2K  4) [chromium] › todo.spec.ts:67:7 › Todo flow E2E › E2E-5: POST /todos のレスポンスを 500 にモックすると "サーバエラーが発生しました" が表示される 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      [2m- waiting for getByTestId('title-input')[22m
+
+
+      79 |     });
+      80 |     await page.goto('/');
+    > 81 |     await page.getByTestId('title-input').fill('boom');
+         |                                           ^
+      82 |     await page.getByTestId('submit-btn').click();
+      83 |     await expect(page.getByTestId('error-5xx')).toHaveText(/サーバエラーが発生しました/);
+      84 |   });
+
+        at /workspaces/dev-process/submodules/editable/floci-apigateway-csharp/frontend/e2e/todo.spec.ts:81:43
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/todo-Todo-flow-E2E-E2E-5-P-cc9c0-モックすると-サーバエラーが発生しました-が表示される-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/todo-Todo-flow-E2E-E2E-5-P-cc9c0-モックすると-サーバエラーが発生しました-が表示される-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K[6/6] [chromium] › todo.spec.ts:90:8 › Todo flow E2E › E2E-6: WEB_BASE_URL 未設定で web-e2e.sh が exit 1 (shell 側で検証, task07)
+[1A[2K  4 failed
+    [chromium] › todo.spec.ts:4:7 › Todo flow E2E › E2E-1: title を作成し ID を控えて GET で同じ title が表示される ─
+    [chromium] › todo.spec.ts:18:7 › Todo flow E2E › E2E-2: /foo/bar を直接開いても Angular ルータが index.html を返す 
+    [chromium] › todo.spec.ts:24:7 › Todo flow E2E › E2E-3: console.error が出ず OPTIONS=204 / POST=201 が観測される 
+    [chromium] › todo.spec.ts:67:7 › Todo flow E2E › E2E-5: POST /todos のレスポンスを 500 にモックすると "サーバエラーが発生しました" が表示される 
+  1 skipped
+  1 passed (1.7m)

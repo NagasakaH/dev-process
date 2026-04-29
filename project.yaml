@@ -5,7 +5,7 @@ meta:
   target_repo: "floci-apigateway-csharp"
   branch: "feature/FRONTEND-001"
   created_at: "2026-04-29T12:16:26+00:00"
-  updated_at: "2026-04-29T16:09:42+00:00"
+  updated_at: "2026-04-29T16:23:45+00:00"
 setup:
   description:
     overview: |
@@ -544,11 +544,11 @@ verification:
   started_at: "2026-04-29T15:56:55+00:00"
   results:
     test:
-      status: fail
-      detail: Frontend unit 17/17 + integration 6/6 SUCCESS, but coverage thresholds (statements:80/branches:70/functions:90/lines:80) NOT MET. .NET unit 34/34 OK, integration 2 passed/9 skipped (env).
+      status: pass
+      detail: Frontend UT 32/32 + cov 100/94.28/100/100, IT 17/17 + cov 98.63/80/100/98.27 (閾値ガードスクリプト含めて全 PASS). .NET unit 34/34 PASS, integration 2 passed + 9 skipped (SkipIfNoFloci 仕様通り).
     build:
       status: pass
-      detail: ng build production OK (215.36 kB initial). dotnet build solution OK (0 warnings/errors).
+      detail: ng build production OK (215.36 kB initial). dotnet build sln OK (0 warning/0 error). compose/nginx/Dockerfile docker build OK.
     lint:
       status: pass
       detail: 'ng lint: All files pass linting.'
@@ -556,41 +556,43 @@ verification:
       status: pass
       detail: 'tsc --noEmit -p tsconfig.json: no errors.'
     e2e:
-      status: blocked
-      detail: 'scripts/web-e2e.sh: floci+terraform OK, but warmup-lambdas.sh fails (api-handler 120s timeout / handler assembly resolution). Additionally nginx sidecar bind mount fails in docker-out-of-docker dev container.'
+      status: fail
+      detail: 'scripts/web-e2e.sh: deploy-local + warmup-lambdas (Round1 fix) まで OK, ただし R1 (web-e2e.sh→apply-api-deployment.sh への ENDPOINT/REST_API_ID/STAGE_NAME env 未伝搬) で停止。手動回避後 nginx は起動するが R2 (compose の frontend/dist bind mount が DOOD で空 → 403) と R3 (frontend/angular.json の assets:[] で dist/assets/config.json 未出力 → ConfigService bootstrap 失敗) により Playwright 4 failed (E2E-1/2/3/5) / 1 passed (E2E-4) / 1 skipped (E2E-6).'
   acceptance_criteria_check:
     - criterion: AC1 ローカル Angular + floci API で Todo CRUD
       method: e2e
-      result: BLOCKED
-      evidence: B1 nginx mount / B2 lambda init
+      result: FAIL
+      evidence: E2E-1 fail (R3 主因)
     - criterion: AC2 S3+CloudFront 相当配信から CRUD
       method: e2e
-      result: BLOCKED
-      evidence: B1
+      result: FAIL
+      evidence: E2E-2 fail。nginx 配信は R2 を回避すれば到達するが R3 で Angular 起動せず
     - criterion: AC3 Angular unit がローカル/CI 通過
       method: unit
-      result: PARTIAL_PASS
-      evidence: 17/17 PASS but coverage <80%
+      result: PASS
+      evidence: 32/32 + 100/94.28/100/100、check-coverage-threshold.js で閾値ガード実装
     - criterion: AC4 Angular integration がローカル/CI 通過
       method: integration
-      result: PARTIAL_PASS
-      evidence: 6/6 PASS but coverage <80%
+      result: PASS
+      evidence: 17/17 + 98.63/80/100/98.27、閾値ガード実装
     - criterion: AC5 Playwright E2E ローカル/CI 通過
       method: e2e
-      result: BLOCKED
-      evidence: B1/B2
+      result: FAIL
+      evidence: 4 failed / 1 passed / 1 skipped (R1/R2/R3)
     - criterion: AC6 .NET 既存 lint/unit/integration/e2e 維持
       method: dotnet
       result: PARTIAL_PASS
-      evidence: build OK, unit 34/34 OK, integration 2/11 (9 skip), e2e not run
+      evidence: build 0 warn / unit 34/34 / integration 2 pass + 9 skip (仕様通り) / e2e は AC5 と連動して未通過
     - criterion: AC7 README にローカル/テスト/CI 手順
       method: doc
-      result: NOT_VERIFIED
-      evidence: verify-readme-* not invoked
-  summary: "Lint/build/型チェック/unit 17/17/integration 6/6 のテスト本体 PASS。フロントエンドカバレッジ閾値 (80/70/90/80) 未達 (Statements 69.33% 等)。E2E は B1 (nginx bind mount) と B2 (api-handler Lambda init 失敗) により Playwright 未到達 BLOCKED。詳細 docs/floci-apigateway-csharp/verification/verification-report.md"
+      result: PASS
+      evidence: verify-readme-content.sh + verify-readme-sections.sh いずれも OK
+  summary: "Round 2 検証 FAILED: 非E2E(lint/build/type/UT32/32+cov100/94.28/100/100/IT17/17+cov98.63/80/100/98.27+threshold guard/.NET build 0warn/unit 34/34/integ 2pass+9skip仕様通り/README verify x2/nginx Dockerfile build) 全PASS。Round1 B1(conf)/B2(warmup) は解消確認。E2Eは web-e2e.sh が R1 (apply-api-deployment.sh への env 未伝搬) で停止し、手動回避後も R2 (nginx dist bind mount が DOOD で空) と R3 (angular.json assets:[] で dist/assets/config.json 未出力 → ConfigService bootstrap 失敗) により Playwright 4/6 fail (E2E-1/2/3/5)、E2E-4 pass、E2E-6 skip。詳細 docs/floci-apigateway-csharp/verification/round2/verification-report.md"
   evidence:
-    - docs/floci-apigateway-csharp/verification/verification-report.md
-    - docs/floci-apigateway-csharp/verification/deploy-local.log
-    - docs/floci-apigateway-csharp/verification/e2e-run.log
-  artifacts: docs/floci-apigateway-csharp/verification/verification-report.md
-  completed_at: "2026-04-29T15:57:02+00:00"
+    - docs/floci-apigateway-csharp/verification/round2/verification-report.md
+    - docs/floci-apigateway-csharp/verification/round2/frontend-unit.log
+    - docs/floci-apigateway-csharp/verification/round2/frontend-integration.log
+    - docs/floci-apigateway-csharp/verification/round2/e2e-run.log
+    - docs/floci-apigateway-csharp/verification/round2/e2e-playwright.log
+  artifacts: docs/floci-apigateway-csharp/verification/round2/verification-report.md
+  completed_at: "2026-04-29T16:22:09+00:00"
