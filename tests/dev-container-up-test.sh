@@ -156,6 +156,16 @@ test_up_runs_container_detached_then_enters_tmux() {
     "up should set a UTF-8 locale for the container" || status=1
   assert_contains "${log_output}" "-e LC_ALL=C.UTF-8" \
     "up should set LC_ALL to UTF-8 for the container" || status=1
+  assert_contains "${log_output}" "-e DOCKER_MODE=${DOCKER_MODE:-dind}" \
+    "up should forward the selected Docker mode into the container" || status=1
+  assert_contains "${log_output}" "-e GITLAB_TOKEN" \
+    "up should forward the GitLab token environment name into the container" || status=1
+  assert_contains "${log_output}" "-e GITLAB_URL" \
+    "up should forward the GitLab URL environment name into the container" || status=1
+  assert_contains "${log_output}" "-e GITHUB_TOKEN" \
+    "up should forward the GitHub token environment name into the container" || status=1
+  assert_not_contains "${log_output}" "fake-token-value" \
+    "up should not put token values in docker run arguments" || status=1
 
   rm -rf "${temp_dir}"
   return "${status}"

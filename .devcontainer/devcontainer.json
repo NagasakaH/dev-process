@@ -36,6 +36,14 @@
     "source=${localEnv:HOME}/.config/skills,target=/home/vscode/.config/skills,type=bind,consistency=cached"
   ],
   "userEnvProbe": "loginInteractiveShell",
+  "runArgs": [
+    "--env",
+    "GITLAB_TOKEN",
+    "--env",
+    "GITLAB_URL",
+    "--env",
+    "GITHUB_TOKEN"
+  ],
   "containerEnv": {
     "DOCKER_MODE": "dood"
   },
