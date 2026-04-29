@@ -110,7 +110,7 @@ build_mounts() {
     if [ -e "$src" ]; then
       mounts+=(-v "${src}:${tgt}")
     else
-      echo "  skip: ${src} (not found)"
+      echo "  skip: ${src} (not found)" >&2
     fi
   done
 
