@@ -1,0 +1,12 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  TodoApi.Lambda -> /workspaces/dev-process/submodules/editable/floci-apigateway-csharp/src/TodoApi.Lambda/bin/Debug/net8.0/TodoApi.Lambda.dll
+  TodoApi.UnitTests -> /workspaces/dev-process/submodules/editable/floci-apigateway-csharp/tests/TodoApi.UnitTests/bin/Debug/net8.0/TodoApi.UnitTests.dll
+  TodoApi.E2ETests -> /workspaces/dev-process/submodules/editable/floci-apigateway-csharp/tests/TodoApi.E2ETests/bin/Debug/net8.0/TodoApi.E2ETests.dll
+  TodoApi.IntegrationTests -> /workspaces/dev-process/submodules/editable/floci-apigateway-csharp/tests/TodoApi.IntegrationTests/bin/Debug/net8.0/TodoApi.IntegrationTests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:03.96

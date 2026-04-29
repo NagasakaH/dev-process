@@ -1,0 +1,72 @@
+name: compose
+services:
+  floci:
+    container_name: floci
+    environment:
+      AWS_DEFAULT_REGION: us-east-1
+      DEBUG: "0"
+      DISABLE_CUSTOM_CORS_APIGATEWAY: "1"
+      DOCKER_HOST: unix:///var/run/docker.sock
+      FLOCI_HOSTNAME: floci
+      FLOCI_SERVICES_DOCKER_NETWORK: floci-net
+      HOSTNAME_FROM_LAMBDA: floci
+      LAMBDA_DOCKER_FLAGS: --network floci-net
+      LAMBDA_DOCKER_NETWORK: floci-net
+      LAMBDA_EXECUTOR: docker
+      LAMBDA_PREBUILD_IMAGES: "1"
+      LAMBDA_REMOVE_CONTAINERS: "0"
+      LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT: "180"
+      SERVICES: apigateway,lambda,dynamodb,stepfunctions,iam,sts,cloudwatchlogs,s3
+    hostname: floci
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -fsS
+        - http://localhost:4566/_localstack/health
+      timeout: 3s
+      interval: 5s
+      retries: 30
+      start_period: 5s
+    image: floci/floci:latest
+    networks:
+      floci-net: null
+    ports:
+      - mode: ingress
+        target: 4566
+        published: "4566"
+        protocol: tcp
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        bind:
+          create_host_path: true
+      - type: volume
+        source: floci-data
+        target: /var/lib/floci
+        volume: {}
+  nginx:
+    build:
+      context: /workspaces/dev-process/submodules/editable/floci-apigateway-csharp/compose/nginx
+      dockerfile: Dockerfile
+    container_name: floci-nginx
+    depends_on:
+      floci:
+        condition: service_started
+        required: true
+    image: floci-frontend-nginx:local
+    networks:
+      floci-net: null
+    ports:
+      - mode: ingress
+        target: 8080
+        published: "8080"
+        protocol: tcp
+networks:
+  floci-net:
+    name: floci-net
+    driver: bridge
+volumes:
+  floci-data:
+    name: compose_floci-data

@@ -1,0 +1,23 @@
+[INFO] OPTIONS http://host.docker.internal:4566/restapis/0b47cf6567/dev/_user_request_/todos
+    HTTP/1.1 200 OK
+    Allow: HEAD, DELETE, POST, GET, OPTIONS, PUT, PATCH
+    Date: Wed, 29 Apr 2026 17:24:56 GMT
+    x-amz-id-2: 1a588b56-571c-4da7-80de-4e35681b6cde
+    x-amz-request-id: 1a588b56-571c-4da7-80de-4e35681b6cde
+    x-amzn-RequestId: 1a588b56-571c-4da7-80de-4e35681b6cde
+    content-length: 0
+    
+[FAIL] /todos: expected 204, got 200
+[INFO] OPTIONS http://host.docker.internal:4566/restapis/0b47cf6567/dev/_user_request_/todos/abc
+    HTTP/1.1 200 OK
+    Allow: HEAD, DELETE, POST, GET, OPTIONS, PUT, PATCH
+    Date: Wed, 29 Apr 2026 17:24:56 GMT
+    x-amz-id-2: 38eda0c4-2807-437d-a3c7-76841c57750e
+    x-amz-request-id: 38eda0c4-2807-437d-a3c7-76841c57750e
+    x-amzn-RequestId: 38eda0c4-2807-437d-a3c7-76841c57750e
+    content-length: 0
+    
+[FAIL] /todos/abc: expected 204, got 200
+[SUMMARY] ok=0 fail=2
+[KNOWN] floci 1.5.9 has no @OPTIONS handler in ApiGatewayUserRequestController.
+        See compose/docker-compose.yml NEW-1 comment and round4 verification report.

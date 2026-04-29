@@ -5,7 +5,7 @@ meta:
   target_repo: "floci-apigateway-csharp"
   branch: "feature/FRONTEND-001"
   created_at: "2026-04-29T12:16:26+00:00"
-  updated_at: "2026-04-29T17:02:37+00:00"
+  updated_at: "2026-04-29T17:26:27+00:00"
 setup:
   description:
     overview: |
@@ -541,14 +541,14 @@ implement:
   summary: 'Round 4 NEW-1 対応: floci 1.5.9 ApiGatewayUserRequestController に @OPTIONS 未定義の構造的バグを特定。IaC/Lambda は RD-006/RD-011 設計通りで本番では正常動作する見込み。RED テスト test-cors-preflight-http.sh を追加し、submodule round4 commit を作成。詳細は docs/floci-apigateway-csharp/verification/round4/implement-fix-report.md。'
 verification:
   status: failed
-  started_at: "2026-04-29T15:56:55+00:00"
+  started_at: "2026-04-29T17:04:00+00:00"
   results:
     test:
       status: pass
-      detail: Frontend UT 32/32 + cov 100/94.28/100/100, IT 17/17 + cov 98.63/80/100/98.27 (閾値ガードスクリプト含めて全 PASS). .NET unit 34/34 PASS, integration 2 passed + 9 skipped (SkipIfNoFloci 仕様通り).
+      detail: Frontend UT 32/32 + cov 100/94.28/100/100, IT 17/17 + cov 98.63/80/100/98.27 (閾値ガード PASS). .NET unit 34/34 PASS, integration 12/12 PASS (floci 起動 + AWS_ENDPOINT_URL 設定下で SkipIfNoFloci を全て満たして実行). infra plan assertion 7/7 + AWS_PROXY 統合確認 + RD-011 違反不在確認 PASS. CORS preflight HTTP RED テスト (NEW-1) は既知 RED (floci 1.5.9 制約のため exit 1)。
     build:
       status: pass
-      detail: ng build production OK (215.36 kB initial). dotnet build sln OK (0 warning/0 error). compose/nginx/Dockerfile docker build OK.
+      detail: ng build production OK (215.36 kB initial). dotnet build sln OK (0 warning/0 error). compose/nginx/Dockerfile docker build OK. docker compose config OK.
     lint:
       status: pass
       detail: 'ng lint: All files pass linting.'
@@ -557,16 +557,16 @@ verification:
       detail: 'tsc --noEmit -p tsconfig.json: no errors.'
     e2e:
       status: fail
-      detail: 'scripts/web-e2e.sh: deploy-local + warmup-lambdas (Round1 fix) まで OK, ただし R1 (web-e2e.sh→apply-api-deployment.sh への ENDPOINT/REST_API_ID/STAGE_NAME env 未伝搬) で停止。手動回避後 nginx は起動するが R2 (compose の frontend/dist bind mount が DOOD で空 → 403) と R3 (frontend/angular.json の assets:[] で dist/assets/config.json 未出力 → ConfigService bootstrap 失敗) により Playwright 4 failed (E2E-1/2/3/5) / 1 passed (E2E-4) / 1 skipped (E2E-6).'
+      detail: 'scripts/web-e2e.sh: deploy-local + apply-state-machine + apply-api-deployment + warmup-lambdas + build-frontend + deploy-frontend まで OK (Round1-3 R1/R2/R3 すべて解消)。Playwright 6 件中 3 passed (E2E-2 nginx + Angular SPA fallback / E2E-4 空 title バリデーション / E2E-5 500 モック表示) / 2 failed (E2E-1 / E2E-3) / 1 skipped (E2E-6 設計通り)。E2E-1/E2E-3 の失敗は NEW-1 (floci 1.5.9 ApiGatewayUserRequestController に @OPTIONS 未定義のため OPTIONS preflight が AWS_PROXY 統合より先に Quarkus 既定で 200+Allow を返す) 起因のみ。Lambda/IaC は設計 (RD-006/RD-011) 通りで本番 AWS では GREEN 見込み。'
   acceptance_criteria_check:
     - criterion: AC1 ローカル Angular + floci API で Todo CRUD
       method: e2e
       result: FAIL
-      evidence: E2E-1 fail (R3 主因)
+      evidence: E2E-1 fail (NEW-1 起因。preflight が 200+Allow のみ → ブラウザが POST 中止)
     - criterion: AC2 S3+CloudFront 相当配信から CRUD
       method: e2e
-      result: FAIL
-      evidence: E2E-2 fail。nginx 配信は R2 を回避すれば到達するが R3 で Angular 起動せず
+      result: PASS
+      evidence: E2E-2 pass (nginx 配信から index.html 取得 → Angular 起動 → SPA ルータが /foo/bar を index.html へ fallback 確認)
     - criterion: AC3 Angular unit がローカル/CI 通過
       method: unit
       result: PASS
@@ -577,22 +577,36 @@ verification:
       evidence: 17/17 + 98.63/80/100/98.27、閾値ガード実装
     - criterion: AC5 Playwright E2E ローカル/CI 通過
       method: e2e
-      result: FAIL
-      evidence: 4 failed / 1 passed / 1 skipped (R1/R2/R3)
+      result: PARTIAL_PASS
+      evidence: 3 passed (E2E-2/4/5) / 2 failed (E2E-1/3 NEW-1 起因のみ) / 1 skipped (E2E-6 設計通り)。Round 2 の 4 fail から 2 fail へ改善
     - criterion: AC6 .NET 既存 lint/unit/integration/e2e 維持
       method: dotnet
-      result: PARTIAL_PASS
-      evidence: build 0 warn / unit 34/34 / integration 2 pass + 9 skip (仕様通り) / e2e は AC5 と連動して未通過
+      result: PASS
+      evidence: build 0 warn / unit 34/34 / integration 12/12 (floci 起動下) / TodoApi.E2ETests build 成功
     - criterion: AC7 README にローカル/テスト/CI 手順
       method: doc
       result: PASS
       evidence: verify-readme-content.sh + verify-readme-sections.sh いずれも OK
-  summary: "Round 2 検証 FAILED: 非E2E(lint/build/type/UT32/32+cov100/94.28/100/100/IT17/17+cov98.63/80/100/98.27+threshold guard/.NET build 0warn/unit 34/34/integ 2pass+9skip仕様通り/README verify x2/nginx Dockerfile build) 全PASS。Round1 B1(conf)/B2(warmup) は解消確認。E2Eは web-e2e.sh が R1 (apply-api-deployment.sh への env 未伝搬) で停止し、手動回避後も R2 (nginx dist bind mount が DOOD で空) と R3 (angular.json assets:[] で dist/assets/config.json 未出力 → ConfigService bootstrap 失敗) により Playwright 4/6 fail (E2E-1/2/3/5)、E2E-4 pass、E2E-6 skip。詳細 docs/floci-apigateway-csharp/verification/round2/verification-report.md"
+  summary: "Round 4 検証: 非E2E(lint/typecheck/build/UT32/IT17+cov/.NET build0warn/UT34/IT12 floci起動下/infra plan 7/7+AWS_PROXY/README verify x2/compose config/nginx build) 全PASS。E2Eは NEW-1 (floci 1.5.9 ApiGatewayUserRequestController に @OPTIONS 未定義) のみが残ブロッカーで E2E-1/E2E-3 が fail。Round 2 の 4 fail から 2 fail へ段階的改善。3 passed (E2E-2/4/5) / 2 failed (E2E-1/3) / 1 skipped (E2E-6 設計通り)。Lambda/IaC は RD-006/RD-011 設計通りで本番 AWS では GREEN 見込み。HTTP REDテスト test-cors-preflight-http.sh で upstream 修正検出を担保。詳細 docs/floci-apigateway-csharp/verification/round4/verification-report.md"
   evidence:
-    - docs/floci-apigateway-csharp/verification/round2/verification-report.md
-    - docs/floci-apigateway-csharp/verification/round2/frontend-unit.log
-    - docs/floci-apigateway-csharp/verification/round2/frontend-integration.log
-    - docs/floci-apigateway-csharp/verification/round2/e2e-run.log
-    - docs/floci-apigateway-csharp/verification/round2/e2e-playwright.log
-  artifacts: docs/floci-apigateway-csharp/verification/round2/verification-report.md
-  completed_at: "2026-04-29T16:22:09+00:00"
+    - docs/floci-apigateway-csharp/verification/round4/verification-report.md
+    - docs/floci-apigateway-csharp/verification/round4/implement-fix-report.md
+    - docs/floci-apigateway-csharp/verification/round4/frontend-unit.log
+    - docs/floci-apigateway-csharp/verification/round4/frontend-integration.log
+    - docs/floci-apigateway-csharp/verification/round4/frontend-build.log
+    - docs/floci-apigateway-csharp/verification/round4/dotnet-unit.log
+    - docs/floci-apigateway-csharp/verification/round4/dotnet-integration.log
+    - docs/floci-apigateway-csharp/verification/round4/infra-frontend-plan.log
+    - docs/floci-apigateway-csharp/verification/round4/infra-cors-preflight-http.log
+    - docs/floci-apigateway-csharp/verification/round4/verify-readme-content.log
+    - docs/floci-apigateway-csharp/verification/round4/verify-readme-sections.log
+    - docs/floci-apigateway-csharp/verification/round4/compose-config.log
+    - docs/floci-apigateway-csharp/verification/round4/nginx-build.log
+    - docs/floci-apigateway-csharp/verification/round4/e2e-run.log
+  blockers:
+    - id: NEW-1
+      title: "floci 1.5.9 OPTIONS preflight が AWS_PROXY 統合に届かない"
+      impact: "ローカル E2E の E2E-1 / E2E-3 が fail。本番 AWS では発生しない見込み"
+      mitigation: "tests/infra/test-cors-preflight-http.sh を RED テストとして同梱、CorsOptionsTests.cs (Lambda 契約) と test-frontend-plan.sh (IaC AWS_PROXY 契約) で本番合格性を担保。floci upstream 修正待ち"
+  artifacts: docs/floci-apigateway-csharp/verification/round4/verification-report.md
+  completed_at: "2026-04-29T17:26:27+00:00"

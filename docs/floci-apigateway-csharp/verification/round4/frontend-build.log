@@ -1,0 +1,13 @@
+❯ Building...
+✔ Building...
+Initial chunk files   | Names         |  Raw size | Estimated transfer size
+main-IHB5ML7F.js      | main          | 180.78 kB |                49.38 kB
+polyfills-FFHMD2TL.js | polyfills     |  34.52 kB |                11.28 kB
+styles-YLW6RFA3.css   | styles        |  61 bytes |                61 bytes
+
+                      | Initial total | 215.36 kB |                60.72 kB
+
+Application bundle generation complete. [1.705 seconds]
+
+Output location: /workspaces/dev-process/submodules/editable/floci-apigateway-csharp/frontend/dist
+

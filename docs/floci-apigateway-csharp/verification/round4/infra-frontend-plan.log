@@ -1,0 +1,29 @@
+[INFO] expected resources: 7
+[INFO] planned addrs:
+  - aws_api_gateway_integration.get_todo
+  - aws_api_gateway_integration.options_todo_id_int
+  - aws_api_gateway_integration.options_todos_int
+  - aws_api_gateway_integration.post_todos
+  - aws_api_gateway_method.get_todo
+  - aws_api_gateway_method.options_todo_id
+  - aws_api_gateway_method.options_todos
+  - aws_api_gateway_method.post_todos
+  - aws_api_gateway_resource.todo_id
+  - aws_api_gateway_resource.todos
+  - aws_api_gateway_rest_api.todo
+  - aws_dynamodb_table.todos
+  - aws_iam_role.lambda_exec
+  - aws_iam_role.sfn_exec
+  - aws_iam_role_policy.lambda_inline
+  - aws_lambda_function.api_handler
+  - aws_lambda_function.persist_todo
+  - aws_lambda_function.validate_todo
+  - aws_lambda_permission.apigw
+  - aws_lambda_permission.apigw_options_todo_id
+  - aws_lambda_permission.apigw_options_todos
+  - aws_s3_bucket.frontend
+  - data.aws_iam_policy_document.lambda_inline
+  - terraform_data.todo_api_deployment
+  - terraform_data.todo_state_machine
+[INFO] missing count: 0 / 7
+[OK] frontend plan assertions passed
