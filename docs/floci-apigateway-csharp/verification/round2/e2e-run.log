@@ -1,0 +1,857 @@
+[OK] test env ready (e2e)
+[OK] floci healthy after 1s
+[1/5] floci 起動
+ Container floci  Running
+ Container floci-nginx  Running
+[2/5] floci ヘルスチェック (http://host.docker.internal:4566)
+[3/5] Lambda zip パッケージ (arm64)
+Tool 'amazon.lambda.tools' was reinstalled with the stable version (version '6.0.5').
+Amazon Lambda Tools for .NET Core applications (6.0.5)
+Project Home: https://github.com/aws/aws-extensions-for-dotnet-cli, https://github.com/aws/aws-lambda-dotnet
+	
+Executing publish command
+Deleted previous publish folder
+... invoking 'dotnet publish', working folder '/workspaces/dev-process/submodules/editable/floci-apigateway-csharp/src/TodoApi.Lambda/bin/Release/net8.0/publish'
+... dotnet publish "/workspaces/dev-process/submodules/editable/floci-apigateway-csharp/src/TodoApi.Lambda" --output "/workspaces/dev-process/submodules/editable/floci-apigateway-csharp/src/TodoApi.Lambda/bin/Release/net8.0/publish" --configuration "Release" --framework "net8.0" /p:GenerateRuntimeConfigurationFiles=true --runtime linux-arm64 --self-contained False 
+... publish:   Determining projects to restore...
+... publish:   Restored /workspaces/dev-process/submodules/editable/floci-apigateway-csharp/src/TodoApi.Lambda/TodoApi.Lambda.csproj (in 265 ms).
+... publish:   TodoApi.Lambda -> /workspaces/dev-process/submodules/editable/floci-apigateway-csharp/src/TodoApi.Lambda/bin/Release/net8.0/linux-arm64/TodoApi.Lambda.dll
+... publish:   TodoApi.Lambda -> /workspaces/dev-process/submodules/editable/floci-apigateway-csharp/src/TodoApi.Lambda/bin/Release/net8.0/publish/
+Changed permissions on published file (chmod +rx AWSSDK.DynamoDBv2.dll).
+Changed permissions on published file (chmod +rx Amazon.Lambda.APIGatewayEvents.dll).
+Changed permissions on published file (chmod +rx TodoApi.Lambda.dll).
+Changed permissions on published file (chmod +rx AWSSDK.Core.dll).
+Changed permissions on published file (chmod +rx TodoApi.Lambda.pdb).
+Changed permissions on published file (chmod +rx Amazon.Lambda.Serialization.SystemTextJson.dll).
+Changed permissions on published file (chmod +rx TodoApi.Lambda.runtimeconfig.json).
+Changed permissions on published file (chmod +rx Amazon.Lambda.Core.dll).
+Changed permissions on published file (chmod +rx AWSSDK.StepFunctions.dll).
+Changed permissions on published file (chmod +rx TodoApi.Lambda.deps.json).
+Zipping publish folder /workspaces/dev-process/submodules/editable/floci-apigateway-csharp/src/TodoApi.Lambda/bin/Release/net8.0/publish to /workspaces/dev-process/submodules/editable/floci-apigateway-csharp/infra/lambda/TodoApi.Lambda.zip
+... zipping:   adding: AWSSDK.DynamoDBv2.dll (deflated 69%)
+... zipping:   adding: Amazon.Lambda.APIGatewayEvents.dll (deflated 54%)
+... zipping:   adding: TodoApi.Lambda.dll (deflated 55%)
+... zipping:   adding: AWSSDK.Core.dll (deflated 81%)
+... zipping:   adding: TodoApi.Lambda.pdb (deflated 42%)
+... zipping:   adding: Amazon.Lambda.Serialization.SystemTextJson.dll (deflated 44%)
+... zipping:   adding: TodoApi.Lambda.runtimeconfig.json (deflated 38%)
+... zipping:   adding: Amazon.Lambda.Core.dll (deflated 45%)
+... zipping:   adding: AWSSDK.StepFunctions.dll (deflated 68%)
+... zipping:   adding: TodoApi.Lambda.deps.json (deflated 74%)
+Created publish archive (/workspaces/dev-process/submodules/editable/floci-apigateway-csharp/infra/lambda/TodoApi.Lambda.zip).
+Lambda project successfully packaged: /workspaces/dev-process/submodules/editable/floci-apigateway-csharp/infra/lambda/TodoApi.Lambda.zip
+[4/5] Terraform apply
+[0m[1mInitializing the backend...[0m
+[0m[1mInitializing provider plugins...[0m
+- terraform.io/builtin/terraform is built in to Terraform
+- Reusing previous version of hashicorp/aws from the dependency lock file
+- Using previously-installed hashicorp/aws v6.42.0
+
+[0m[1m[32mTerraform has been successfully initialized![0m[32m[0m
+[0m[32m
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.[0m
+[0m[1mdata.aws_iam_policy_document.sfn_assume: Reading...[0m[0m
+[0m[1mdata.aws_iam_policy_document.lambda_assume: Reading...[0m[0m
+[0m[1maws_api_gateway_rest_api.todo: Refreshing state... [id=7a39271daa][0m
+[0m[1maws_s3_bucket.frontend: Refreshing state... [id=frontend-bucket][0m
+[0m[1maws_dynamodb_table.todos: Refreshing state... [id=Todos][0m
+[0m[1mdata.aws_iam_policy_document.lambda_assume: Read complete after 0s [id=2690255455][0m
+[0m[1mdata.aws_iam_policy_document.sfn_assume: Read complete after 0s [id=4022981484][0m
+[0m[1maws_iam_role.lambda_exec: Refreshing state... [id=todo-lambda-exec][0m
+[0m[1maws_iam_role.sfn_exec: Refreshing state... [id=todo-sfn-exec][0m
+[0m[1maws_api_gateway_resource.todos: Refreshing state... [id=a2036b83][0m
+[0m[1maws_iam_role_policy.lambda_inline: Refreshing state... [id=todo-lambda-exec:terraform-20260429154703824300000001][0m
+[0m[1maws_lambda_function.persist_todo: Refreshing state... [id=persist-todo][0m
+[0m[1maws_lambda_function.validate_todo: Refreshing state... [id=validate-todo][0m
+[0m[1maws_lambda_function.api_handler: Refreshing state... [id=api-handler][0m
+[0m[1maws_api_gateway_resource.todo_id: Refreshing state... [id=d10dc048][0m
+[0m[1maws_api_gateway_method.post_todos: Refreshing state... [id=agm-7a39271daa-a2036b83-POST][0m
+[0m[1maws_api_gateway_method.options_todos: Refreshing state... [id=agm-7a39271daa-a2036b83-OPTIONS][0m
+[0m[1maws_api_gateway_method.get_todo: Refreshing state... [id=agm-7a39271daa-d10dc048-GET][0m
+[0m[1maws_api_gateway_method.options_todo_id: Refreshing state... [id=agm-7a39271daa-d10dc048-OPTIONS][0m
+[0m[1maws_api_gateway_integration.get_todo: Refreshing state... [id=agi-7a39271daa-d10dc048-GET][0m
+[0m[1mterraform_data.todo_state_machine: Refreshing state... [id=cc2e4a6a-e87e-d8a0-2032-316cdca6436b][0m
+[0m[1maws_api_gateway_integration.options_todos_int: Refreshing state... [id=agi-7a39271daa-a2036b83-OPTIONS][0m
+[0m[1maws_lambda_permission.apigw: Refreshing state... [id=AllowAPIGatewayInvoke][0m
+[0m[1maws_lambda_permission.apigw_options_todo_id: Refreshing state... [id=AllowAPIGatewayInvokeOptionsTodoId][0m
+[0m[1maws_api_gateway_integration.options_todo_id_int: Refreshing state... [id=agi-7a39271daa-d10dc048-OPTIONS][0m
+[0m[1maws_api_gateway_integration.post_todos: Refreshing state... [id=agi-7a39271daa-a2036b83-POST][0m
+[0m[1maws_lambda_permission.apigw_options_todos: Refreshing state... [id=AllowAPIGatewayInvokeOptionsTodos][0m
+[0m[1mterraform_data.todo_api_deployment: Refreshing state... [id=aeb82809-1a6e-b584-99dc-00ef2ef8ec0d][0m
+
+[1m[36mNote:[0m[1m Objects have changed outside of Terraform
+[0m
+Terraform detected the following changes made outside of Terraform since the
+last "terraform apply" which may have affected this plan:
+
+[1m  # aws_api_gateway_integration.get_todo[0m has been deleted
+[0m  [31m-[0m[0m resource "aws_api_gateway_integration" "get_todo" {
+      [31m-[0m[0m id                      = "agi-7a39271daa-d10dc048-GET" [90m-> null[0m[0m
+        [90m# (16 unchanged attributes hidden)[0m[0m
+    }
+
+[1m  # aws_api_gateway_integration.post_todos[0m has been deleted
+[0m  [31m-[0m[0m resource "aws_api_gateway_integration" "post_todos" {
+      [31m-[0m[0m id                      = "agi-7a39271daa-a2036b83-POST" [90m-> null[0m[0m
+        [90m# (16 unchanged attributes hidden)[0m[0m
+    }
+
+[1m  # aws_api_gateway_method.get_todo[0m has been deleted
+[0m  [31m-[0m[0m resource "aws_api_gateway_method" "get_todo" {
+      [31m-[0m[0m http_method        = "GET" [90m-> null[0m[0m
+      [31m-[0m[0m id                 = "agm-7a39271daa-d10dc048-GET" [90m-> null[0m[0m
+        [90m# (6 unchanged attributes hidden)[0m[0m
+    }
+
+[1m  # aws_api_gateway_method.options_todo_id[0m has been deleted
+[0m  [31m-[0m[0m resource "aws_api_gateway_method" "options_todo_id" {
+      [31m-[0m[0m http_method      = "OPTIONS" [90m-> null[0m[0m
+        id               = "agm-7a39271daa-d10dc048-OPTIONS"
+        [90m# (5 unchanged attributes hidden)[0m[0m
+    }
+
+[1m  # aws_api_gateway_method.options_todos[0m has been deleted
+[0m  [31m-[0m[0m resource "aws_api_gateway_method" "options_todos" {
+      [31m-[0m[0m http_method      = "OPTIONS" [90m-> null[0m[0m
+        id               = "agm-7a39271daa-a2036b83-OPTIONS"
+        [90m# (5 unchanged attributes hidden)[0m[0m
+    }
+
+[1m  # aws_api_gateway_method.post_todos[0m has been deleted
+[0m  [31m-[0m[0m resource "aws_api_gateway_method" "post_todos" {
+      [31m-[0m[0m http_method      = "POST" [90m-> null[0m[0m
+      [31m-[0m[0m id               = "agm-7a39271daa-a2036b83-POST" [90m-> null[0m[0m
+        [90m# (5 unchanged attributes hidden)[0m[0m
+    }
+
+[1m  # aws_api_gateway_resource.todo_id[0m has been deleted
+[0m  [31m-[0m[0m resource "aws_api_gateway_resource" "todo_id" {
+      [31m-[0m[0m id          = "d10dc048" [90m-> null[0m[0m
+        [90m# (5 unchanged attributes hidden)[0m[0m
+    }
+
+[1m  # aws_api_gateway_resource.todos[0m has been deleted
+[0m  [31m-[0m[0m resource "aws_api_gateway_resource" "todos" {
+      [31m-[0m[0m id          = "a2036b83" [90m-> null[0m[0m
+        [90m# (5 unchanged attributes hidden)[0m[0m
+    }
+
+[1m  # aws_api_gateway_rest_api.todo[0m has been deleted
+[0m  [31m-[0m[0m resource "aws_api_gateway_rest_api" "todo" {
+      [31m-[0m[0m execution_arn                = "arn:aws:execute-api:us-east-1::7a39271daa" [90m-> null[0m[0m
+      [31m-[0m[0m id                           = "7a39271daa" [90m-> null[0m[0m
+        name                         = "todo-api"
+      [31m-[0m[0m root_resource_id             = "0f9be15b" [90m-> null[0m[0m
+        [90m# (10 unchanged attributes hidden)[0m[0m
+    }
+
+[1m  # aws_dynamodb_table.todos[0m has been deleted
+[0m  [31m-[0m[0m resource "aws_dynamodb_table" "todos" {
+      [31m-[0m[0m arn                         = "arn:aws:dynamodb:us-east-1:000000000000:table/Todos" [90m-> null[0m[0m
+        id                          = "Todos"
+      [31m-[0m[0m name                        = "Todos" [90m-> null[0m[0m
+        [90m# (12 unchanged attributes hidden)[0m[0m
+
+        [90m# (3 unchanged blocks hidden)[0m[0m
+    }
+
+[1m  # aws_iam_role.lambda_exec[0m has been deleted
+[0m  [31m-[0m[0m resource "aws_iam_role" "lambda_exec" {
+      [31m-[0m[0m arn                   = "arn:aws:iam::000000000000:role/todo-lambda-exec" [90m-> null[0m[0m
+      [31m-[0m[0m id                    = "todo-lambda-exec" [90m-> null[0m[0m
+        name                  = "todo-lambda-exec"
+        [90m# (11 unchanged attributes hidden)[0m[0m
+    }
+
+[1m  # aws_iam_role.sfn_exec[0m has been deleted
+[0m  [31m-[0m[0m resource "aws_iam_role" "sfn_exec" {
+      [31m-[0m[0m arn                   = "arn:aws:iam::000000000000:role/todo-sfn-exec" [90m-> null[0m[0m
+        id                    = "todo-sfn-exec"
+        name                  = "todo-sfn-exec"
+        [90m# (11 unchanged attributes hidden)[0m[0m
+    }
+
+[1m  # aws_lambda_function.api_handler[0m has been deleted
+[0m  [31m-[0m[0m resource "aws_lambda_function" "api_handler" {
+      [31m-[0m[0m function_name                  = "api-handler" [90m-> null[0m[0m
+        id                             = "api-handler"
+      [31m-[0m[0m invoke_arn                     = "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:000000000000:function:api-handler/invocations" [90m-> null[0m[0m
+        [90m# (29 unchanged attributes hidden)[0m[0m
+
+        [90m# (3 unchanged blocks hidden)[0m[0m
+    }
+
+[1m  # aws_lambda_function.persist_todo[0m has been deleted
+[0m  [31m-[0m[0m resource "aws_lambda_function" "persist_todo" {
+      [31m-[0m[0m arn                            = "arn:aws:lambda:us-east-1:000000000000:function:persist-todo" [90m-> null[0m[0m
+        id                             = "persist-todo"
+        [90m# (30 unchanged attributes hidden)[0m[0m
+
+        [90m# (3 unchanged blocks hidden)[0m[0m
+    }
+
+[1m  # aws_lambda_function.validate_todo[0m has been deleted
+[0m  [31m-[0m[0m resource "aws_lambda_function" "validate_todo" {
+      [31m-[0m[0m arn                            = "arn:aws:lambda:us-east-1:000000000000:function:validate-todo" [90m-> null[0m[0m
+        id                             = "validate-todo"
+        [90m# (30 unchanged attributes hidden)[0m[0m
+
+        [90m# (3 unchanged blocks hidden)[0m[0m
+    }
+
+
+Unless you have made equivalent changes to your configuration, or ignored the
+relevant attributes using ignore_changes, the following plan may include
+actions to undo or respond to these changes.
+[90m
+─────────────────────────────────────────────────────────────────────────────[0m
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  [32m+[0m create[0m
+  [33m~[0m update in-place[0m
+[31m-[0m/[32m+[0m destroy and then create replacement[0m
+ [36m<=[0m read (data resources)[0m
+
+Terraform will perform the following actions:
+
+[1m  # data.aws_iam_policy_document.lambda_inline[0m will be read during apply
+  # (config refers to values not yet known)
+[0m [36m<=[0m[0m data "aws_iam_policy_document" "lambda_inline" {
+      [32m+[0m[0m id            = (known after apply)
+      [32m+[0m[0m json          = (known after apply)
+      [32m+[0m[0m minified_json = (known after apply)
+
+      [32m+[0m[0m statement {
+          [32m+[0m[0m actions   = [
+              [32m+[0m[0m "dynamodb:GetItem",
+              [32m+[0m[0m "dynamodb:PutItem",
+            ]
+          [32m+[0m[0m resources = [
+              [32m+[0m[0m (known after apply),
+            ]
+          [32m+[0m[0m sid       = "DynamoTodos"
+        }
+      [32m+[0m[0m statement {
+          [32m+[0m[0m actions   = [
+              [32m+[0m[0m "states:DescribeExecution",
+              [32m+[0m[0m "states:StartExecution",
+            ]
+          [32m+[0m[0m resources = [
+              [32m+[0m[0m "arn:aws:states:us-east-1:000000000000:execution:todo-flow:*",
+              [32m+[0m[0m "arn:aws:states:us-east-1:000000000000:stateMachine:todo-flow",
+            ]
+          [32m+[0m[0m sid       = "StartExecution"
+        }
+      [32m+[0m[0m statement {
+          [32m+[0m[0m actions   = [
+              [32m+[0m[0m "logs:CreateLogGroup",
+              [32m+[0m[0m "logs:CreateLogStream",
+              [32m+[0m[0m "logs:PutLogEvents",
+            ]
+          [32m+[0m[0m resources = [
+              [32m+[0m[0m "*",
+            ]
+          [32m+[0m[0m sid       = "CloudWatchLogs"
+        }
+    }
+
+[1m  # aws_api_gateway_integration.get_todo[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_integration" "get_todo" {
+      [32m+[0m[0m cache_namespace         = (known after apply)
+      [32m+[0m[0m connection_type         = "INTERNET"
+      [32m+[0m[0m http_method             = "GET"
+      [32m+[0m[0m id                      = (known after apply)
+      [32m+[0m[0m integration_http_method = "POST"
+      [32m+[0m[0m passthrough_behavior    = (known after apply)
+      [32m+[0m[0m region                  = "us-east-1"
+      [32m+[0m[0m resource_id             = (known after apply)
+      [32m+[0m[0m response_transfer_mode  = (known after apply)
+      [32m+[0m[0m rest_api_id             = (known after apply)
+      [32m+[0m[0m timeout_milliseconds    = 29000
+      [32m+[0m[0m type                    = "AWS_PROXY"
+      [32m+[0m[0m uri                     = (known after apply)
+    }
+
+[1m  # aws_api_gateway_integration.options_todo_id_int[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_integration" "options_todo_id_int" {
+      [32m+[0m[0m cache_namespace         = (known after apply)
+      [32m+[0m[0m connection_type         = "INTERNET"
+      [32m+[0m[0m http_method             = "OPTIONS"
+      [32m+[0m[0m id                      = (known after apply)
+      [32m+[0m[0m integration_http_method = "POST"
+      [32m+[0m[0m passthrough_behavior    = (known after apply)
+      [32m+[0m[0m region                  = "us-east-1"
+      [32m+[0m[0m resource_id             = (known after apply)
+      [32m+[0m[0m response_transfer_mode  = (known after apply)
+      [32m+[0m[0m rest_api_id             = (known after apply)
+      [32m+[0m[0m timeout_milliseconds    = 29000
+      [32m+[0m[0m type                    = "AWS_PROXY"
+      [32m+[0m[0m uri                     = (known after apply)
+    }
+
+[1m  # aws_api_gateway_integration.options_todos_int[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_integration" "options_todos_int" {
+      [32m+[0m[0m cache_namespace         = (known after apply)
+      [32m+[0m[0m connection_type         = "INTERNET"
+      [32m+[0m[0m http_method             = "OPTIONS"
+      [32m+[0m[0m id                      = (known after apply)
+      [32m+[0m[0m integration_http_method = "POST"
+      [32m+[0m[0m passthrough_behavior    = (known after apply)
+      [32m+[0m[0m region                  = "us-east-1"
+      [32m+[0m[0m resource_id             = (known after apply)
+      [32m+[0m[0m response_transfer_mode  = (known after apply)
+      [32m+[0m[0m rest_api_id             = (known after apply)
+      [32m+[0m[0m timeout_milliseconds    = 29000
+      [32m+[0m[0m type                    = "AWS_PROXY"
+      [32m+[0m[0m uri                     = (known after apply)
+    }
+
+[1m  # aws_api_gateway_integration.post_todos[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_integration" "post_todos" {
+      [32m+[0m[0m cache_namespace         = (known after apply)
+      [32m+[0m[0m connection_type         = "INTERNET"
+      [32m+[0m[0m http_method             = "POST"
+      [32m+[0m[0m id                      = (known after apply)
+      [32m+[0m[0m integration_http_method = "POST"
+      [32m+[0m[0m passthrough_behavior    = (known after apply)
+      [32m+[0m[0m region                  = "us-east-1"
+      [32m+[0m[0m resource_id             = (known after apply)
+      [32m+[0m[0m response_transfer_mode  = (known after apply)
+      [32m+[0m[0m rest_api_id             = (known after apply)
+      [32m+[0m[0m timeout_milliseconds    = 29000
+      [32m+[0m[0m type                    = "AWS_PROXY"
+      [32m+[0m[0m uri                     = (known after apply)
+    }
+
+[1m  # aws_api_gateway_method.get_todo[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_method" "get_todo" {
+      [32m+[0m[0m api_key_required   = false
+      [32m+[0m[0m authorization      = "NONE"
+      [32m+[0m[0m http_method        = "GET"
+      [32m+[0m[0m id                 = (known after apply)
+      [32m+[0m[0m region             = "us-east-1"
+      [32m+[0m[0m request_parameters = {
+          [32m+[0m[0m "method.request.path.id" = true
+        }
+      [32m+[0m[0m resource_id        = (known after apply)
+      [32m+[0m[0m rest_api_id        = (known after apply)
+    }
+
+[1m  # aws_api_gateway_method.options_todo_id[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_method" "options_todo_id" {
+      [32m+[0m[0m api_key_required = false
+      [32m+[0m[0m authorization    = "NONE"
+      [32m+[0m[0m http_method      = "OPTIONS"
+      [32m+[0m[0m id               = (known after apply)
+      [32m+[0m[0m region           = "us-east-1"
+      [32m+[0m[0m resource_id      = (known after apply)
+      [32m+[0m[0m rest_api_id      = (known after apply)
+    }
+
+[1m  # aws_api_gateway_method.options_todos[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_method" "options_todos" {
+      [32m+[0m[0m api_key_required = false
+      [32m+[0m[0m authorization    = "NONE"
+      [32m+[0m[0m http_method      = "OPTIONS"
+      [32m+[0m[0m id               = (known after apply)
+      [32m+[0m[0m region           = "us-east-1"
+      [32m+[0m[0m resource_id      = (known after apply)
+      [32m+[0m[0m rest_api_id      = (known after apply)
+    }
+
+[1m  # aws_api_gateway_method.post_todos[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_method" "post_todos" {
+      [32m+[0m[0m api_key_required = false
+      [32m+[0m[0m authorization    = "NONE"
+      [32m+[0m[0m http_method      = "POST"
+      [32m+[0m[0m id               = (known after apply)
+      [32m+[0m[0m region           = "us-east-1"
+      [32m+[0m[0m resource_id      = (known after apply)
+      [32m+[0m[0m rest_api_id      = (known after apply)
+    }
+
+[1m  # aws_api_gateway_resource.todo_id[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_resource" "todo_id" {
+      [32m+[0m[0m id          = (known after apply)
+      [32m+[0m[0m parent_id   = (known after apply)
+      [32m+[0m[0m path        = (known after apply)
+      [32m+[0m[0m path_part   = "{id}"
+      [32m+[0m[0m region      = "us-east-1"
+      [32m+[0m[0m rest_api_id = (known after apply)
+    }
+
+[1m  # aws_api_gateway_resource.todos[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_resource" "todos" {
+      [32m+[0m[0m id          = (known after apply)
+      [32m+[0m[0m parent_id   = (known after apply)
+      [32m+[0m[0m path        = (known after apply)
+      [32m+[0m[0m path_part   = "todos"
+      [32m+[0m[0m region      = "us-east-1"
+      [32m+[0m[0m rest_api_id = (known after apply)
+    }
+
+[1m  # aws_api_gateway_rest_api.todo[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_rest_api" "todo" {
+      [32m+[0m[0m api_key_source               = (known after apply)
+      [32m+[0m[0m arn                          = (known after apply)
+      [32m+[0m[0m binary_media_types           = (known after apply)
+      [32m+[0m[0m created_date                 = (known after apply)
+      [32m+[0m[0m description                  = (known after apply)
+      [32m+[0m[0m disable_execute_api_endpoint = (known after apply)
+      [32m+[0m[0m execution_arn                = (known after apply)
+      [32m+[0m[0m id                           = (known after apply)
+      [32m+[0m[0m minimum_compression_size     = (known after apply)
+      [32m+[0m[0m name                         = "todo-api"
+      [32m+[0m[0m policy                       = (known after apply)
+      [32m+[0m[0m region                       = "us-east-1"
+      [32m+[0m[0m root_resource_id             = (known after apply)
+      [32m+[0m[0m tags_all                     = (known after apply)
+
+      [32m+[0m[0m endpoint_configuration (known after apply)
+    }
+
+[1m  # aws_dynamodb_table.todos[0m will be created
+[0m  [32m+[0m[0m resource "aws_dynamodb_table" "todos" {
+      [32m+[0m[0m arn              = (known after apply)
+      [32m+[0m[0m billing_mode     = "PAY_PER_REQUEST"
+      [32m+[0m[0m hash_key         = "id"
+      [32m+[0m[0m id               = (known after apply)
+      [32m+[0m[0m name             = "Todos"
+      [32m+[0m[0m read_capacity    = (known after apply)
+      [32m+[0m[0m region           = "us-east-1"
+      [32m+[0m[0m stream_arn       = (known after apply)
+      [32m+[0m[0m stream_label     = (known after apply)
+      [32m+[0m[0m stream_view_type = (known after apply)
+      [32m+[0m[0m tags_all         = (known after apply)
+      [32m+[0m[0m write_capacity   = (known after apply)
+
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "id"
+          [32m+[0m[0m type = "S"
+        }
+
+      [32m+[0m[0m global_secondary_index (known after apply)
+
+      [32m+[0m[0m global_table_witness (known after apply)
+
+      [32m+[0m[0m point_in_time_recovery (known after apply)
+
+      [32m+[0m[0m server_side_encryption (known after apply)
+
+      [32m+[0m[0m ttl (known after apply)
+
+      [32m+[0m[0m warm_throughput (known after apply)
+    }
+
+[1m  # aws_iam_role.lambda_exec[0m will be created
+[0m  [32m+[0m[0m resource "aws_iam_role" "lambda_exec" {
+      [32m+[0m[0m arn                   = (known after apply)
+      [32m+[0m[0m assume_role_policy    = jsonencode(
+            {
+              [32m+[0m[0m Statement = [
+                  [32m+[0m[0m {
+                      [32m+[0m[0m Action    = "sts:AssumeRole"
+                      [32m+[0m[0m Effect    = "Allow"
+                      [32m+[0m[0m Principal = {
+                          [32m+[0m[0m Service = "lambda.amazonaws.com"
+                        }
+                    },
+                ]
+              [32m+[0m[0m Version   = "2012-10-17"
+            }
+        )
+      [32m+[0m[0m create_date           = (known after apply)
+      [32m+[0m[0m force_detach_policies = false
+      [32m+[0m[0m id                    = (known after apply)
+      [32m+[0m[0m managed_policy_arns   = (known after apply)
+      [32m+[0m[0m max_session_duration  = 3600
+      [32m+[0m[0m name                  = "todo-lambda-exec"
+      [32m+[0m[0m name_prefix           = (known after apply)
+      [32m+[0m[0m path                  = "/"
+      [32m+[0m[0m tags_all              = (known after apply)
+      [32m+[0m[0m unique_id             = (known after apply)
+
+      [32m+[0m[0m inline_policy (known after apply)
+    }
+
+[1m  # aws_iam_role.sfn_exec[0m will be created
+[0m  [32m+[0m[0m resource "aws_iam_role" "sfn_exec" {
+      [32m+[0m[0m arn                   = (known after apply)
+      [32m+[0m[0m assume_role_policy    = jsonencode(
+            {
+              [32m+[0m[0m Statement = [
+                  [32m+[0m[0m {
+                      [32m+[0m[0m Action    = "sts:AssumeRole"
+                      [32m+[0m[0m Effect    = "Allow"
+                      [32m+[0m[0m Principal = {
+                          [32m+[0m[0m Service = "states.amazonaws.com"
+                        }
+                    },
+                ]
+              [32m+[0m[0m Version   = "2012-10-17"
+            }
+        )
+      [32m+[0m[0m create_date           = (known after apply)
+      [32m+[0m[0m force_detach_policies = false
+      [32m+[0m[0m id                    = (known after apply)
+      [32m+[0m[0m managed_policy_arns   = (known after apply)
+      [32m+[0m[0m max_session_duration  = 3600
+      [32m+[0m[0m name                  = "todo-sfn-exec"
+      [32m+[0m[0m name_prefix           = (known after apply)
+      [32m+[0m[0m path                  = "/"
+      [32m+[0m[0m tags_all              = (known after apply)
+      [32m+[0m[0m unique_id             = (known after apply)
+
+      [32m+[0m[0m inline_policy (known after apply)
+    }
+
+[1m  # aws_iam_role_policy.lambda_inline[0m will be created
+[0m  [32m+[0m[0m resource "aws_iam_role_policy" "lambda_inline" {
+      [32m+[0m[0m id          = (known after apply)
+      [32m+[0m[0m name        = (known after apply)
+      [32m+[0m[0m name_prefix = (known after apply)
+      [32m+[0m[0m policy      = (known after apply)
+      [32m+[0m[0m role        = (known after apply)
+    }
+
+[1m  # aws_lambda_function.api_handler[0m will be created
+[0m  [32m+[0m[0m resource "aws_lambda_function" "api_handler" {
+      [32m+[0m[0m architectures                  = [
+          [32m+[0m[0m "arm64",
+        ]
+      [32m+[0m[0m arn                            = (known after apply)
+      [32m+[0m[0m code_sha256                    = (known after apply)
+      [32m+[0m[0m filename                       = "./lambda/TodoApi.Lambda.zip"
+      [32m+[0m[0m function_name                  = "api-handler"
+      [32m+[0m[0m handler                        = "TodoApi.Lambda::TodoApi.Lambda.Function::ApiHandler"
+      [32m+[0m[0m id                             = (known after apply)
+      [32m+[0m[0m invoke_arn                     = (known after apply)
+      [32m+[0m[0m last_modified                  = (known after apply)
+      [32m+[0m[0m memory_size                    = 512
+      [32m+[0m[0m package_type                   = "Zip"
+      [32m+[0m[0m publish                        = false
+      [32m+[0m[0m qualified_arn                  = (known after apply)
+      [32m+[0m[0m qualified_invoke_arn           = (known after apply)
+      [32m+[0m[0m region                         = "us-east-1"
+      [32m+[0m[0m reserved_concurrent_executions = -1
+      [32m+[0m[0m response_streaming_invoke_arn  = (known after apply)
+      [32m+[0m[0m role                           = (known after apply)
+      [32m+[0m[0m runtime                        = "dotnet8"
+      [32m+[0m[0m signing_job_arn                = (known after apply)
+      [32m+[0m[0m signing_profile_version_arn    = (known after apply)
+      [32m+[0m[0m skip_destroy                   = false
+      [32m+[0m[0m source_code_hash               = "uuiRDYS8TX68Dq9jN0v5HlGTBqRb+Gg9tllNG5iJGlI="
+      [32m+[0m[0m source_code_size               = (known after apply)
+      [32m+[0m[0m tags_all                       = (known after apply)
+      [32m+[0m[0m timeout                        = 120
+      [32m+[0m[0m version                        = (known after apply)
+
+      [32m+[0m[0m environment {
+          [32m+[0m[0m variables = {
+              [32m+[0m[0m "AWS_DEFAULT_REGION" = "us-east-1"
+              [32m+[0m[0m "AWS_ENDPOINT_URL"   = "http://floci:4566"
+              [32m+[0m[0m "STATE_MACHINE_ARN"  = "arn:aws:states:us-east-1:000000000000:stateMachine:todo-flow"
+              [32m+[0m[0m "TABLE_NAME"         = "Todos"
+            }
+        }
+
+      [32m+[0m[0m ephemeral_storage (known after apply)
+
+      [32m+[0m[0m logging_config (known after apply)
+
+      [32m+[0m[0m tracing_config (known after apply)
+    }
+
+[1m  # aws_lambda_function.persist_todo[0m will be created
+[0m  [32m+[0m[0m resource "aws_lambda_function" "persist_todo" {
+      [32m+[0m[0m architectures                  = [
+          [32m+[0m[0m "arm64",
+        ]
+      [32m+[0m[0m arn                            = (known after apply)
+      [32m+[0m[0m code_sha256                    = (known after apply)
+      [32m+[0m[0m filename                       = "./lambda/TodoApi.Lambda.zip"
+      [32m+[0m[0m function_name                  = "persist-todo"
+      [32m+[0m[0m handler                        = "TodoApi.Lambda::TodoApi.Lambda.Function::PersistTodo"
+      [32m+[0m[0m id                             = (known after apply)
+      [32m+[0m[0m invoke_arn                     = (known after apply)
+      [32m+[0m[0m last_modified                  = (known after apply)
+      [32m+[0m[0m memory_size                    = 512
+      [32m+[0m[0m package_type                   = "Zip"
+      [32m+[0m[0m publish                        = false
+      [32m+[0m[0m qualified_arn                  = (known after apply)
+      [32m+[0m[0m qualified_invoke_arn           = (known after apply)
+      [32m+[0m[0m region                         = "us-east-1"
+      [32m+[0m[0m reserved_concurrent_executions = -1
+      [32m+[0m[0m response_streaming_invoke_arn  = (known after apply)
+      [32m+[0m[0m role                           = (known after apply)
+      [32m+[0m[0m runtime                        = "dotnet8"
+      [32m+[0m[0m signing_job_arn                = (known after apply)
+      [32m+[0m[0m signing_profile_version_arn    = (known after apply)
+      [32m+[0m[0m skip_destroy                   = false
+      [32m+[0m[0m source_code_hash               = "uuiRDYS8TX68Dq9jN0v5HlGTBqRb+Gg9tllNG5iJGlI="
+      [32m+[0m[0m source_code_size               = (known after apply)
+      [32m+[0m[0m tags_all                       = (known after apply)
+      [32m+[0m[0m timeout                        = 120
+      [32m+[0m[0m version                        = (known after apply)
+
+      [32m+[0m[0m environment {
+          [32m+[0m[0m variables = {
+              [32m+[0m[0m "AWS_DEFAULT_REGION" = "us-east-1"
+              [32m+[0m[0m "AWS_ENDPOINT_URL"   = "http://floci:4566"
+              [32m+[0m[0m "STATE_MACHINE_ARN"  = "arn:aws:states:us-east-1:000000000000:stateMachine:todo-flow"
+              [32m+[0m[0m "TABLE_NAME"         = "Todos"
+            }
+        }
+
+      [32m+[0m[0m ephemeral_storage (known after apply)
+
+      [32m+[0m[0m logging_config (known after apply)
+
+      [32m+[0m[0m tracing_config (known after apply)
+    }
+
+[1m  # aws_lambda_function.validate_todo[0m will be created
+[0m  [32m+[0m[0m resource "aws_lambda_function" "validate_todo" {
+      [32m+[0m[0m architectures                  = [
+          [32m+[0m[0m "arm64",
+        ]
+      [32m+[0m[0m arn                            = (known after apply)
+      [32m+[0m[0m code_sha256                    = (known after apply)
+      [32m+[0m[0m filename                       = "./lambda/TodoApi.Lambda.zip"
+      [32m+[0m[0m function_name                  = "validate-todo"
+      [32m+[0m[0m handler                        = "TodoApi.Lambda::TodoApi.Lambda.Function::ValidateTodo"
+      [32m+[0m[0m id                             = (known after apply)
+      [32m+[0m[0m invoke_arn                     = (known after apply)
+      [32m+[0m[0m last_modified                  = (known after apply)
+      [32m+[0m[0m memory_size                    = 512
+      [32m+[0m[0m package_type                   = "Zip"
+      [32m+[0m[0m publish                        = false
+      [32m+[0m[0m qualified_arn                  = (known after apply)
+      [32m+[0m[0m qualified_invoke_arn           = (known after apply)
+      [32m+[0m[0m region                         = "us-east-1"
+      [32m+[0m[0m reserved_concurrent_executions = -1
+      [32m+[0m[0m response_streaming_invoke_arn  = (known after apply)
+      [32m+[0m[0m role                           = (known after apply)
+      [32m+[0m[0m runtime                        = "dotnet8"
+      [32m+[0m[0m signing_job_arn                = (known after apply)
+      [32m+[0m[0m signing_profile_version_arn    = (known after apply)
+      [32m+[0m[0m skip_destroy                   = false
+      [32m+[0m[0m source_code_hash               = "uuiRDYS8TX68Dq9jN0v5HlGTBqRb+Gg9tllNG5iJGlI="
+      [32m+[0m[0m source_code_size               = (known after apply)
+      [32m+[0m[0m tags_all                       = (known after apply)
+      [32m+[0m[0m timeout                        = 120
+      [32m+[0m[0m version                        = (known after apply)
+
+      [32m+[0m[0m environment {
+          [32m+[0m[0m variables = {
+              [32m+[0m[0m "AWS_DEFAULT_REGION" = "us-east-1"
+              [32m+[0m[0m "AWS_ENDPOINT_URL"   = "http://floci:4566"
+              [32m+[0m[0m "STATE_MACHINE_ARN"  = "arn:aws:states:us-east-1:000000000000:stateMachine:todo-flow"
+              [32m+[0m[0m "TABLE_NAME"         = "Todos"
+            }
+        }
+
+      [32m+[0m[0m ephemeral_storage (known after apply)
+
+      [32m+[0m[0m logging_config (known after apply)
+
+      [32m+[0m[0m tracing_config (known after apply)
+    }
+
+[1m  # aws_lambda_permission.apigw[0m will be created
+[0m  [32m+[0m[0m resource "aws_lambda_permission" "apigw" {
+      [32m+[0m[0m action              = "lambda:InvokeFunction"
+      [32m+[0m[0m function_name       = "api-handler"
+      [32m+[0m[0m id                  = (known after apply)
+      [32m+[0m[0m principal           = "apigateway.amazonaws.com"
+      [32m+[0m[0m region              = "us-east-1"
+      [32m+[0m[0m source_arn          = (known after apply)
+      [32m+[0m[0m statement_id        = "AllowAPIGatewayInvoke"
+      [32m+[0m[0m statement_id_prefix = (known after apply)
+    }
+
+[1m  # aws_lambda_permission.apigw_options_todo_id[0m will be created
+[0m  [32m+[0m[0m resource "aws_lambda_permission" "apigw_options_todo_id" {
+      [32m+[0m[0m action              = "lambda:InvokeFunction"
+      [32m+[0m[0m function_name       = "api-handler"
+      [32m+[0m[0m id                  = (known after apply)
+      [32m+[0m[0m principal           = "apigateway.amazonaws.com"
+      [32m+[0m[0m region              = "us-east-1"
+      [32m+[0m[0m source_arn          = (known after apply)
+      [32m+[0m[0m statement_id        = "AllowAPIGatewayInvokeOptionsTodoId"
+      [32m+[0m[0m statement_id_prefix = (known after apply)
+    }
+
+[1m  # aws_lambda_permission.apigw_options_todos[0m will be created
+[0m  [32m+[0m[0m resource "aws_lambda_permission" "apigw_options_todos" {
+      [32m+[0m[0m action              = "lambda:InvokeFunction"
+      [32m+[0m[0m function_name       = "api-handler"
+      [32m+[0m[0m id                  = (known after apply)
+      [32m+[0m[0m principal           = "apigateway.amazonaws.com"
+      [32m+[0m[0m region              = "us-east-1"
+      [32m+[0m[0m source_arn          = (known after apply)
+      [32m+[0m[0m statement_id        = "AllowAPIGatewayInvokeOptionsTodos"
+      [32m+[0m[0m statement_id_prefix = (known after apply)
+    }
+
+[1m  # aws_s3_bucket.frontend[0m will be created
+[0m  [32m+[0m[0m resource "aws_s3_bucket" "frontend" {
+      [32m+[0m[0m acceleration_status         = (known after apply)
+      [32m+[0m[0m acl                         = (known after apply)
+      [32m+[0m[0m arn                         = (known after apply)
+      [32m+[0m[0m bucket                      = "frontend-bucket"
+      [32m+[0m[0m bucket_domain_name          = (known after apply)
+      [32m+[0m[0m bucket_namespace            = (known after apply)
+      [32m+[0m[0m bucket_prefix               = (known after apply)
+      [32m+[0m[0m bucket_region               = (known after apply)
+      [32m+[0m[0m bucket_regional_domain_name = (known after apply)
+      [32m+[0m[0m force_destroy               = true
+      [32m+[0m[0m hosted_zone_id              = (known after apply)
+      [32m+[0m[0m id                          = (known after apply)
+      [32m+[0m[0m object_lock_enabled         = (known after apply)
+      [32m+[0m[0m policy                      = (known after apply)
+      [32m+[0m[0m region                      = "us-east-1"
+      [32m+[0m[0m request_payer               = (known after apply)
+      [32m+[0m[0m tags                        = {
+          [32m+[0m[0m "Owner"   = "FRONTEND-001"
+          [32m+[0m[0m "Purpose" = "FRONTEND-001 placement verification only (floci local)"
+        }
+      [32m+[0m[0m tags_all                    = {
+          [32m+[0m[0m "Owner"   = "FRONTEND-001"
+          [32m+[0m[0m "Purpose" = "FRONTEND-001 placement verification only (floci local)"
+        }
+      [32m+[0m[0m website_domain              = (known after apply)
+      [32m+[0m[0m website_endpoint            = (known after apply)
+
+      [32m+[0m[0m cors_rule (known after apply)
+
+      [32m+[0m[0m grant (known after apply)
+
+      [32m+[0m[0m lifecycle_rule (known after apply)
+
+      [32m+[0m[0m logging (known after apply)
+
+      [32m+[0m[0m object_lock_configuration (known after apply)
+
+      [32m+[0m[0m replication_configuration (known after apply)
+
+      [32m+[0m[0m server_side_encryption_configuration (known after apply)
+
+      [32m+[0m[0m versioning (known after apply)
+
+      [32m+[0m[0m website (known after apply)
+    }
+
+[1m  # terraform_data.todo_api_deployment[0m must be [1m[31mreplaced[0m
+[0m[31m-[0m/[32m+[0m[0m resource "terraform_data" "todo_api_deployment" {
+      [33m~[0m[0m id               = "aeb82809-1a6e-b584-99dc-00ef2ef8ec0d" -> (known after apply)
+      [33m~[0m[0m triggers_replace = [
+          [33m~[0m[0m "d4c69af43cec94458196ea0d6fd69505d326b6b0" -> (known after apply),
+        ]
+    }
+
+[1m  # terraform_data.todo_state_machine[0m will be updated in-place
+[0m  [33m~[0m[0m resource "terraform_data" "todo_state_machine" {
+        id     = "cc2e4a6a-e87e-d8a0-2032-316cdca6436b"
+      [33m~[0m[0m input  = {
+          [33m~[0m[0m persist_lambda_arn  = "arn:aws:lambda:us-east-1:000000000000:function:persist-todo" -> (known after apply)
+          [33m~[0m[0m role_arn            = "arn:aws:iam::000000000000:role/todo-sfn-exec" -> (known after apply)
+          [33m~[0m[0m validate_lambda_arn = "arn:aws:lambda:us-east-1:000000000000:function:validate-todo" -> (known after apply)
+        }
+      [33m~[0m[0m output = {
+          [31m-[0m[0m persist_lambda_arn  = "arn:aws:lambda:us-east-1:000000000000:function:persist-todo"
+          [31m-[0m[0m role_arn            = "arn:aws:iam::000000000000:role/todo-sfn-exec"
+          [31m-[0m[0m validate_lambda_arn = "arn:aws:lambda:us-east-1:000000000000:function:validate-todo"
+        } -> (known after apply)
+    }
+
+[1mPlan:[0m [0m23 to add, 1 to change, 1 to destroy.
+
+Changes to Outputs:
+  [33m~[0m[0m invoke_url        = "http://floci:4566/restapis/7a39271daa/dev/_user_request_" -> (known after apply)
+  [33m~[0m[0m rest_api_id       = "7a39271daa" -> (known after apply)
+[0m[1mterraform_data.todo_api_deployment: Destroying... [id=aeb82809-1a6e-b584-99dc-00ef2ef8ec0d][0m[0m
+[0m[1mterraform_data.todo_api_deployment: Destruction complete after 0s[0m
+[0m[1maws_api_gateway_rest_api.todo: Creating...[0m[0m
+[0m[1maws_iam_role.lambda_exec: Creating...[0m[0m
+[0m[1maws_iam_role.sfn_exec: Creating...[0m[0m
+[0m[1maws_s3_bucket.frontend: Creating...[0m[0m
+[0m[1maws_dynamodb_table.todos: Creating...[0m[0m
+[0m[1maws_api_gateway_rest_api.todo: Creation complete after 0s [id=c772e1b235][0m
+[0m[1maws_iam_role.sfn_exec: Creation complete after 0s [id=todo-sfn-exec][0m
+[0m[1maws_iam_role.lambda_exec: Creation complete after 0s [id=todo-lambda-exec][0m
+[0m[1maws_api_gateway_resource.todos: Creating...[0m[0m
+[0m[1maws_api_gateway_resource.todos: Creation complete after 0s [id=e225f985][0m
+[0m[1maws_api_gateway_method.post_todos: Creating...[0m[0m
+[0m[1maws_api_gateway_resource.todo_id: Creating...[0m[0m
+[0m[1maws_api_gateway_method.options_todos: Creating...[0m[0m
+[0m[1maws_api_gateway_resource.todo_id: Creation complete after 0s [id=d598f58c][0m
+[0m[1maws_api_gateway_method.options_todos: Creation complete after 0s [id=agm-c772e1b235-e225f985-OPTIONS][0m
+[0m[1maws_api_gateway_method.options_todo_id: Creating...[0m[0m
+[0m[1maws_api_gateway_method.get_todo: Creating...[0m[0m
+[0m[1maws_api_gateway_method.post_todos: Creation complete after 0s [id=agm-c772e1b235-e225f985-POST][0m
+[0m[1maws_api_gateway_method.options_todo_id: Creation complete after 0s [id=agm-c772e1b235-d598f58c-OPTIONS][0m
+[0m[1maws_api_gateway_method.get_todo: Creation complete after 0s [id=agm-c772e1b235-d598f58c-GET][0m
+[0m[1maws_s3_bucket.frontend: Creation complete after 0s [id=frontend-bucket][0m
+[0m[1maws_dynamodb_table.todos: Creation complete after 6s [id=Todos][0m
+[0m[1mdata.aws_iam_policy_document.lambda_inline: Reading...[0m[0m
+[0m[1mdata.aws_iam_policy_document.lambda_inline: Read complete after 0s [id=1607817428][0m
+[0m[1maws_lambda_function.api_handler: Creating...[0m[0m
+[0m[1maws_lambda_function.validate_todo: Creating...[0m[0m
+[0m[1maws_lambda_function.persist_todo: Creating...[0m[0m
+[0m[1maws_iam_role_policy.lambda_inline: Creating...[0m[0m
+[0m[1maws_iam_role_policy.lambda_inline: Creation complete after 0s [id=todo-lambda-exec:terraform-20260429161617768500000001][0m
+[0m[1maws_lambda_function.validate_todo: Creation complete after 5s [id=validate-todo][0m
+[0m[1maws_lambda_function.persist_todo: Still creating... [00m10s elapsed][0m[0m
+[0m[1maws_lambda_function.api_handler: Still creating... [00m10s elapsed][0m[0m
+[0m[1maws_lambda_function.persist_todo: Creation complete after 10s [id=persist-todo][0m
+[0m[1maws_lambda_function.api_handler: Creation complete after 15s [id=api-handler][0m
+[0m[1maws_api_gateway_integration.get_todo: Creating...[0m[0m
+[0m[1maws_api_gateway_integration.options_todo_id_int: Creating...[0m[0m
+[0m[1maws_api_gateway_integration.options_todos_int: Creating...[0m[0m
+[0m[1maws_lambda_permission.apigw_options_todo_id: Creating...[0m[0m
+[0m[1maws_lambda_permission.apigw: Creating...[0m[0m
+[0m[1maws_lambda_permission.apigw_options_todos: Creating...[0m[0m
+[0m[1maws_api_gateway_integration.post_todos: Creating...[0m[0m
+[0m[1maws_api_gateway_integration.post_todos: Creation complete after 0s [id=agi-c772e1b235-e225f985-POST][0m
+[0m[1maws_api_gateway_integration.options_todo_id_int: Creation complete after 0s [id=agi-c772e1b235-d598f58c-OPTIONS][0m
+[0m[1maws_api_gateway_integration.get_todo: Creation complete after 0s [id=agi-c772e1b235-d598f58c-GET][0m
+[0m[1maws_lambda_permission.apigw_options_todo_id: Creation complete after 0s [id=AllowAPIGatewayInvokeOptionsTodoId][0m
+[0m[1maws_api_gateway_integration.options_todos_int: Creation complete after 0s [id=agi-c772e1b235-e225f985-OPTIONS][0m
+[0m[1maws_lambda_permission.apigw_options_todos: Creation complete after 0s [id=AllowAPIGatewayInvokeOptionsTodos][0m
+[0m[1maws_lambda_permission.apigw: Creation complete after 0s [id=AllowAPIGatewayInvoke][0m
+[0m[1mterraform_data.todo_api_deployment: Creating...[0m[0m
+[0m[1mterraform_data.todo_api_deployment: Provisioning with 'local-exec'...[0m[0m
+[0m[1mterraform_data.todo_api_deployment (local-exec):[0m [0mExecuting: ["/bin/sh" "-c" "./../scripts/apply-api-deployment.sh"]
+[0m[1mterraform_data.todo_api_deployment: Creation complete after 2s [id=3b0309ae-17fc-7b11-c617-69e74d46ce51][0m
+[0m[1m[32m
+Apply complete! Resources: 23 added, 0 changed, 1 destroyed.[0m
+[0m[1m[32m
+Outputs:
+
+[0mfrontend_bucket = "frontend-bucket"
+frontend_url = "http://localhost:8080"
+invoke_url = "http://host.docker.internal:4566/restapis/c772e1b235/dev/_user_request_"
+rest_api_id = "c772e1b235"
+stage_name = "dev"
+state_machine_arn = "arn:aws:states:us-east-1:000000000000:stateMachine:todo-flow"
+table_name = "Todos"
+[warmup] api-handler: OK (attempt 1)
+[warmup] validate-todo: OK (attempt 1)
+[warmup] persist-todo: OK (attempt 1)
+[5/5] 出力
+frontend_bucket = "frontend-bucket"
+frontend_url = "http://localhost:8080"
+invoke_url = "http://host.docker.internal:4566/restapis/c772e1b235/dev/_user_request_"
+rest_api_id = "c772e1b235"
+stage_name = "dev"
+state_machine_arn = "arn:aws:states:us-east-1:000000000000:stateMachine:todo-flow"
+table_name = "Todos"
+scripts/apply-api-deployment.sh: line 4: ENDPOINT: ENDPOINT is required

@@ -1,0 +1,45 @@
+
+> floci-frontend@0.1.0 test:integration
+> ng run frontend:test-integration --watch=false --code-coverage --browsers=ChromeHeadlessCI && node scripts/check-coverage-threshold.js coverage/integration
+
+- Generating browser application bundles (phase: setup)...
+✔ Browser application bundle generation complete.
+[32m29 04 2026 16:12:33.769:INFO [karma-server]: [39mKarma v6.4.4 server started at http://localhost:9877/
+[32m29 04 2026 16:12:33.772:INFO [launcher]: [39mLaunching browsers ChromeHeadlessCI with concurrency unlimited
+[32m29 04 2026 16:12:33.774:INFO [launcher]: [39mStarting browser ChromeHeadless
+[32m29 04 2026 16:12:35.659:INFO [Chrome Headless 145.0.0.0 (Linux 0.0.0)]: [39mConnected on socket WjqJPs1crxPreaDwAAAB with id 40432149
+Chrome Headless 145.0.0.0 (Linux 0.0.0): Executed 0 of 17[32m SUCCESS[39m (0 secs / 0 secs)
+[1A[2KChrome Headless 145.0.0.0 (Linux 0.0.0): Executed 1 of 17[32m SUCCESS[39m (0 secs / 0.021 secs)
+[1A[2KChrome Headless 145.0.0.0 (Linux 0.0.0): Executed 2 of 17[32m SUCCESS[39m (0 secs / 0.026 secs)
+[1A[2KChrome Headless 145.0.0.0 (Linux 0.0.0): Executed 3 of 17[32m SUCCESS[39m (0 secs / 0.029 secs)
+[1A[2KChrome Headless 145.0.0.0 (Linux 0.0.0): Executed 4 of 17[32m SUCCESS[39m (0 secs / 0.147 secs)
+[1A[2KChrome Headless 145.0.0.0 (Linux 0.0.0): Executed 5 of 17[32m SUCCESS[39m (0 secs / 0.158 secs)
+[1A[2KChrome Headless 145.0.0.0 (Linux 0.0.0): Executed 6 of 17[32m SUCCESS[39m (0 secs / 0.169 secs)
+[1A[2KChrome Headless 145.0.0.0 (Linux 0.0.0): Executed 7 of 17[32m SUCCESS[39m (0 secs / 0.181 secs)
+[1A[2KChrome Headless 145.0.0.0 (Linux 0.0.0): Executed 8 of 17[32m SUCCESS[39m (0 secs / 0.186 secs)
+[1A[2KChrome Headless 145.0.0.0 (Linux 0.0.0): Executed 9 of 17[32m SUCCESS[39m (0 secs / 0.192 secs)
+[1A[2KChrome Headless 145.0.0.0 (Linux 0.0.0): Executed 10 of 17[32m SUCCESS[39m (0 secs / 0.198 secs)
+[1A[2KChrome Headless 145.0.0.0 (Linux 0.0.0): Executed 11 of 17[32m SUCCESS[39m (0 secs / 0.202 secs)
+[1A[2KChrome Headless 145.0.0.0 (Linux 0.0.0): Executed 12 of 17[32m SUCCESS[39m (0 secs / 0.207 secs)
+[1A[2KChrome Headless 145.0.0.0 (Linux 0.0.0): Executed 13 of 17[32m SUCCESS[39m (0 secs / 0.214 secs)
+[1A[2KChrome Headless 145.0.0.0 (Linux 0.0.0): Executed 14 of 17[32m SUCCESS[39m (0 secs / 0.218 secs)
+[1A[2KChrome Headless 145.0.0.0 (Linux 0.0.0): Executed 15 of 17[32m SUCCESS[39m (0 secs / 0.221 secs)
+[1A[2KChrome Headless 145.0.0.0 (Linux 0.0.0): Executed 16 of 17[32m SUCCESS[39m (0 secs / 0.233 secs)
+[1A[2KChrome Headless 145.0.0.0 (Linux 0.0.0): Executed 17 of 17[32m SUCCESS[39m (0 secs / 0.239 secs)
+[1A[2KChrome Headless 145.0.0.0 (Linux 0.0.0): Executed 17 of 17[32m SUCCESS[39m (0.293 secs / 0.239 secs)
+[32mTOTAL: 17 SUCCESS[39m
+
+=============================== Coverage summary ===============================
+Statements   : 98.63% ( 72/73 )
+Branches     : 80% ( 28/35 )
+Functions    : 100% ( 26/26 )
+Lines        : 98.27% ( 57/58 )
+================================================================================
+✔ Browser application bundle generation complete.
+✔ Browser application bundle generation complete.
+OK statements 98.81% (>= 80%)
+OK branches   80.00% (>= 70%)
+OK functions  100.00% (>= 90%)
+OK lines      98.28% (>= 80%)
+
+[check-coverage-threshold] OK (coverage/integration)
