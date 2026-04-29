@@ -1,0 +1,93 @@
+# =============================================================================
+# 開発セットアップ設定ファイル（SSOT: Single Source of Truth）
+# =============================================================================
+# 生成日時: 2026-04-29T12:16:26.179+00:00
+# スキル: create-setup-yaml（対話的生成）
+# =============================================================================
+
+task_name: "floci-apigateway-csharp に Angular フロントエンド追加（テスト・CI 含む）"
+ticket_id: "FRONTEND-001"
+
+# =============================================================================
+# 説明（階層化フォーマット）
+# =============================================================================
+description:
+  overview: |
+    floci-apigateway-csharp に Angular 製の新規フロントエンドを追加し、
+    既存 .NET 8 API（API Gateway 経由）を呼び出す UI を提供する。
+
+  purpose: |
+    API バックエンドのみのサンプルに UI 層を追加し、
+    floci 上での API Gateway + Lambda + Step Functions + DynamoDB 構成を
+    ブラウザから操作できる形にして、デモ性と E2E 検証性を高める。
+
+  background: |
+    対象リポジトリは .NET 8 Lambda と Terraform による floci(LocalStack 相当)
+    向け Todo API サンプルで、現在はフロントエンドが存在しない。
+    既存 CI は GitLab CI 上で lint、unit、integration、e2e を実行している。
+    今回は Angular フロントエンドを追加し、S3 + CloudFront 相当のローカル構成で
+    配信・接続できるようにしたうえで、Playwright E2E をローカルおよび CI で実行する。
+
+  requirements:
+    functional:
+      - "Angular アプリで Todo の作成（POST /todos）と取得（GET /todos/{id}）ができること"
+      - "既存 API の terraform output または設定ファイルから API ベース URL を解決できること"
+      - "フロントエンドを S3 + CloudFront 相当のローカル構成で配信し、API と連携できること"
+      - "Playwright E2E でブラウザから Todo 作成・取得の一連の動作を検証できること"
+    non_functional:
+      - "実 AWS への接続を行わず、floci/LocalStack 相当のローカルエンドポイントのみを使用すること"
+      - "GitLab CI で既存 .NET テストと追加フロントエンドテストが全て通ること"
+      - "ローカルで Angular 開発サーバーまたは S3 + CloudFront 相当構成を起動して動作確認できること"
+      - "CI では再現性のある Node.js / npm / Playwright 実行環境を使用すること"
+
+  acceptance_criteria:
+    - "ローカルで Angular フロントエンドを起動し、floci 上の API を叩いて Todo を作成・取得できること"
+    - "ローカルで S3 + CloudFront 相当の配信構成を起動し、フロントエンド経由の Todo 作成・取得ができること"
+    - "Angular の単体テスト（component/service）がローカルと CI で実行され、全て通過すること"
+    - "Angular の結合テスト（HttpClient/API 接続境界など）がローカルと CI で実行され、全て通過すること"
+    - "Playwright E2E が floci + terraform apply 済み API と S3 + CloudFront 相当フロントエンドに対してローカルと CI で実行され、全て通過すること"
+    - "既存 .NET 側の lint/unit/integration/e2e ジョブが引き続き成功すること"
+    - "README または同等のドキュメントにローカル起動、テスト、CI 実行方法が記載されていること"
+
+  test_scope:
+    - unit
+    - integration
+    - e2e
+
+  scope:
+    - "対象リポジトリ内に新規 Angular プロジェクトを追加すること"
+    - "Angular 単体テスト、結合テスト、Playwright E2E を追加すること"
+    - "S3 + CloudFront 相当のローカル配信構成を追加または既存 floci/Terraform 構成へ統合すること"
+    - "GitLab CI にフロントエンドの install/build/test/e2e 実行を追加すること"
+    - "ローカル実行手順と CI 実行手順をドキュメント化すること"
+
+  out_of_scope:
+    - "認証・認可の追加"
+    - "本番 AWS へのデプロイ"
+    - "CloudFront/S3 の本番運用向け設定や CDN 最適化"
+    - "既存 API の大幅な仕様変更"
+
+  notes: |
+    ticket_id はユーザー承認により FRONTEND-001 とする。
+    GitLab 対象リポジトリ floci-apigateway-csharp を editable として扱う。
+    https://github.com/floci-io/floci は readonly の参考リポジトリとして追加する。
+    Angular バージョン、テストランナー、ディレクトリ名、API 設定方式、
+    CI ジョブ分割は brainstorming/design で詳細化する。
+
+# =============================================================================
+# リポジトリ設定
+# =============================================================================
+related_repositories:
+  - name: "floci"
+    url: "https://github.com/floci-io/floci.git"
+
+target_repositories:
+  - name: "floci-apigateway-csharp"
+    url: "https://gitlab.com/nagasaka-experimental/floci-apigateway-csharp.git"
+    base_branch: "main"
+
+# オプション設定
+options:
+  create_design_document: true
+  design_document_dir: "docs"
+  submodules_dir: "submodules"
