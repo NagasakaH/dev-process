@@ -1,0 +1,317 @@
+[OK] floci healthy after 1s
+[1/5] floci 起動
+ Container floci  Running
+ Container floci-nginx  Running
+[2/5] floci ヘルスチェック (http://host.docker.internal:4566)
+[3/5] Lambda zip パッケージ (arm64)
+Tool 'amazon.lambda.tools' was reinstalled with the stable version (version '6.0.5').
+Amazon Lambda Tools for .NET Core applications (6.0.5)
+Project Home: https://github.com/aws/aws-extensions-for-dotnet-cli, https://github.com/aws/aws-lambda-dotnet
+	
+Executing publish command
+Deleted previous publish folder
+... invoking 'dotnet publish', working folder '/workspaces/dev-process/submodules/editable/floci-apigateway-csharp/src/TodoApi.Lambda/bin/Release/net8.0/publish'
+... dotnet publish "/workspaces/dev-process/submodules/editable/floci-apigateway-csharp/src/TodoApi.Lambda" --output "/workspaces/dev-process/submodules/editable/floci-apigateway-csharp/src/TodoApi.Lambda/bin/Release/net8.0/publish" --configuration "Release" --framework "net8.0" /p:GenerateRuntimeConfigurationFiles=true --runtime linux-arm64 --self-contained False 
+... publish:   Determining projects to restore...
+... publish:   All projects are up-to-date for restore.
+... publish:   TodoApi.Lambda -> /workspaces/dev-process/submodules/editable/floci-apigateway-csharp/src/TodoApi.Lambda/bin/Release/net8.0/linux-arm64/TodoApi.Lambda.dll
+... publish:   TodoApi.Lambda -> /workspaces/dev-process/submodules/editable/floci-apigateway-csharp/src/TodoApi.Lambda/bin/Release/net8.0/publish/
+Changed permissions on published file (chmod +rx AWSSDK.DynamoDBv2.dll).
+Changed permissions on published file (chmod +rx Amazon.Lambda.APIGatewayEvents.dll).
+Changed permissions on published file (chmod +rx TodoApi.Lambda.dll).
+Changed permissions on published file (chmod +rx AWSSDK.Core.dll).
+Changed permissions on published file (chmod +rx TodoApi.Lambda.pdb).
+Changed permissions on published file (chmod +rx Amazon.Lambda.Serialization.SystemTextJson.dll).
+Changed permissions on published file (chmod +rx TodoApi.Lambda.runtimeconfig.json).
+Changed permissions on published file (chmod +rx Amazon.Lambda.Core.dll).
+Changed permissions on published file (chmod +rx AWSSDK.StepFunctions.dll).
+Changed permissions on published file (chmod +rx TodoApi.Lambda.deps.json).
+Zipping publish folder /workspaces/dev-process/submodules/editable/floci-apigateway-csharp/src/TodoApi.Lambda/bin/Release/net8.0/publish to /workspaces/dev-process/submodules/editable/floci-apigateway-csharp/infra/lambda/TodoApi.Lambda.zip
+... zipping:   adding: AWSSDK.DynamoDBv2.dll (deflated 69%)
+... zipping:   adding: Amazon.Lambda.APIGatewayEvents.dll (deflated 54%)
+... zipping:   adding: TodoApi.Lambda.dll (deflated 55%)
+... zipping:   adding: AWSSDK.Core.dll (deflated 81%)
+... zipping:   adding: TodoApi.Lambda.pdb (deflated 42%)
+... zipping:   adding: Amazon.Lambda.Serialization.SystemTextJson.dll (deflated 44%)
+... zipping:   adding: TodoApi.Lambda.runtimeconfig.json (deflated 38%)
+... zipping:   adding: Amazon.Lambda.Core.dll (deflated 45%)
+... zipping:   adding: AWSSDK.StepFunctions.dll (deflated 68%)
+... zipping:   adding: TodoApi.Lambda.deps.json (deflated 74%)
+Created publish archive (/workspaces/dev-process/submodules/editable/floci-apigateway-csharp/infra/lambda/TodoApi.Lambda.zip).
+Lambda project successfully packaged: /workspaces/dev-process/submodules/editable/floci-apigateway-csharp/infra/lambda/TodoApi.Lambda.zip
+[4/5] Terraform apply
+[0m[1mInitializing the backend...[0m
+[0m[1mInitializing provider plugins...[0m
+- terraform.io/builtin/terraform is built in to Terraform
+- Reusing previous version of hashicorp/aws from the dependency lock file
+- Using previously-installed hashicorp/aws v6.42.0
+
+[0m[1m[32mTerraform has been successfully initialized![0m[32m[0m
+[0m[32m
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.[0m
+[0m[1mdata.aws_iam_policy_document.sfn_assume: Reading...[0m[0m
+[0m[1mdata.aws_iam_policy_document.lambda_assume: Reading...[0m[0m
+[0m[1maws_api_gateway_rest_api.todo: Refreshing state... [id=0b47cf6567][0m
+[0m[1maws_s3_bucket.frontend: Refreshing state... [id=frontend-bucket][0m
+[0m[1maws_dynamodb_table.todos: Refreshing state... [id=Todos][0m
+[0m[1mdata.aws_iam_policy_document.sfn_assume: Read complete after 0s [id=4022981484][0m
+[0m[1mdata.aws_iam_policy_document.lambda_assume: Read complete after 0s [id=2690255455][0m
+[0m[1maws_iam_role.sfn_exec: Refreshing state... [id=todo-sfn-exec][0m
+[0m[1maws_iam_role.lambda_exec: Refreshing state... [id=todo-lambda-exec][0m
+[0m[1maws_lambda_function.validate_todo: Refreshing state... [id=validate-todo][0m
+[0m[1maws_api_gateway_resource.todos: Refreshing state... [id=d5ce982f][0m
+[0m[1mdata.aws_iam_policy_document.lambda_inline: Reading...[0m[0m
+[0m[1maws_lambda_function.persist_todo: Refreshing state... [id=persist-todo][0m
+[0m[1maws_lambda_function.api_handler: Refreshing state... [id=api-handler][0m
+[0m[1mdata.aws_iam_policy_document.lambda_inline: Read complete after 0s [id=1607817428][0m
+[0m[1maws_iam_role_policy.lambda_inline: Refreshing state... [id=todo-lambda-exec:terraform-20260429170939039000000001][0m
+[0m[1maws_api_gateway_resource.todo_id: Refreshing state... [id=931db03f][0m
+[0m[1maws_api_gateway_method.post_todos: Refreshing state... [id=agm-0b47cf6567-d5ce982f-POST][0m
+[0m[1maws_api_gateway_method.options_todos: Refreshing state... [id=agm-0b47cf6567-d5ce982f-OPTIONS][0m
+[0m[1maws_api_gateway_method.get_todo: Refreshing state... [id=agm-0b47cf6567-931db03f-GET][0m
+[0m[1maws_api_gateway_method.options_todo_id: Refreshing state... [id=agm-0b47cf6567-931db03f-OPTIONS][0m
+[0m[1mterraform_data.todo_state_machine: Refreshing state... [id=12995f2c-a830-b050-13c5-38c01f0ca35d][0m
+[0m[1maws_api_gateway_integration.options_todos_int: Refreshing state... [id=agi-0b47cf6567-d5ce982f-OPTIONS][0m
+[0m[1maws_api_gateway_integration.get_todo: Refreshing state... [id=agi-0b47cf6567-931db03f-GET][0m
+[0m[1maws_api_gateway_integration.post_todos: Refreshing state... [id=agi-0b47cf6567-d5ce982f-POST][0m
+[0m[1maws_lambda_permission.apigw_options_todos: Refreshing state... [id=AllowAPIGatewayInvokeOptionsTodos][0m
+[0m[1maws_lambda_permission.apigw: Refreshing state... [id=AllowAPIGatewayInvoke][0m
+[0m[1maws_lambda_permission.apigw_options_todo_id: Refreshing state... [id=AllowAPIGatewayInvokeOptionsTodoId][0m
+[0m[1maws_api_gateway_integration.options_todo_id_int: Refreshing state... [id=agi-0b47cf6567-931db03f-OPTIONS][0m
+[0m[1mterraform_data.todo_api_deployment: Refreshing state... [id=6571c2ad-734a-e502-fa37-594c242d37e1][0m
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  [33m~[0m update in-place[0m
+
+Terraform will perform the following actions:
+
+[1m  # aws_api_gateway_integration.get_todo[0m will be updated in-place
+[0m  [33m~[0m[0m resource "aws_api_gateway_integration" "get_todo" {
+        id                      = "agi-0b47cf6567-931db03f-GET"
+      [33m~[0m[0m timeout_milliseconds    = 0 [33m->[0m[0m 29000
+        [90m# (18 unchanged attributes hidden)[0m[0m
+    }
+
+[1m  # aws_api_gateway_integration.options_todo_id_int[0m will be updated in-place
+[0m  [33m~[0m[0m resource "aws_api_gateway_integration" "options_todo_id_int" {
+        id                      = "agi-0b47cf6567-931db03f-OPTIONS"
+      [33m~[0m[0m timeout_milliseconds    = 0 [33m->[0m[0m 29000
+        [90m# (18 unchanged attributes hidden)[0m[0m
+    }
+
+[1m  # aws_api_gateway_integration.options_todos_int[0m will be updated in-place
+[0m  [33m~[0m[0m resource "aws_api_gateway_integration" "options_todos_int" {
+        id                      = "agi-0b47cf6567-d5ce982f-OPTIONS"
+      [33m~[0m[0m timeout_milliseconds    = 0 [33m->[0m[0m 29000
+        [90m# (18 unchanged attributes hidden)[0m[0m
+    }
+
+[1m  # aws_api_gateway_integration.post_todos[0m will be updated in-place
+[0m  [33m~[0m[0m resource "aws_api_gateway_integration" "post_todos" {
+        id                      = "agi-0b47cf6567-d5ce982f-POST"
+      [33m~[0m[0m timeout_milliseconds    = 0 [33m->[0m[0m 29000
+        [90m# (18 unchanged attributes hidden)[0m[0m
+    }
+
+[1m  # aws_api_gateway_method.get_todo[0m will be updated in-place
+[0m  [33m~[0m[0m resource "aws_api_gateway_method" "get_todo" {
+        id                   = "agm-0b47cf6567-931db03f-GET"
+      [33m~[0m[0m request_parameters   = {
+          [32m+[0m[0m "method.request.path.id" = true
+        }
+        [90m# (11 unchanged attributes hidden)[0m[0m
+    }
+
+[1mPlan:[0m [0m0 to add, 5 to change, 0 to destroy.
+[0m[1maws_api_gateway_integration.post_todos: Modifying... [id=agi-0b47cf6567-d5ce982f-POST][0m[0m
+[0m[1maws_api_gateway_integration.options_todo_id_int: Modifying... [id=agi-0b47cf6567-931db03f-OPTIONS][0m[0m
+[0m[1maws_api_gateway_method.get_todo: Modifying... [id=agm-0b47cf6567-931db03f-GET][0m[0m
+[0m[1maws_api_gateway_integration.options_todos_int: Modifying... [id=agi-0b47cf6567-d5ce982f-OPTIONS][0m[0m
+[0m[1maws_api_gateway_method.get_todo: Modifications complete after 1s [id=agm-0b47cf6567-931db03f-GET][0m
+[0m[1maws_api_gateway_integration.get_todo: Modifying... [id=agi-0b47cf6567-931db03f-GET][0m[0m
+[0m[1maws_api_gateway_integration.options_todo_id_int: Modifications complete after 4s [id=agi-0b47cf6567-931db03f-OPTIONS][0m
+[0m[1maws_api_gateway_integration.options_todos_int: Modifications complete after 4s [id=agi-0b47cf6567-d5ce982f-OPTIONS][0m
+[0m[1maws_api_gateway_integration.post_todos: Modifications complete after 4s [id=agi-0b47cf6567-d5ce982f-POST][0m
+[0m[1maws_api_gateway_integration.get_todo: Modifications complete after 3s [id=agi-0b47cf6567-931db03f-GET][0m
+[0m[1m[32m
+Apply complete! Resources: 0 added, 5 changed, 0 destroyed.[0m
+[0m[1m[32m
+Outputs:
+
+[0mfrontend_bucket = "frontend-bucket"
+frontend_url = "http://localhost:8080"
+invoke_url = "http://host.docker.internal:4566/restapis/0b47cf6567/dev/_user_request_"
+rest_api_id = "0b47cf6567"
+stage_name = "dev"
+state_machine_arn = "arn:aws:states:us-east-1:000000000000:stateMachine:todo-flow"
+table_name = "Todos"
+[warmup] api-handler: OK (attempt 1)
+[warmup] validate-todo: OK (attempt 1)
+[warmup] persist-todo: OK (attempt 1)
+[5/5] 出力
+frontend_bucket = "frontend-bucket"
+frontend_url = "http://localhost:8080"
+invoke_url = "http://host.docker.internal:4566/restapis/0b47cf6567/dev/_user_request_"
+rest_api_id = "0b47cf6567"
+stage_name = "dev"
+state_machine_arn = "arn:aws:states:us-east-1:000000000000:stateMachine:todo-flow"
+table_name = "Todos"
+[warmup] api-handler: OK (attempt 1)
+[warmup] validate-todo: OK (attempt 1)
+[warmup] persist-todo: OK (attempt 1)
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: 'floci-frontend@0.1.0',
+npm warn EBADENGINE   required: { node: '^20.11.0', npm: '^10.0.0' },
+npm warn EBADENGINE   current: { node: 'v24.14.0', npm: '11.9.0' }
+npm warn EBADENGINE }
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated critters@0.0.24: Ownership of Critters has moved to the Nuxt team, who will be maintaining the project going forward. If you'd like to keep using Critters, please switch to the actively-maintained fork at https://github.com/danielroe/beasties
+npm warn deprecated tar@6.2.1: Old versions of tar are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+
+added 1051 packages, and audited 1052 packages in 17s
+
+216 packages are looking for funding
+  run `npm fund` for details
+
+51 vulnerabilities (6 low, 15 moderate, 30 high)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+
+> floci-frontend@0.1.0 build
+> ng build --configuration=production
+
+❯ Building...
+✔ Building...
+Initial chunk files   | Names         |  Raw size | Estimated transfer size
+main-IHB5ML7F.js      | main          | 180.78 kB |                49.38 kB
+polyfills-FFHMD2TL.js | polyfills     |  34.52 kB |                11.28 kB
+styles-YLW6RFA3.css   | styles        |  61 bytes |                61 bytes
+
+                      | Initial total | 215.36 kB |                60.72 kB
+
+Application bundle generation complete. [1.887 seconds]
+
+Output location: /workspaces/dev-process/submodules/editable/floci-apigateway-csharp/frontend/dist
+
+[OK] frontend built at frontend/dist/
+Completed 17.7 KiB/228.8 KiB (1.5 MiB/s) with 6 file(s) remainingCompleted 17.8 KiB/228.8 KiB (1.3 MiB/s) with 6 file(s) remainingupload: frontend/dist/assets/config.json to s3://frontend-bucket/assets/config.json
+Completed 17.8 KiB/228.8 KiB (1.3 MiB/s) with 5 file(s) remainingupload: frontend/dist/3rdpartylicenses.txt to s3://frontend-bucket/3rdpartylicenses.txt
+Completed 17.8 KiB/228.8 KiB (1.3 MiB/s) with 4 file(s) remainingCompleted 18.5 KiB/228.8 KiB (1.2 MiB/s) with 4 file(s) remainingupload: frontend/dist/index.html to s3://frontend-bucket/index.html
+Completed 18.5 KiB/228.8 KiB (1.2 MiB/s) with 3 file(s) remainingCompleted 52.2 KiB/228.8 KiB (2.6 MiB/s) with 3 file(s) remainingupload: frontend/dist/polyfills-FFHMD2TL.js to s3://frontend-bucket/polyfills-FFHMD2TL.js
+Completed 52.2 KiB/228.8 KiB (2.6 MiB/s) with 2 file(s) remainingCompleted 228.7 KiB/228.8 KiB (10.9 MiB/s) with 2 file(s) remainingupload: frontend/dist/main-IHB5ML7F.js to s3://frontend-bucket/main-IHB5ML7F.js
+Completed 228.7 KiB/228.8 KiB (10.9 MiB/s) with 1 file(s) remainingCompleted 228.8 KiB/228.8 KiB (10.8 MiB/s) with 1 file(s) remainingupload: frontend/dist/styles-YLW6RFA3.css to s3://frontend-bucket/styles-YLW6RFA3.css
+[OK] frontend deployed to s3://frontend-bucket/
+[OK] frontend dist copied into floci-nginx:/usr/share/nginx/html/
+<testsuites id="" name="" tests="6" failures="2" skipped="1" errors="0" time="43.23827099999999">
+<testsuite name="todo.spec.ts" timestamp="2026-04-29T17:14:02.584Z" hostname="chromium" tests="6" failures="2" skipped="1" time="39.157" errors="0">
+<testcase name="Todo flow E2E › E2E-1: title を作成し ID を控えて GET で同じ title が表示される" classname="todo.spec.ts" time="30.085">
+<failure message="todo.spec.ts:4:7 E2E-1: title を作成し ID を控えて GET で同じ title が表示される" type="FAILURE">
+<![CDATA[  [chromium] › todo.spec.ts:4:7 › Todo flow E2E › E2E-1: title を作成し ID を控えて GET で同じ title が表示される ───
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.textContent: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByTestId('created')
+
+
+       6 |     await page.getByTestId('title-input').fill(`buy milk ${Date.now()}`);
+       7 |     await page.getByTestId('submit-btn').click();
+    >  8 |     const created = await page.getByTestId('created').textContent();
+         |                                                       ^
+       9 |     expect(created).toMatch(/作成しました:/);
+      10 |     const id = (created ?? '').replace(/^.*作成しました:\s*/, '').trim();
+      11 |     expect(id.length).toBeGreaterThan(0);
+
+        at /workspaces/dev-process/submodules/editable/floci-apigateway-csharp/frontend/e2e/todo.spec.ts:8:55
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/todo-Todo-flow-E2E-E2E-1-t-5372c-D-を控えて-GET-で同じ-title-が表示される-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/todo-Todo-flow-E2E-E2E-1-t-5372c-D-を控えて-GET-で同じ-title-が表示される-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|test-results/todo-Todo-flow-E2E-E2E-1-t-5372c-D-を控えて-GET-で同じ-title-が表示される-chromium/trace.zip]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Todo flow E2E › E2E-2: /foo/bar を直接開いても Angular ルータが index.html を返す" classname="todo.spec.ts" time="0.997">
+</testcase>
+<testcase name="Todo flow E2E › E2E-3: console.error が出ず OPTIONS=204 / POST=201 が観測される" classname="todo.spec.ts" time="5.898">
+<failure message="todo.spec.ts:24:7 E2E-3: console.error が出ず OPTIONS=204 / POST=201 が観測される" type="FAILURE">
+<![CDATA[  [chromium] › todo.spec.ts:24:7 › Todo flow E2E › E2E-3: console.error が出ず OPTIONS=204 / POST=201 が観測される 
+
+    Error: Timed out 5000ms waiting for expect(locator).toBeVisible()
+
+    Locator: getByTestId('created')
+    Expected: visible
+    Received: <element(s) not found>
+    Call log:
+      - expect.toBeVisible with timeout 5000ms
+      - waiting for getByTestId('created')
+
+
+      38 |     await page.getByTestId('title-input').fill(`cors ${Date.now()}`);
+      39 |     await page.getByTestId('submit-btn').click();
+    > 40 |     await expect(page.getByTestId('created')).toBeVisible();
+         |                                               ^
+      41 |
+      42 |     expect(postStatuses).toContain(201);
+      43 |     // OPTIONS は preflight が走った場合 204 が観測される (cross-origin の場合)
+
+        at /workspaces/dev-process/submodules/editable/floci-apigateway-csharp/frontend/e2e/todo.spec.ts:40:47
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/todo-Todo-flow-E2E-E2E-3-c-bb325-OPTIONS-204-POST-201-が観測される-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/todo-Todo-flow-E2E-E2E-3-c-bb325-OPTIONS-204-POST-201-が観測される-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|test-results/todo-Todo-flow-E2E-E2E-3-c-bb325-OPTIONS-204-POST-201-が観測される-chromium/trace.zip]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Todo flow E2E › E2E-4: title 空送信で errors[0] が UI に表示される" classname="todo.spec.ts" time="1.283">
+</testcase>
+<testcase name="Todo flow E2E › E2E-5: POST /todos のレスポンスを 500 にモックすると &quot;サーバエラーが発生しました&quot; が表示される" classname="todo.spec.ts" time="0.894">
+</testcase>
+<testcase name="Todo flow E2E › E2E-6: WEB_BASE_URL 未設定で web-e2e.sh が exit 1 (shell 側で検証, task07)" classname="todo.spec.ts" time="0">
+<properties>
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+</testsuites>
+
+  Serving HTML report at http://localhost:9323. Press Ctrl+C to quit.

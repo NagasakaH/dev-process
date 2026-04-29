@@ -1,0 +1,4 @@
+Test run for /workspaces/dev-process/submodules/editable/floci-apigateway-csharp/tests/TodoApi.IntegrationTests/bin/Debug/net8.0/TodoApi.IntegrationTests.dll (.NETCoreApp,Version=v8.0)
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:    12, Skipped:     0, Total:    12, Duration: 519 ms - TodoApi.IntegrationTests.dll (net8.0)
