@@ -21,12 +21,12 @@
 
 ## 目的
 
-`*.spec.ts` (unit) と `*.integration.spec.ts` (integration) を、karma config / tsconfig.spec / angular.json target / npm scripts レベルで分離する。`coverageReporter.check.global` で閾値強制し、未達時 CI fail させる (RD-005 / RD-008)。
+`*.spec.ts` (unit) と `*.integration.spec.ts` (integration) を、karma config / tsconfig.spec / angular.json target / npm scripts レベルで分離する。`coverageReporter.check.global` で **最初から最終閾値** (statements:80 / branches:70 / functions:90 / lines:80) を強制し、未達時 CI fail させる (RD-005 / RD-008 / RP-006)。**暫定的な低閾値運用は禁止**。
 
 ## 実装ステップ (TDD: RED-GREEN-REFACTOR)
 
 ### RED
-1. `frontend/src/app/__demo__/sample.spec.ts` (一時) と `frontend/src/app/__demo__/sample.integration.spec.ts` (一時) を作成 (ダミー `expect(true).toBe(true)`)
+1. `frontend/src/app/__demo__/sample.spec.ts` (一時) と `frontend/src/app/__demo__/sample.integration.spec.ts` (一時) を作成 (ダミー `expect(true).toBe(true)`)。**本タスク完了時に削除する一時ファイルである**ことを明示するため、ファイル冒頭に `// TEMPORARY: removed before task05 completion (RP-018)` コメントを必ず付ける
 2. `cd frontend && npm run test:unit` がまだ未設定で失敗 / `npm run test:integration` も失敗することを確認
 
 ### GREEN
@@ -53,10 +53,10 @@
    }
    ```
 9. `karma-jasmine` / `karma-chrome-launcher` / `karma-junit-reporter` / `karma-coverage` / `jasmine-core` を devDependency に追加
-10. `cd frontend && npm run test:unit` / `npm run test:integration` がダミー spec で **GREEN** (coverage 閾値はダミー spec のみで `0%` のため意図的に低い閾値を一時設定し、後続タスクで実コードと spec が増えた段階で再評価。**ただし最終 PR 時点では §1.4 の閾値を満たすこと**)
+10. `__demo__/*.spec.ts` を **本タスク内で必ず削除** したうえで `cd frontend && npm run test:unit` / `npm run test:integration` を実行する。後続タスクが追加する実 spec によって閾値を満たす形にすること。**閾値の一時引き下げは禁止 (RP-006)**。`__demo__` を残したままでは coverage が 0% で fail するため、本タスク GREEN 完了は「実 spec を 1 件以上含めるか、`__demo__` 削除後に dummy 状態でのテスト構成検証 (`ng test --dry-run` 相当) のみで判定」とする
 
 ### REFACTOR
-11. ダミー `__demo__` spec を削除し、後続タスクが追加する `*.spec.ts` を待つ前提とする
+11. `__demo__` ディレクトリが消えていることを `test ! -d frontend/src/app/__demo__` で検証 (RP-018)
 12. `ChromeHeadlessCI` の launcher 定義を `karma.conf.js` 共通モジュール化
 13. coverage 出力先 `coverage/unit/` / `coverage/integration/` を分離
 
@@ -75,8 +75,9 @@
 
 - [ ] `npm run test:unit` がローカルで成功 (ChromeHeadlessCI)
 - [ ] `npm run test:integration` がローカルで成功
-- [ ] coverage 閾値設定 (lines:80 / statements:80 / branches:70 / functions:90) が両 karma config に存在
+- [ ] coverage 閾値設定が **最初から最終値** (statements:80 / branches:70 / functions:90 / lines:80) で両 karma config に存在 (RP-006、暫定低閾値禁止)
 - [ ] `*.spec.ts` と `*.integration.spec.ts` が確実に分離される
+- [ ] `test ! -d frontend/src/app/__demo__` が真（`__demo__` ディレクトリが存在しない、RP-018）
 - [ ] result.md 作成
 
 ## コミット

@@ -34,11 +34,11 @@
 ### GREEN
 3. `.gitlab-ci.yml` に下記を追加 (`02_interface-api-design.md` §7 を厳守):
    - `.node` テンプレート (image: `node:20.11-bullseye-slim`、cache: `frontend/node_modules`, `~/.npm`、key は `frontend/package-lock.json` baseline)
-   - `web-lint`: stage `lint` / image `node:20.11-bullseye-slim` / `cd frontend && npm ci && npm run lint`
-   - `web-unit`: stage `unit` / image `mcr.microsoft.com/playwright:v1.45.3-jammy` / `cd frontend && npm ci && npm run test:unit -- --reporters=junit,coverage` / artifacts `junit:` 設定
-   - `web-integration`: stage `integration` / 同 image / `npm run test:integration -- --reporters=junit,coverage`
-   - `web-e2e`: stage `e2e` / 同 image / **DinD service** + `DOCKER_HOST=tcp://docker:2375` / `DOCKER_TLS_CERTDIR=""` / `FF_NETWORK_PER_BUILD: "true"` / `WEB_BASE_URL: "http://docker:8080"` / `AWS_ENDPOINT_URL: "http://docker:4566"` / `AWS_*=test` / before_script で `apt-get install docker.io docker-compose-plugin awscli` + `docker info` / script で `docker compose up -d floci nginx` → `wait-floci-healthy.sh` → `deploy-local.sh` → `build-frontend.sh` → `deploy-frontend.sh` → `web-e2e.sh` / after_script `docker compose down -v || true` / artifacts `frontend/test-results/, frontend/playwright-report/` + `reports.junit`
-4. 全 4 ジョブの先頭で `scripts/check-test-env.sh` を実行
+   - `web-lint`: stage `lint` / image `node:20.11-bullseye-slim` / `bash scripts/check-test-env.sh lint` (RP-001 — Node/npm のみ。docker/terraform/aws/dotnet を要求しない) → `cd frontend && npm ci && npm run lint`
+   - `web-unit`: stage `unit` / image `mcr.microsoft.com/playwright:v1.45.3-jammy` / `bash scripts/check-test-env.sh unit` → `cd frontend && npm ci && npm run test:unit -- --reporters=junit,coverage` / artifacts `junit:` 設定
+   - `web-integration`: stage `integration` / 同 image / `bash scripts/check-test-env.sh integration` → `npm run test:integration -- --reporters=junit,coverage`
+   - `web-e2e`: stage `e2e` / 同 image / **DinD service** + `DOCKER_HOST=tcp://docker:2375` / `DOCKER_TLS_CERTDIR=""` / `FF_NETWORK_PER_BUILD: "true"` / `WEB_BASE_URL: "http://docker:8080"` / `AWS_ENDPOINT_URL: "http://docker:4566"` / `AWS_*=test` / before_script で `apt-get install docker.io docker-compose-plugin awscli` + `docker info` + `bash scripts/check-test-env.sh e2e` / script で `docker compose up -d floci nginx` → `bash scripts/wait-floci-healthy.sh` → `bash scripts/deploy-local.sh` → `bash scripts/apply-api-deployment.sh` → `bash scripts/warmup-lambdas.sh` → `bash scripts/build-frontend.sh` → `bash scripts/deploy-frontend.sh` → `bash scripts/web-e2e.sh` (RP-008) / after_script `docker compose down -v || true` / artifacts `frontend/test-results/, frontend/playwright-report/` + `reports.junit`
+4. 全 4 ジョブの先頭で `scripts/check-test-env.sh <profile>` を実行（profile は lint/unit/integration/e2e、RP-001）
 5. 既存 `.dotnet` ジョブ (`lint`/`unit`/`integration`/`e2e`) の YAML を **変更しない** (新ジョブ追加のみ)
 6. ローカル `gitlab-ci-lint` (もしくは `glab ci lint`) で syntax 通過
 
@@ -57,6 +57,9 @@
 
 - [ ] `gitlab-ci-lint` (or `glab ci lint`) が exit 0
 - [ ] `web-lint`/`web-unit`/`web-integration`/`web-e2e` の 4 ジョブが定義
+- [ ] 各 web-* ジョブの before_script で **対応プロファイル** (`check-test-env.sh lint|unit|integration|e2e`) が呼ばれている (RP-001)
+- [ ] `web-lint` ジョブの image が `node:20.11-bullseye-slim` で、docker/terraform/aws/dotnet をインストールしないこと (RP-001)
+- [ ] `web-e2e` の script に `wait-floci-healthy.sh` → `deploy-local.sh` → `apply-api-deployment.sh` → `warmup-lambdas.sh` → `build-frontend.sh` → `deploy-frontend.sh` → `web-e2e.sh` の順序で含まれている (RP-008)
 - [ ] DinD `--tls=false` / `DOCKER_HOST=tcp://docker:2375` / `DOCKER_TLS_CERTDIR=""` / `FF_NETWORK_PER_BUILD=true` がすべて設定
 - [ ] image tag が `mcr.microsoft.com/playwright:v1.45.3-jammy` / `node:20.11-bullseye-slim` (固定)
 - [ ] 既存 `.dotnet` ジョブの YAML 変更が無いこと (`git diff` で確認)

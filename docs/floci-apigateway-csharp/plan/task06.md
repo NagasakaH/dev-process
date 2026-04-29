@@ -23,6 +23,8 @@
 
 `*.integration.spec.ts` 命名で結合テストを追加し、`HttpTestingController` で 1 件のリクエストを 1 回だけ flush することを検証する。
 
+> **責務境界 (RP-012)**: 本タスクは **テスト追加のみ** を担当する。AppComponent / TodoComponent / main.ts / ConfigService の **実装変更は禁止**。config-error 表示や APP_INITIALIZER catch ロジックは task04 で完結している前提とし、本タスクはそれを検証するテストのみ書く。実装上の不足が見つかった場合は task04 へ差し戻す。
+
 ## 実装ステップ (TDD)
 
 ### RED
@@ -37,7 +39,7 @@
 
 ### GREEN
 3. 既存実装 (task03-*, task04) で IT-1〜IT-5 が pass
-4. IT-6 については `main.ts` の `bootstrapApplication(...).catch(...)` フォールバック表示が必要 → 既に task04 で実装済み。テスト容易性のため `ConfigService.load` の reject を `BehaviorSubject<'config-error'>` 経由でも公開できるようにし、`AppComponent` 側でも捕捉表示を追加 (必要に応じて)
+4. IT-6 については `main.ts` の `bootstrapApplication(...).catch(...)` フォールバック表示 / AppComponent の config-error 表示が **task04 で実装済み**である前提で検証のみ行う。実装が不足していれば task04 へ差し戻す（RP-012）
 5. `npm run test:integration` で **GREEN**
 
 ### REFACTOR
