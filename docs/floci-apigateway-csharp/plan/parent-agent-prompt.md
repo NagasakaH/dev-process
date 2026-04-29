@@ -153,11 +153,11 @@ git branch -D FRONTEND-001-task02-01
 | グループ | 検証コマンド                                                              |
 | -------- | ------------------------------------------------------------------------- |
 | G1       | `cd frontend && npm ci && npm run build` （`frontend/dist/index.html` 出力 / RP-002 確認）|
-| G2       | `dotnet test tests/TodoApi.UnitTests`, `terraform validate`, `bash tests/infra/test-frontend-plan.sh` (RP-010), `docker compose config` |
-| G3       | `cd frontend && npm run test:unit`                                        |
-| G4       | `cd frontend && npm run test:unit`, `dotnet test tests/TodoApi.IntegrationTests`, `bash scripts/check-test-env.sh e2e` (RP-001) |
-| G5       | `npm run test:integration`, `npx playwright test` (devcontainer内 floci 起動済み)、`test ! -d frontend/src/app/__demo__` (RP-018) |
-| G6       | `glab ci lint` または `gitlab-ci-lint .gitlab-ci.yml`                     |
+| G2       | `dotnet test tests/TodoApi.UnitTests`, `terraform validate`, `bash tests/infra/test-frontend-plan.sh` (RP-010 / RP2-005: 期待件数と未マッチ件数が出力に含まれること), `docker compose config`, **(RP2-004)** task05 は `npm run test:unit` を実行せず構成検証のみ (`node -e` で karma global 閾値確認 / `jq` で angular.json / package.json 検証 / `tsconfig.spec.*` 分離確認) |
+| G3       | `cd frontend && npm run test:unit` （実 spec 追加後の coverage ゲート初実行 / RP2-004） |
+| G4       | `cd frontend && npm run test:unit`, `dotnet test tests/TodoApi.IntegrationTests` (**RP2-003**: task09 で `OPTIONS /todos` の RED→GREEN 遷移を必ず確認), `bash scripts/check-test-env.sh e2e` (RP-001) |
+| G5       | `npm run test:integration` （task06 後の coverage ゲート / RP2-004）, `npx playwright test` (devcontainer内 floci 起動済み)、`test ! -d frontend/src/app/__demo__` (RP-018) |
+| G6       | `glab ci lint` または `gitlab-ci-lint .gitlab-ci.yml` （**RP2-001**: web-e2e before_script に terraform 1.6.6 / dotnet-sdk-8.0 固定インストール手順がある / **RP2-002**: web-e2e の script が `check-test-env.sh e2e` + `compose up` + `web-e2e.sh` の 3 行のみで、`deploy-local|apply-api-deployment|warmup-lambdas|build-frontend|deploy-frontend|wait-floci-healthy` を直接含まないこと） |
 | G7       | `bash scripts/verify-readme-sections.sh` (baseline + 順序、RP-015)        |
 | G8       | task12.md の Step 1〜9 を完走 (coverage grep / SHA特定 / __demo__削除 含む) |
 

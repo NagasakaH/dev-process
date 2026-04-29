@@ -5,7 +5,7 @@ meta:
   target_repo: "floci-apigateway-csharp"
   branch: "feature/FRONTEND-001"
   created_at: "2026-04-29T12:16:26+00:00"
-  updated_at: "2026-04-29T14:37:38+00:00"
+  updated_at: "2026-04-30T12:00:00+00:00"
 setup:
   description:
     overview: |
@@ -152,7 +152,7 @@ investigation:
 design:
   status: completed
   started_at: "2026-04-29T13:14:49+00:00"
-  summary: "round1指摘 RD-001〜RD-012 を反映した再設計を完了。配信経路をnginx host volume mount一意（S3 syncは配置検証用）、API GW OPTIONSはAWS_PROXY+Lambda標準で204統一、CI imageをmcr.microsoft.com/playwright:v1.45.3-jammy統一、web-e2eにDinD設定（DOCKER_HOST/TLS/FF_NETWORK_PER_BUILD/WEB_BASE_URL）明記、unit/integrationをファイル名/karma config/tsconfig/npm scriptsで分離、karma coverage check.global強制、JSONキーCamelCase（id/title/createdAt等）確定、Angular18.2/Node20.11/Karma6.4/Playwright1.45.3バージョン固定、必須env未設定時はshell exit1+Playwright globalSetup throwでfail-fast統一、verify-readme-sectionsの検証対象見出し一覧明記、test environment readiness（Node/Chromium/Playwright/Docker DinD/floci/AWS CLI/Terraform）を05/06両方に追記。 round2指摘 RD2-001〜RD2-006 を反映: APIGW MOCK統合言及とLambda fallback表記を全文書から削除/却下案化（OPTIONSはAWS_PROXY→Lambda 204のみ）、05_test-plan E2E手順から fallback: ./frontend/dist volume mount コメント削除、Playwright config例を requireEnv('WEB_BASE_URL') 必須参照に変更してlocalhost:8080 fallback除去、06 DinD readinessを2375/DOCKER_TLS_CERTDIR=\"\"/--tls=false に統一しTLS証明書前提を削除、05切り分けフローからLambda fallback検討表記をAWS_PROXY統合Terraform定義/Lambda OPTIONSハンドラ確認に置換、Angularピンを~18.2.0に統一（^18.0.0除去）。review status はround3未実施のためconditionalのまま。"
+  summary: "round1指摘 RD-001〜RD-012 を反映した再設計を完了。配信経路をnginx host volume mount一意（S3 syncは配置検証用）、API GW OPTIONSはAWS_PROXY+Lambda標準で204統一、CI imageをmcr.microsoft.com/playwright:v1.45.3-jammy統一、web-e2eにDinD設定（DOCKER_HOST/TLS/FF_NETWORK_PER_BUILD/WEB_BASE_URL）明記、unit/integrationをファイル名/karma config/tsconfig/npm scriptsで分離、karma coverage check.global強制、JSONキーCamelCase（id/title/createdAt等）確定、Angular18.2/Node20.11/Karma6.4/Playwright1.45.3バージョン固定、必須env未設定時はshell exit1+Playwright globalSetup throwでfail-fast統一、verify-readme-sectionsの検証対象見出し一覧明記、test environment readiness（Node/Chromium/Playwright/Docker DinD/floci/AWS CLI/Terraform）を05/06両方に追記。 round2指摘 RD2-001〜RD2-006 を反映: APIGW MOCK統合言及とLambda fallback表記を全文書から削除/却下案化（OPTIONSはAWS_PROXY→Lambda 204のみ）、05_test-plan E2E手順から fallback: ./frontend/dist volume mount コメント削除、Playwright config例を requireEnv('WEB_BASE_URL') 必須参照に変更してlocalhost:8080 fallback除去、06 DinD readinessを2375/DOCKER_TLS_CERTDIR=\"\"/--tls=false に統一しTLS証明書前提を削除、05切り分けフローからLambda fallback検討表記をAWS_PROXY統合Terraform定義/Lambda OPTIONSハンドラ確認に置換、Angularピンを~18.2.0に統一（^18.0.0除去）。review status はround3未実施のためconditionalのまま。 round3 修正 (2026-04-30): review-plan round2 の RP2-006 / RP2-007 を反映し 05_test-plan の E2E-5 を Playwright page.route() に統一して docker compose stop を却下、02_interface-api-design の web-e2e DinD 手順を task07/task10 と整合 (web-e2e.sh が wait-floci-healthy → deploy-local → apply-api-deployment → warmup-lambdas → build-frontend → deploy-frontend → playwright を内部実行)。"
   approach: ""
   key_decisions: []
   review:
@@ -280,7 +280,7 @@ design:
 plan:
   status: completed
   started_at: "2026-04-29T14:07:23+00:00"
-  summary: "16 タスク (Angular scaffold / CORS / Terraform OPTIONS / nginx / Karma分離 / Angular サービス・コンポーネント / scripts / Playwright E2E / .NET IT追加 / GitLab CI / README / 弊害検証) を 8 並列グループに分割。E2E は task08 (Playwright) と task10 (CI web-e2e DinD) で対応。round 2 (2026-04-30): review-plan round 1 の RP-001〜RP-018 (Critical 1 / Major 9 / Minor 8) 全 18 件を再計画に反映済み。task07 前提に task01 / task08 前提に task02-01 を追加、check-test-env プロファイル化、APP_INITIALIZER 責務を task04 に集約、最終 coverage 閾値固定、E2E 5xx を Playwright route mock 化、apply-api-deployment + warmup-lambdas 順序固定など。推定総時間 約 13.75h → 約 14.5h (バッファ込み)。"
+  summary: "16 タスク (Angular scaffold / CORS / Terraform OPTIONS / nginx / Karma分離 / Angular サービス・コンポーネント / scripts / Playwright E2E / .NET IT追加 / GitLab CI / README / 弊害検証) を 8 並列グループに分割。E2E は task08 (Playwright) と task10 (CI web-e2e DinD) で対応。round 2 (2026-04-30): review-plan round 1 の RP-001〜RP-018 (Critical 1 / Major 9 / Minor 8) 全 18 件を再計画に反映済み。task07 前提に task01 / task08 前提に task02-01 を追加、check-test-env プロファイル化、APP_INITIALIZER 責務を task04 に集約、最終 coverage 閾値固定、E2E 5xx を Playwright route mock 化、apply-api-deployment + warmup-lambdas 順序固定など。推定総時間 約 13.75h → 約 14.5h (バッファ込み)。 round3 修正 (2026-04-30): review-plan round2 の RP2-001〜RP2-007 を反映。task10 web-e2e before_script に terraform 1.6.6 / dotnet-sdk-8.0 固定インストールを追加 (RP2-001)、web-e2e.sh を唯一のエントリポイント化し CI script を check-test-env + compose up + web-e2e.sh の3行に簡略化 (RP2-002)、task02-02 の RED を tests/infra/test-frontend-plan.sh のみに集約し cross-task RED を task09 完了条件へ移管 (RP2-003)、task05 の GREEN 判定を karma config / npm scripts 構成検証のみに限定し実 npm run test:unit は後続統合ゲート (G3/G5/web-unit) で実行する旨を明記 (RP2-004)、jq クエリを .change.resource.addr に統一し期待件数/未マッチ件数の明示出力を完了条件化 (RP2-005)。design 側は 05_test-plan の E2E-5 を Playwright page.route() 方式に統一して docker compose stop を却下案として明記 (RP2-006)、02_interface-api-design の web-e2e DinD 手順を task07/task10 と同順序 (web-e2e.sh が wait-floci-healthy → deploy-local → apply-api-deployment → warmup-lambdas → build-frontend → deploy-frontend → playwright を内部実行) に整合 (RP2-007)。review.status は round3 未実施のため conditional のまま。"
   total_tasks: 16
   tasks:
     - id: task01
@@ -471,34 +471,41 @@ plan:
         severity: major
         category: "CI実行可能性 / check-test-env e2e プロファイル整合"
         description: "task10 の web-e2e before_script は docker/awscli のみを導入するが、task07 の check-test-env.sh e2e プロファイルは terraform/dotnet も必須としており、Playwright image には含まれないため CI が成立しない。 | 対応方針: task10 before_script に terraform 1.6.6 と dotnet-sdk-8.0 の導入手順を固定して追加するか、e2e プロファイルを分割する。推奨は導入手順を明記し、完了条件にも terraform/dotnet 利用可能確認を追加。 | 関連ファイル: docs/floci-apigateway-csharp/plan/task07.md, docs/floci-apigateway-csharp/plan/task10.md"
-        status: open
+        status: resolved
+        resolved_in_round: 3
       - id: RP2-002
         severity: minor
         category: "CI重複実行 / web-e2e フロー二重化"
         description: "task10 の web-e2e script が deploy-local/apply-api-deployment/warmup/build/deploy を直接呼んだ後に web-e2e.sh を呼ぶ一方、task07 の web-e2e.sh 自身も同一処理を実行するため二重実行になる。 | 対応方針: web-e2e.sh を唯一のエントリポイントにし、task10 script は check-test-env + compose up + web-e2e.sh のみに簡略化。重複呼び出し禁止を完了条件化。 | 関連ファイル: docs/floci-apigateway-csharp/plan/task07.md, docs/floci-apigateway-csharp/plan/task10.md"
-        status: open
+        status: resolved
+        resolved_in_round: 3
       - id: RP2-003
         severity: minor
         category: "TDD RED の cross-task 依存"
         description: "task02-02 の RED/完了条件が task09 の OPTIONS IntegrationTest に依存しており、task02-02 単独で検証できない。 | 対応方針: task02-02 の RED は tests/infra/test-frontend-plan.sh のみに集約し、task09 連動は task09 完了条件へ移す。 | 関連ファイル: docs/floci-apigateway-csharp/plan/task02-02.md, docs/floci-apigateway-csharp/plan/task09.md"
-        status: open
+        status: resolved
+        resolved_in_round: 3
       - id: RP2-004
         severity: minor
         category: "task05 GREEN 判定 / coverage"
         description: "task05 は __demo__ spec を作って削除しつつ coverage 最終閾値を強制するため、単独 GREEN 判定が曖昧。ng test --dry-run 相当も正式手段でない。 | 対応方針: task05 の GREEN 判定を明示化する。推奨: task05 内では karma config と npm scripts の構成検証に限定し、実 npm run test:unit は後続統合ゲートで実行する旨を明記。 | 関連ファイル: docs/floci-apigateway-csharp/plan/task05.md"
-        status: open
+        status: resolved
+        resolved_in_round: 3
       - id: RP2-005
         severity: minor
         category: "terraform plan-json パース堅牢性"
         description: "task02-02 の jq クエリが Terraform 1.6.6 schema とズレた fallback を含み、false negative/可読性低下のリスクがある。 | 対応方針: Terraform 1.6.6 の plan -json schema に合わせ .change.resource.addr のみに統一し、期待件数と未マッチ件数を明示出力する。 | 関連ファイル: docs/floci-apigateway-csharp/plan/task02-02.md"
-        status: open
+        status: resolved
+        resolved_in_round: 3
       - id: RP2-006
         severity: minor
         category: "設計-計画整合性 / E2E 5xx"
         description: "plan は E2E-5 を page.route() 方針に変更したが、design 側に docker compose stop 方式が残っている。 | 対応方針: design 側も page.route() 方針に統一し、停止方式を却下案として明記する。 | 関連ファイル: docs/floci-apigateway-csharp/design/05_test-plan.md"
-        status: open
+        status: resolved
+        resolved_in_round: 3
       - id: RP2-007
         severity: minor
         category: "設計-計画整合性 / web-e2e順序"
         description: "plan は deploy-local 後に apply-api-deployment/warmup を必須化したが、design の DinD 手順に未反映。 | 対応方針: design の web-e2e 手順を task07/task10 と同順序に更新する。 | 関連ファイル: docs/floci-apigateway-csharp/design/02_interface-api-design.md"
-        status: open
+        status: resolved
+        resolved_in_round: 3
