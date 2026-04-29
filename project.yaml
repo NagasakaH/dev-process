@@ -5,7 +5,7 @@ meta:
   target_repo: "floci-apigateway-csharp"
   branch: "feature/FRONTEND-001"
   created_at: "2026-04-29T12:16:26+00:00"
-  updated_at: "2026-04-29T16:44:45+00:00"
+  updated_at: "2026-04-29T17:02:37+00:00"
 setup:
   description:
     overview: |
@@ -536,9 +536,9 @@ implement:
   completed_tasks: 0
   total_tasks: 0
   tasks: []
-  artifacts: "docs/floci-apigateway-csharp/verification/round3/implement-fix-report.md"
+  artifacts: "docs/floci-apigateway-csharp/verification/round4/implement-fix-report.md"
   completed_at: "2026-04-29T16:09:42+00:00"
-  summary: 'Round2 R1/R2/R3 + state machine 冪等化を修正。lint/unit(32/32)/integration(17/17)/build/nginx build PASS。E2E は 3 PASS / 1 SKIP / 2 FAIL (CORS preflight 未設定 - 別ブロッカー)。submodule commit 23aa139, parent 1a3d4de'
+  summary: 'Round 4 NEW-1 対応: floci 1.5.9 ApiGatewayUserRequestController に @OPTIONS 未定義の構造的バグを特定。IaC/Lambda は RD-006/RD-011 設計通りで本番では正常動作する見込み。RED テスト test-cors-preflight-http.sh を追加し、submodule round4 commit を作成。詳細は docs/floci-apigateway-csharp/verification/round4/implement-fix-report.md。'
 verification:
   status: failed
   started_at: "2026-04-29T15:56:55+00:00"
