@@ -5,7 +5,7 @@ meta:
   target_repo: "floci-apigateway-csharp"
   branch: "feature/FRONTEND-001"
   created_at: "2026-04-29T12:16:26+00:00"
-  updated_at: "2026-04-29T20:39:25+00:00"
+  updated_at: "2026-04-29T23:01:13+00:00"
 setup:
   description:
     overview: |
@@ -538,92 +538,92 @@ implement:
   tasks:
     - id: task01
       status: completed
-      commit: "1090042"
+      commit: "025f207"
       target_repo: floci-apigateway-csharp
     - id: task02-01
       status: completed
-      commit: "1090042"
+      commit: "025f207"
       target_repo: floci-apigateway-csharp
     - id: task02-02
       status: completed
-      commit: "1090042"
+      commit: "025f207"
       target_repo: floci-apigateway-csharp
     - id: task02-03
       status: completed
-      commit: "1090042"
+      commit: "025f207"
       target_repo: floci-apigateway-csharp
     - id: task02-04
       status: completed
-      commit: "1090042"
+      commit: "025f207"
       target_repo: floci-apigateway-csharp
     - id: task03-01
       status: completed
-      commit: "1090042"
+      commit: "025f207"
       target_repo: floci-apigateway-csharp
     - id: task03-02
       status: completed
-      commit: "1090042"
+      commit: "025f207"
       target_repo: floci-apigateway-csharp
     - id: task04
       status: completed
-      commit: "1090042"
+      commit: "025f207"
       target_repo: floci-apigateway-csharp
     - id: task05
       status: completed
-      commit: "1090042"
+      commit: "025f207"
       target_repo: floci-apigateway-csharp
     - id: task06
       status: completed
-      commit: "1090042"
+      commit: "025f207"
       target_repo: floci-apigateway-csharp
     - id: task07
       status: completed
-      commit: "1090042"
+      commit: "025f207"
       target_repo: floci-apigateway-csharp
     - id: task08
       status: completed
-      commit: "1090042"
+      commit: "025f207"
       target_repo: floci-apigateway-csharp
     - id: task09
       status: completed
-      commit: "1090042"
+      commit: "025f207"
       target_repo: floci-apigateway-csharp
     - id: task10
       status: completed
-      commit: "1090042"
+      commit: "025f207"
       target_repo: floci-apigateway-csharp
     - id: task11
       status: completed
-      commit: "1090042"
+      commit: "025f207"
       target_repo: floci-apigateway-csharp
     - id: task12
       status: completed
-      commit: "1090042"
+      commit: "025f207"
       target_repo: floci-apigateway-csharp
   artifacts: "docs/floci-apigateway-csharp/code-review/fix-round-01.md"
-  completed_at: "2026-04-29T20:39:25+00:00"
+  completed_at: "2026-04-29T23:01:13+00:00"
 verification:
   status: completed
   started_at: "2026-04-29T17:04:00+00:00"
   results:
     test:
       status: pass
-      detail: Frontend unit 32/32 + cov 100/94.28/100/100, integration 17/17 + cov 98.64/80/100/98.30, .NET unit 37/37, .NET integration 12/12, infra plan assertion 7/7 PASS.
+      detail: Frontend unit 32/32 + cov 100/94.28/100/100, integration 17/17 + cov 98.64/80/100/98.30, .NET unit 37/37, .NET integration 12/12, backend e2e 6/6, infra plan assertion 7/7 PASS. gitlab-ci-local and GitLab pipeline 2489878063 all jobs PASS.
       coverage: unit 100/94.28/100/100; integration 98.64/80/100/98.30
     build:
       status: pass
-      detail: dotnet build Release 0 warning/0 error; Angular production build PASS.
+      detail: dotnet build Release 0 warning/0 error; Angular production build PASS; GitLab pipeline 2489878063 format/e2e build steps success.
     lint:
       status: pass
-      detail: 'ng lint: All files pass linting.'
+      detail: 'ng lint and dotnet format pass; gitlab-ci-local format/web-lint PASS; GitLab format/web-lint success.'
     typecheck:
       status: pass
       detail: 'npm run typecheck (tsc --noEmit -p tsconfig.json) PASS.'
     e2e:
       status: pass
-      detail: 'scripts/web-e2e.sh completed; Playwright E2E-1-E2E-6 all passed (6/6).'
-      method: WEB_BASE_URL=http://host.docker.internal:8080 AWS_ENDPOINT_URL=http://host.docker.internal:4566 CHROME_BIN=/usr/bin/chromium SKIP_ENV_CHECK=1 bash scripts/web-e2e.sh
-      environment: floci 1.5.9 + nginx static frontend + Playwright Chromium
+      detail: 'scripts/web-e2e.sh completed; Playwright E2E-1-E2E-6 all passed (6/6). gitlab-ci-local web-e2e PASS and GitLab web-e2e job success.'
+      method: 'local: WEB_BASE_URL=http://host.docker.internal:8080 AWS_ENDPOINT_URL=http://host.docker.internal:4566 CHROME_BIN=/usr/bin/chromium SKIP_ENV_CHECK=1 bash scripts/web-e2e.sh; CI local: npx --yes gitlab-ci-local@latest --privileged --pull-policy if-not-present --concurrency 1 ... web-e2e; GitLab pipeline 2489878063'
+      environment: floci 1.5.9 + nginx static frontend + Playwright Chromium; gitlab-ci-local 4.71.0; GitLab SaaS runner
   acceptance_criteria_check:
     - criteria: AC1 ローカル Angular + floci API で Todo CRUD
       verified_by: e2e_test
@@ -646,13 +646,14 @@ verification:
     - criteria: AC7 README にローカル/テスト/CI 手順
       verified_by: manual
       result: pass
-  summary: "Round 5: code-review 指摘対応後、unit/integration/E2E/build/lint/typecheck/AC 照合が全通過。floci OPTIONS 制約はブラウザ経路を simple request 化して解消し、STRICT_PREFLIGHT=1 で厳密診断可能。"
+  summary: "Round 5: code-review 指摘対応後、通常ローカル検証、gitlab-ci-local 検証、GitLab pipeline 2489878063 が全通過。floci OPTIONS 制約はブラウザ経路を simple request 化して解消し、STRICT_PREFLIGHT=1 で厳密診断可能。"
   evidence:
     - docs/floci-apigateway-csharp/verification/round5/verification-report.md
     - docs/floci-apigateway-csharp/code-review/fix-round-01.md
+    - 'GitLab pipeline 2489878063: https://gitlab.com/nagasaka-experimental/floci-apigateway-csharp/-/pipelines/2489878063'
   artifacts:
     - docs/floci-apigateway-csharp/verification/round5/verification-report.md
-  completed_at: "2026-04-29T20:39:25+00:00"
+  completed_at: "2026-04-29T23:01:13+00:00"
 code_review:
   status: revision_required
   started_at: "2026-04-29T17:29:15+00:00"
@@ -692,77 +693,77 @@ code_review:
       severity: critical
       description: 'verification failed/create_mr_pr failed: AC1/AC5/E2E/TC-08 未達。floci OPTIONS 制約解消または合意済み代替環境での AC 実証が必要。'
       status: fixed
-      fix_commit: "1090042"
+      fix_commit: "025f207"
     - id: CR-002
       severity: critical
       description: E2E-6 が test.skip で実行されず AC5 (E2E-1〜E2E-6 全通過) 未達。WEB_BASE_URL 未設定 fail-fast を実テスト/CI で検証し skip 撤廃。
       status: fixed
-      fix_commit: "1090042"
+      fix_commit: "025f207"
     - id: CR-003
       severity: critical
       description: E2E-1 が作成 Todo の title 一致を検証していない。ID 表示のみ確認しており AC 検証不足。
       status: fixed
-      fix_commit: "1090042"
+      fix_commit: "025f207"
     - id: CR-004
       severity: major
       description: Frontend TodoStatus/POST 型が実 Backend と不一致の可能性。status pending/done、POST 応答 {id, executionArn} と整合させる。
       status: fixed
-      fix_commit: "1090042"
+      fix_commit: "025f207"
     - id: CR-005
       severity: major
       description: CORS HTTP preflight RED テストが invoke_url 未取得時 exit0 skip しゲートとして弱い。必須前提未充足は失敗もしくは明示手動 skip のみに限定。
       status: fixed
-      fix_commit: "1090042"
+      fix_commit: "025f207"
     - id: CR-006
       severity: minor
       description: GitLab web-unit/web-integration JUnit report path と Karma 出力先不一致の可能性。
       status: fixed
-      fix_commit: "1090042"
+      fix_commit: "025f207"
     - id: CR-007
       severity: major
       description: compose/docker-compose.yml に no-op env DISABLE_CUSTOM_CORS_APIGATEWAY が残置。
       file: compose/docker-compose.yml
       status: fixed
-      fix_commit: "1090042"
+      fix_commit: "025f207"
     - id: CR-008
       severity: major
       description: scripts/web-e2e.sh の terraform state show + awk 抽出が脆い。terraform output -json 等の machine-readable 出力に変更。
       file: scripts/web-e2e.sh
       status: fixed
-      fix_commit: "1090042"
+      fix_commit: "025f207"
     - id: CR-009
       severity: major
       description: Lambda OPTIONS 分岐が任意 resource に 204+CORS を返しうる。/todos,/todos/{id} に限定し unknown OPTIONS は 404 にする。
       status: fixed
-      fix_commit: "1090042"
+      fix_commit: "025f207"
     - id: CR-010
       severity: major
       description: Lambda GET /todos/foo/bar が id foo/bar として通る可能性。resource/id segment を厳格化。
       status: fixed
-      fix_commit: "1090042"
+      fix_commit: "025f207"
     - id: CR-011
       severity: major
       description: frontend/src/main.ts の innerHTML 使用を createElement/textContent 等に変更し XSS リスクを排除。
       file: frontend/src/main.ts
       status: fixed
-      fix_commit: "1090042"
+      fix_commit: "025f207"
     - id: CR-012
       severity: major
       description: frontend/scripts/check-coverage-threshold.js が XML 正規表現でパースしており脆い。json-summary 等構造化形式に変更。
       file: frontend/scripts/check-coverage-threshold.js
       status: fixed
-      fix_commit: "1090042"
+      fix_commit: "025f207"
     - id: CR-013
       severity: minor
       description: SkipIfNoFlociTheory の skip 理由/件数のトレース性を改善、または verification 手順に明記。
       status: fixed
-      fix_commit: "1090042"
+      fix_commit: "025f207"
     - id: CR-014
       severity: minor
       description: infra/outputs.tf frontend_url が localhost:8080 ハードコード。CI との差異をコメント/変数化。
       file: infra/outputs.tf
       status: fixed
-      fix_commit: "1090042"
+      fix_commit: "025f207"
     - id: CR-015
       severity: minor
       description: GitLab web-e2e CI のツール install が重い。事前ビルドイメージを検討。
@@ -772,7 +773,7 @@ code_review:
       severity: info
       description: CORS "*" の将来リスク。ALLOWED_ORIGIN env 等で制御可能に。
       status: fixed
-      fix_commit: "1090042"
+      fix_commit: "025f207"
   artifacts:
     - docs/floci-apigateway-csharp/code-review/round-01-summary.md
     - docs/floci-apigateway-csharp/code-review/fix-round-01.md

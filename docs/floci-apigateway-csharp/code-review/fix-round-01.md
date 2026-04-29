@@ -3,7 +3,7 @@
 ## 概要
 
 - 対象: `docs/floci-apigateway-csharp/code-review/round-01-summary.md`
-- 修正コミット: `1090042` (`refs FRONTEND-001 code-review 指摘対応`)
+- 修正コミット: `025f207` (`refs FRONTEND-001 gitlab-ci-local検証でCI定義を修正`)
 - 結果: Critical / Major / Minor 指摘はすべて修正または技術的理由で反論済み。再 code-review 待ち。
 
 ## 指摘対応一覧
@@ -35,3 +35,5 @@
 - .NET build/unit/integration: PASS
 - Infra plan assertion: PASS
 - `scripts/web-e2e.sh`: Playwright 6/6 PASS
+- `gitlab-ci-local --privileged`: backend `e2e` PASS、`format web-lint unit web-unit integration web-integration web-e2e` PASS
+- GitLab pipeline 2489878063: 8/8 jobs success
