@@ -1,0 +1,139 @@
+meta:
+  version: "1.0"
+  ticket_id: "FRONTEND-001"
+  task_name: "floci-apigateway-csharp に Angular フロントエンド追加（テスト・CI 含む）"
+  target_repo: "floci-apigateway-csharp"
+  branch: "feature/FRONTEND-001"
+  created_at: "2026-04-29T12:16:26+00:00"
+  updated_at: "2026-04-29T12:16:26+00:00"
+
+setup:
+  description:
+    overview: |
+      floci-apigateway-csharp に Angular 製の新規フロントエンドを追加し、
+      既存 .NET 8 API（API Gateway 経由）を呼び出す UI を提供する。
+    purpose: |
+      API バックエンドのみのサンプルに UI 層を追加し、
+      floci 上での API Gateway + Lambda + Step Functions + DynamoDB 構成を
+      ブラウザから操作できる形にして、デモ性と E2E 検証性を高める。
+    background: |
+      対象リポジトリは .NET 8 Lambda と Terraform による floci(LocalStack 相当)
+      向け Todo API サンプルで、現在はフロントエンドが存在しない。
+      既存 CI は GitLab CI 上で lint、unit、integration、e2e を実行している。
+      今回は Angular フロントエンドを追加し、S3 + CloudFront 相当のローカル構成で
+      配信・接続できるようにしたうえで、Playwright E2E をローカルおよび CI で実行する。
+    requirements:
+      functional:
+        - "Angular アプリで Todo の作成（POST /todos）と取得（GET /todos/{id}）ができること"
+        - "既存 API の terraform output または設定ファイルから API ベース URL を解決できること"
+        - "フロントエンドを S3 + CloudFront 相当のローカル構成で配信し、API と連携できること"
+        - "Playwright E2E でブラウザから Todo 作成・取得の一連の動作を検証できること"
+      non_functional:
+        - "実 AWS への接続を行わず、floci/LocalStack 相当のローカルエンドポイントのみを使用すること"
+        - "GitLab CI で既存 .NET テストと追加フロントエンドテストが全て通ること"
+        - "ローカルで Angular 開発サーバーまたは S3 + CloudFront 相当構成を起動して動作確認できること"
+        - "CI では再現性のある Node.js / npm / Playwright 実行環境を使用すること"
+    acceptance_criteria:
+      - "ローカルで Angular フロントエンドを起動し、floci 上の API を叩いて Todo を作成・取得できること"
+      - "ローカルで S3 + CloudFront 相当の配信構成を起動し、フロントエンド経由の Todo 作成・取得ができること"
+      - "Angular の単体テスト（component/service）がローカルと CI で実行され、全て通過すること"
+      - "Angular の結合テスト（HttpClient/API 接続境界など）がローカルと CI で実行され、全て通過すること"
+      - "Playwright E2E が floci + terraform apply 済み API と S3 + CloudFront 相当フロントエンドに対してローカルと CI で実行され、全て通過すること"
+      - "既存 .NET 側の lint/unit/integration/e2e ジョブが引き続き成功すること"
+      - "README または同等のドキュメントにローカル起動、テスト、CI 実行方法が記載されていること"
+    scope:
+      - "対象リポジトリ内に新規 Angular プロジェクトを追加すること"
+      - "Angular 単体テスト、結合テスト、Playwright E2E を追加すること"
+      - "S3 + CloudFront 相当のローカル配信構成を追加または既存 floci/Terraform 構成へ統合すること"
+      - "GitLab CI にフロントエンドの install/build/test/e2e 実行を追加すること"
+      - "ローカル実行手順と CI 実行手順をドキュメント化すること"
+    out_of_scope:
+      - "認証・認可の追加"
+      - "本番 AWS へのデプロイ"
+      - "CloudFront/S3 の本番運用向け設定や CDN 最適化"
+      - "既存 API の大幅な仕様変更"
+    notes: |
+      GitLab 対象リポジトリ floci-apigateway-csharp を editable として扱う。
+      https://github.com/floci-io/floci は readonly の参考リポジトリとして扱う。
+      floci には CloudFront 相当のサービス実装が確認できないため、
+      CloudFront 相当は nginx によるフロント静的配信レイヤーとして扱う。
+      API は nginx 経由にせず、既存 floci API Gateway invoke_url を Angular から直接呼び出す。
+  related_repositories:
+    - name: "floci"
+      url: "https://github.com/floci-io/floci.git"
+  target_repositories:
+    - name: "floci-apigateway-csharp"
+      url: "https://gitlab.com/nagasaka-experimental/floci-apigateway-csharp.git"
+      base_branch: "main"
+  options:
+    create_design_document: true
+    design_document_dir: "docs"
+    submodules_dir: "submodules"
+
+brainstorming:
+  status: completed
+  started_at: "2026-04-29T12:16:26+00:00"
+  completed_at: "2026-04-29T12:16:26+00:00"
+  summary: |
+    Angular 18 LTS フロントエンドを frontend/ に追加し、既存 floci API Gateway を直接呼び出す方針を確定。
+    CloudFront 相当は nginx による静的フロント配信のみとし、API 直呼びのため CORS 対応を追加する。
+    Karma/Jasmine の unit/integration と Playwright E2E をローカル/CIで実行する。
+  decisions:
+    - question: "CloudFront 相当のローカル配信方式"
+      decision: "floci に CloudFront 相当サービスは確認できないため、nginx sidecar をフロント静的配信の CloudFront 相当として使う。API は nginx 経由にしない。"
+    - question: "API ベース URL の解決方式"
+      decision: "Angular は assets/config.json 等から floci API Gateway の invoke_url を読み取り、ブラウザから直接呼び出す。API 側には CORS 対応を追加する。"
+    - question: "Angular プロジェクトの配置場所とバージョン"
+      decision: "frontend/ 配下に Angular 18 LTS を追加する。"
+    - question: "テストランナー"
+      decision: "単体・結合テストは Angular 標準の Karma/Jasmine、E2E は Playwright を採用する。"
+    - question: "CI ジョブ構成"
+      decision: "既存 stage に web-lint / web-unit / web-integration / web-e2e を追加し、npm と Playwright browsers をキャッシュする。"
+  refined_requirements:
+    - "Angular 18 LTS を frontend/ 配下に追加する"
+    - "CloudFront 相当は nginx sidecar による静的フロント配信として実装し、API リバースプロキシは行わない"
+    - "Angular から既存 floci API Gateway invoke_url を直接呼び出せるよう、実行時設定ファイルを用意する"
+    - "ブラウザから API Gateway を直接呼ぶため、API Gateway/Lambda 側に CORS 対応を追加する"
+    - "floci S3 を利用できるよう compose/Terraform/scripts を拡張し、フロント成果物のローカル配信導線を整備する"
+    - "GitLab CI に web-lint / web-unit / web-integration / web-e2e を追加し、既存 .NET ジョブを非破壊で維持する"
+    - "README に Angular ローカル起動、S3+CloudFront相当配信、テスト、CI 実行手順を追記する"
+  test_strategy:
+    scope:
+      - unit
+      - integration
+      - e2e
+    unit:
+      framework: "Karma + Jasmine"
+      target: "Angular component/service/pipe の単体テスト。HttpClient はモックする。"
+    integration:
+      framework: "Karma + Jasmine + HttpTestingController"
+      target: "Todo API クライアント、設定読み込み、フォームから API 呼び出し境界、エラー表示の結合テスト。"
+    e2e:
+      method: "floci 起動、terraform apply、API invoke_url 取得、Angular build、S3 への静的成果物配置、nginx 静的配信起動、Playwright 実行。API は nginx 経由にせず floci API Gateway を直接呼び出す。"
+      criteria:
+        - "UI 経由で POST /todos が成功し、GET /todos/{id} で同一データを取得できる"
+        - "S3 + CloudFront 相当の静的配信 URL から Angular UI を表示できる"
+        - "API Gateway 直接呼び出しに必要な CORS がブラウザ上で成立する"
+        - "4xx/5xx 応答時に UI にユーザー向けエラーが表示される"
+        - "実 AWS に到達せず、AWS_ENDPOINT_URL 未設定時は安全に失敗する"
+      environment: "ローカル devcontainer/Docker と GitLab CI DinD の両方"
+
+overview:
+  status: completed
+  completed_at: "2026-04-29T12:16:26+00:00"
+  summary: "floci-apigateway-csharp と floci のサブモジュール概要作成完了"
+  artifacts: "submodules/floci-apigateway-csharp.md, submodules/floci.md"
+
+human_checkpoints:
+  brainstorming_review:
+    status: pending
+    current_round: 0
+    rounds: []
+  design_review:
+    status: pending
+    current_round: 0
+    rounds: []
+  pr_review:
+    status: pending
+    current_round: 0
+    rounds: []
