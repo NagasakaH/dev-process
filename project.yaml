@@ -5,7 +5,7 @@ meta:
   target_repo: "floci-apigateway-csharp"
   branch: "feature/FRONTEND-001"
   created_at: "2026-04-29T12:16:26+00:00"
-  updated_at: "2026-04-29T17:26:27+00:00"
+  updated_at: "2026-04-29T17:29:39+00:00"
 setup:
   description:
     overview: |
@@ -610,3 +610,18 @@ verification:
       mitigation: "tests/infra/test-cors-preflight-http.sh を RED テストとして同梱、CorsOptionsTests.cs (Lambda 契約) と test-frontend-plan.sh (IaC AWS_PROXY 契約) で本番合格性を担保。floci upstream 修正待ち"
   artifacts: docs/floci-apigateway-csharp/verification/round4/verification-report.md
   completed_at: "2026-04-29T17:26:27+00:00"
+code_review:
+  status: pending
+  started_at: "2026-04-29T17:29:15+00:00"
+  round: 1
+  rounds: []
+  review_checklist: {}
+  issues: []
+  artifacts: []
+create_mr_pr:
+  status: failed
+  started_at: "2026-04-29T17:29:39+00:00"
+  completed_at: "2026-04-29T17:29:39+00:00"
+  mode: code
+  platform: gitlab
+  mr_pr_urls: []
